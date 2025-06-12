@@ -1,0 +1,28 @@
+{
+  "name": "ssh-client-web",
+  "version": "1.0.0",
+  "description": "SSH Client Web Service - tmux controller",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm start",
+    "install:all": "npm install && cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "tmux",
+    "ssh",
+    "web",
+    "terminal",
+    "react",
+    "fastapi"
+  ],
+  "author": "",
+  "license": "MIT"
+}
