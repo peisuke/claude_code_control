@@ -13,8 +13,9 @@ import {
 import { Refresh, PlayArrow, Stop } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
-// @ts-ignore
-import Ansi from 'ansi-to-react';
+import Convert from 'ansi-to-html';
+
+const convert = new Convert();
 
 interface TmuxDisplayTabProps {
   isConnected: boolean;
@@ -211,7 +212,15 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
           }
         }}
       >
-        {output ? <Ansi>{output}</Ansi> : 'tmux出力がここに表示されます...'}
+        {output ? (
+          <div 
+            dangerouslySetInnerHTML={{ 
+              __html: convert.toHtml(output) 
+            }} 
+          />
+        ) : (
+          'tmux出力がここに表示されます...'
+        )}
       </Box>
     </Paper>
   );

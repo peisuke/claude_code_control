@@ -25,8 +25,9 @@ import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
 import ConnectionStatus from './ConnectionStatus';
 import TmuxTargetSelector from './TmuxTargetSelector';
-// @ts-ignore
-import Ansi from 'ansi-to-react';
+import Convert from 'ansi-to-html';
+
+const convert = new Convert();
 
 interface UnifiedViewProps {
   isConnected: boolean;
@@ -244,7 +245,15 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             }
           }}
         >
-          {output ? <Ansi>{output}</Ansi> : 'tmux出力がここに表示されます...'}
+          {output ? (
+            <div 
+              dangerouslySetInnerHTML={{ 
+                __html: convert.toHtml(output) 
+              }} 
+            />
+          ) : (
+            'tmux出力がここに表示されます...'
+          )}
         </Box>
       </Paper>
 
