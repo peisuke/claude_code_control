@@ -1,7 +1,7 @@
 {
-  "name": "ssh-client-web",
+  "name": "claude-code-control",
   "version": "1.0.0",
-  "description": "SSH Client Web Service - tmux controller",
+  "description": "Claude Code Control - Web-based tmux controller for remote development",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
@@ -16,8 +16,9 @@
     "concurrently": "^8.2.2"
   },
   "keywords": [
+    "claude-code",
     "tmux",
-    "ssh",
+    "remote-development",
     "web",
     "terminal",
     "react",

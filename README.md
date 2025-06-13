@@ -1,6 +1,6 @@
-# SSH Client Web Service
+# Claude Code Control
 
-A web-based tmux controller with real-time output display.
+A web-based tmux controller for remote development with Claude Code integration.
 
 ## Architecture
 - **Frontend**: React 18 with Material-UI v5
@@ -9,6 +9,7 @@ A web-based tmux controller with real-time output display.
 - **Real-time**: WebSocket for live tmux output streaming
 
 ## Features
+- 🤖 Claude Code remote development control
 - 🚀 Send commands to tmux sessions, windows, and panes
 - 📡 Real-time tmux output display with WebSocket
 - 🎯 Hierarchical target selection (session:window.pane)

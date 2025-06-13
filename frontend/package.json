@@ -1,5 +1,5 @@
 {
-  "name": "ssh-client-frontend",
+  "name": "claude-code-control-frontend",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
