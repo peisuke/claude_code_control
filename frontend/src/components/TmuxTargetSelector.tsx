@@ -13,9 +13,15 @@ import {
   Alert,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  DialogContentText
 } from '@mui/material';
-import { Refresh, Add, ExpandMore, BugReport } from '@mui/icons-material';
+import { Refresh, ExpandMore, BugReport, Settings } from '@mui/icons-material';
 import { TmuxHierarchy, TmuxTarget } from '../types';
 import { tmuxAPI } from '../services/api';
 
@@ -23,12 +29,16 @@ interface TmuxTargetSelectorProps {
   selectedTarget: string;
   onTargetChange: (target: string) => void;
   disabled?: boolean;
+  connectionStatus?: React.ReactNode;
+  onSettingsOpen?: () => void;
 }
 
 const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
   selectedTarget,
   onTargetChange,
-  disabled = false
+  disabled = false,
+  connectionStatus,
+  onSettingsOpen
 }) => {
   const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
   const [loading, setLoading] = useState(false);
@@ -123,14 +133,6 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
     }
   };
 
-  const handleCreateSession = () => {
-    const newSessionName = prompt('新しいセッション名を入力してください:', `session-${Date.now()}`);
-    if (newSessionName && newSessionName.trim()) {
-      onTargetChange(newSessionName.trim());
-      // Refresh hierarchy after a short delay to allow session creation
-      setTimeout(loadHierarchy, 1000);
-    }
-  };
 
   if (error) {
     return (
@@ -150,33 +152,40 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
     <Box>
       <Stack spacing={2}>
         {/* Control Buttons */}
-        <Stack direction="row" spacing={1} alignItems="center">
-          <IconButton
-            onClick={loadHierarchy}
-            disabled={disabled || loading}
-            title="階層を更新"
-            size="small"
-          >
-            {loading ? <CircularProgress size={16} /> : <Refresh />}
-          </IconButton>
-          
-          <IconButton
-            onClick={handleCreateSession}
-            disabled={disabled || loading}
-            title="新しいセッションを作成"
-            size="small"
-          >
-            <Add />
-          </IconButton>
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <IconButton
+              onClick={loadHierarchy}
+              disabled={disabled || loading}
+              title="階層を更新"
+              size="small"
+            >
+              {loading ? <CircularProgress size={16} /> : <Refresh />}
+            </IconButton>
 
-          <IconButton
-            onClick={() => setShowDebug(!showDebug)}
-            title="デバッグ情報を表示"
-            color={showDebug ? "primary" : "default"}
-            size="small"
-          >
-            <BugReport />
-          </IconButton>
+            <IconButton
+              onClick={() => setShowDebug(!showDebug)}
+              title="デバッグ情報を表示"
+              color={showDebug ? "primary" : "default"}
+              size="small"
+            >
+              <BugReport />
+            </IconButton>
+          </Stack>
+
+          <Stack direction="row" spacing={1} alignItems="center">
+            {connectionStatus}
+            {onSettingsOpen && (
+              <Button
+                variant="outlined"
+                startIcon={<Settings />}
+                onClick={onSettingsOpen}
+                size="small"
+              >
+                設定
+              </Button>
+            )}
+          </Stack>
         </Stack>
 
         {/* Selectors - Horizontal Layout */}
@@ -302,6 +311,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
           </Accordion>
         )}
       </Stack>
+
     </Box>
   );
 };

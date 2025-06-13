@@ -14,6 +14,7 @@
     "@types/node": "^16.18.65",
     "@types/react": "^18.2.42",
     "@types/react-dom": "^18.2.17",
+    "ansi-to-react": "^6.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",

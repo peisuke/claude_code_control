@@ -10,7 +10,7 @@ import {
   CircularProgress,
   Divider
 } from '@mui/material';
-import { Send, KeyboardReturn, Settings } from '@mui/icons-material';
+import { Send, KeyboardReturn, Settings, ClearAll } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import ConnectionStatus from './ConnectionStatus';
 import TmuxTargetSelector from './TmuxTargetSelector';
@@ -45,6 +45,15 @@ const CommandTab: React.FC<CommandTabProps> = ({
   const handleSendEnter = async () => {
     try {
       await sendEnter(selectedTarget);
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
+  const handleClear = async () => {
+    try {
+      // Send Ctrl+L to clear the screen
+      await sendCommand('\x0c', selectedTarget);
     } catch (error) {
       // Error is handled by the hook
     }
@@ -102,23 +111,35 @@ const CommandTab: React.FC<CommandTabProps> = ({
         />
 
         {/* Action Buttons */}
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="contained"
-            startIcon={isLoading ? <CircularProgress size={16} /> : <Send />}
-            onClick={handleSendCommand}
-            disabled={!isConnected || !command.trim() || isLoading}
-          >
-            送信
-          </Button>
+        <Stack direction="row" spacing={2} justifyContent="space-between">
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="contained"
+              startIcon={isLoading ? <CircularProgress size={16} /> : <Send />}
+              onClick={handleSendCommand}
+              disabled={!isConnected || !command.trim() || isLoading}
+            >
+              送信
+            </Button>
+            
+            <Button
+              variant="outlined"
+              startIcon={<KeyboardReturn />}
+              onClick={handleSendEnter}
+              disabled={!isConnected || isLoading}
+            >
+              Enter
+            </Button>
+          </Stack>
           
           <Button
             variant="outlined"
-            startIcon={<KeyboardReturn />}
-            onClick={handleSendEnter}
+            color="warning"
+            startIcon={<ClearAll />}
+            onClick={handleClear}
             disabled={!isConnected || isLoading}
           >
-            Enter
+            Clear
           </Button>
         </Stack>
       </Stack>

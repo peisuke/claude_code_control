@@ -127,6 +127,105 @@ async def get_hierarchy():
         )
 
 
+@router.post("/create-session")
+async def create_session(session_name: str):
+    """Create a new tmux session"""
+    try:
+        success = await tmux_service.create_session(session_name)
+        
+        if success:
+            return ApiResponse(
+                success=True,
+                message=f"Session '{session_name}' created successfully"
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to create session '{session_name}'"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating session: {str(e)}"
+        )
+
+
+@router.delete("/session/{session_name}")
+async def delete_session(session_name: str):
+    """Delete a tmux session"""
+    try:
+        success = await tmux_service.kill_session(session_name)
+        
+        if success:
+            return ApiResponse(
+                success=True,
+                message=f"Session '{session_name}' deleted successfully"
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete session '{session_name}'"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting session: {str(e)}"
+        )
+
+
+@router.post("/create-window")
+async def create_window(session_name: str, window_name: str = None):
+    """Create a new window in a tmux session"""
+    try:
+        success = await tmux_service.create_window(session_name, window_name)
+        
+        if success:
+            message = f"Window created in session '{session_name}'"
+            if window_name:
+                message += f" with name '{window_name}'"
+            return ApiResponse(
+                success=True,
+                message=message
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to create window in session '{session_name}'"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating window: {str(e)}"
+        )
+
+
+@router.delete("/window/{session_name}/{window_index}")
+async def delete_window(session_name: str, window_index: str):
+    """Delete a window from a tmux session"""
+    try:
+        success = await tmux_service.kill_window(session_name, window_index)
+        
+        if success:
+            return ApiResponse(
+                success=True,
+                message=f"Window '{window_index}' deleted from session '{session_name}'"
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete window '{window_index}' from session '{session_name}'"
+            )
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting window: {str(e)}"
+        )
+
+
 @router.get("/status")
 async def get_status():
     """Get tmux status and available sessions"""

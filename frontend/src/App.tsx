@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
-import Layout from './components/Layout';
-import CommandTab from './components/CommandTab';
-import TmuxDisplayTab from './components/TmuxDisplayTab';
+import { CssBaseline, Box } from '@mui/material';
+import UnifiedView from './components/UnifiedView';
 import SettingsModal from './components/SettingsModal';
 import { tmuxAPI } from './services/api';
 
@@ -72,18 +70,14 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Layout>
-        <CommandTab 
+      <Box sx={{ height: '100vh', bgcolor: 'grey.100' }}>
+        <UnifiedView 
           isConnected={isConnected}
           onSettingsOpen={handleSettingsOpen}
           selectedTarget={selectedTarget}
           onTargetChange={handleTargetChange}
         />
-        <TmuxDisplayTab 
-          isConnected={isConnected}
-          selectedTarget={selectedTarget}
-        />
-      </Layout>
+      </Box>
       
       <SettingsModal
         isOpen={settingsOpen}

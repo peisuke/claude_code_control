@@ -112,6 +112,60 @@ class TmuxAPI {
 
     return response.json();
   }
+
+  async createSession(sessionName: string): Promise<ApiResponse> {
+    const response = await fetch(`${this.baseURL}/tmux/create-session?session_name=${encodeURIComponent(sessionName)}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteSession(sessionName: string): Promise<ApiResponse> {
+    const response = await fetch(`${this.baseURL}/tmux/session/${encodeURIComponent(sessionName)}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async createWindow(sessionName: string, windowName?: string): Promise<ApiResponse> {
+    const url = new URL(`${this.baseURL}/tmux/create-window`);
+    url.searchParams.append('session_name', sessionName);
+    if (windowName) {
+      url.searchParams.append('window_name', windowName);
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async deleteWindow(sessionName: string, windowIndex: string): Promise<ApiResponse> {
+    const response = await fetch(`${this.baseURL}/tmux/window/${encodeURIComponent(sessionName)}/${encodeURIComponent(windowIndex)}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const tmuxAPI = new TmuxAPI();

@@ -13,6 +13,8 @@ import {
 import { Refresh, PlayArrow, Stop } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
+// @ts-ignore
+import Ansi from 'ansi-to-react';
 
 interface TmuxDisplayTabProps {
   isConnected: boolean;
@@ -156,11 +158,11 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
         <Stack direction="row" spacing={2} alignItems="center">
           <Button
             variant="contained"
-            startIcon={isLoading ? <CircularProgress size={16} /> : <Refresh />}
             onClick={handleRefresh}
             disabled={!isConnected || isLoading || autoRefresh}
+            sx={{ minWidth: 'auto', px: 2 }}
           >
-            更新
+            {isLoading ? <CircularProgress size={20} /> : <Refresh />}
           </Button>
           
           <FormControlLabel
@@ -188,31 +190,28 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
 
       {/* Output Display */}
       <Box
+        ref={outputRef}
         sx={{
           flex: '1 1 auto',
           mt: 2,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column'
+          overflow: 'auto',
+          fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+          fontSize: { xs: '10px', sm: '12px', md: '14px' },
+          backgroundColor: '#000000',
+          color: '#f0f0f0',
+          p: 2,
+          m: 0,
+          borderRadius: 1,
+          whiteSpace: 'pre',
+          WebkitOverflowScrolling: 'touch',
+          '& code': {
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            backgroundColor: 'transparent'
+          }
         }}
       >
-        <Box
-          ref={outputRef}
-          sx={{
-            flex: '1 1 auto',
-            overflow: 'auto',
-            fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-            fontSize: '14px',
-            backgroundColor: 'grey.900',
-            color: 'grey.100',
-            p: 2,
-            borderRadius: 1,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all'
-          }}
-        >
-          {output || 'tmux出力がここに表示されます...'}
-        </Box>
+        {output ? <Ansi>{output}</Ansi> : 'tmux出力がここに表示されます...'}
       </Box>
     </Paper>
   );

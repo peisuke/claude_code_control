@@ -65,7 +65,7 @@ class TmuxService:
             if not await self.session_exists(session_name):
                 return "Session not found"
             
-            cmd = ["tmux", "capture-pane", "-t", target, "-p"]
+            cmd = ["tmux", "capture-pane", "-t", target, "-e", "-p"]
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -206,6 +206,61 @@ class TmuxService:
             print(f"Error getting panes: {e}")
             return []
     
+    async def kill_session(self, session: str) -> bool:
+        """Kill a tmux session"""
+        try:
+            cmd = ["tmux", "kill-session", "-t", session]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            return process.returncode == 0
+            
+        except Exception as e:
+            print(f"Error killing session: {e}")
+            return False
+    
+    async def create_window(self, session: str, window_name: str = None) -> bool:
+        """Create a new window in a tmux session"""
+        try:
+            cmd = ["tmux", "new-window", "-t", session]
+            if window_name:
+                cmd.extend(["-n", window_name])
+            
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            return process.returncode == 0
+            
+        except Exception as e:
+            print(f"Error creating window: {e}")
+            return False
+    
+    async def kill_window(self, session: str, window_index: str) -> bool:
+        """Kill a window in a tmux session"""
+        try:
+            target = f"{session}:{window_index}"
+            cmd = ["tmux", "kill-window", "-t", target]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            return process.returncode == 0
+            
+        except Exception as e:
+            print(f"Error killing window: {e}")
+            return False
+
     async def get_hierarchy(self) -> Dict[str, Any]:
         """Get complete tmux hierarchy (sessions -> windows -> panes)"""
         try:

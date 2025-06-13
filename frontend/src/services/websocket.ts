@@ -10,9 +10,13 @@ export class WebSocketService {
   private onMessageCallback?: (output: TmuxOutput) => void;
   private onConnectionCallback?: (connected: boolean) => void;
 
-  constructor(target: string = 'default', baseUrl: string = 'ws://localhost:8000/api/tmux/ws') {
+  constructor(target: string = 'default') {
     this.sessionName = target;
-    this.baseUrl = baseUrl;
+    // Use the same host as the current page, with WebSocket protocol
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const port = process.env.NODE_ENV === 'development' ? '8000' : window.location.port;
+    this.baseUrl = `${protocol}//${host}:${port}/api/tmux/ws`;
   }
 
   private get url(): string {
