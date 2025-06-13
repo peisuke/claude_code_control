@@ -1,29 +1,38 @@
 # Claude Code Control
 
-A web-based tmux controller for remote development with Claude Code integration.
+Web interface for controlling Claude Code development sessions through tmux. Monitor and interact with your Claude Code sessions in real-time from your browser.
+
+## Overview
+
+Claude Code Control provides a web-based interface to interact with tmux sessions where Claude Code is running. This allows you to:
+- Monitor Claude Code's terminal output in real-time
+- Send commands to Claude Code sessions
+- Manage multiple tmux sessions, windows, and panes
+- View live updates via WebSocket streaming
 
 ## Architecture
-- **Frontend**: React 18 with Material-UI v5
-- **Backend**: FastAPI with WebSocket support  
-- **Structure**: Monorepo (frontend/backend separation)
-- **Real-time**: WebSocket for live tmux output streaming
+- **Frontend**: React 18 with TypeScript and Material-UI v5
+- **Backend**: FastAPI (Python) with WebSocket support
+- **Integration**: Direct tmux command execution on the host machine
+- **Real-time Updates**: WebSocket streaming for live output
 
 ## Features
-- 🤖 Claude Code remote development control
-- 🚀 Send commands to tmux sessions, windows, and panes
-- 📡 Real-time tmux output display with WebSocket
-- 🎯 Hierarchical target selection (session:window.pane)
-- 📱 Mobile-friendly responsive interface
-- ⚙️ Session management and configuration
-- 🎨 Material-UI based clean interface
-- 🐛 Debug mode for troubleshooting
+- 🤖 **Claude Code Integration**: Monitor and control Claude Code development sessions
+- 📡 **Real-time Output**: Live tmux output streaming via WebSocket
+- 🎯 **Flexible Targeting**: Send commands to specific sessions, windows, or panes
+- 🖥️ **Unified Interface**: Combined command input and output display
+- 📱 **Responsive Design**: Works on desktop and mobile devices
+- ⚙️ **Session Management**: Create, delete, and switch between tmux sessions
+- 🎨 **Modern UI**: Clean Material-UI interface with ANSI color support
+- 🐛 **Debug Mode**: View raw tmux hierarchy for troubleshooting
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- tmux installed on the system
+- **Python 3.11+** (for FastAPI backend)
+- **Node.js 18+** (for React frontend)
+- **tmux** (must be installed and accessible)
+- **Claude Code** (running in tmux sessions)
 
 ### Development Setup
 
@@ -61,20 +70,37 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ## Usage
 
-1. **コマンド送信タブ**
-   - tmuxセッションにコマンドを送信
-   - Enterキーでコマンド実行
-   - 設定ボタンでセッション管理
+### Starting Claude Code
+1. Start a tmux session:
+   ```bash
+   tmux new-session -s claude-code
+   ```
 
-2. **tmux表示タブ**  
-   - tmuxセッションの出力をリアルタイム表示
-   - 手動更新 or WebSocketリアルタイム更新
-   - モノスペースフォントで見やすい表示
+2. Run Claude Code in the tmux session:
+   ```bash
+   claude-code
+   ```
 
-3. **設定**
-   - セッション名の変更
-   - 自動セッション作成の設定
-   - 接続テスト機能
+3. Access the web interface at http://localhost:3000
+
+### Web Interface
+
+**Unified View** (Recommended)
+- Combined command input and output display
+- Real-time output streaming with auto-scroll
+- Send commands or press Enter key
+- Toggle between manual refresh and live updates
+
+**Target Selection**
+- Select tmux sessions from the dropdown
+- Format: `session:window.pane` (e.g., `claude-code:0.0`)
+- Debug mode shows raw tmux hierarchy
+
+**Session Management** (Settings)
+- Create new tmux sessions
+- Delete existing sessions
+- Create windows within sessions
+- View session hierarchy
 
 ## API Endpoints
 
@@ -120,9 +146,10 @@ npm run build           # Build frontend
 ```
 
 ## Security Notes
-- tmux sessions are accessed locally on the server
-- WebSocket connections should be secured in production
-- Consider authentication for production use
+- This tool directly executes tmux commands on the host machine
+- Only run on trusted networks or localhost
+- No authentication is implemented - add security layers for production use
+- WebSocket connections should be secured with TLS in production
 
 ## Troubleshooting
 
@@ -143,39 +170,59 @@ ls -la /tmp/tmux-*
 ```
 
 ### WebSocket connection issues
-- Check if port 8000 is accessible
+- Check if ports 3000 and 8000 are available
 - Verify CORS settings in backend/app/config.py
-- Check browser console for WebSocket errors
+- Check browser console for detailed error messages
+- Ensure the backend can access tmux on the host
 
 ## Testing tmux Integration
 
-### Creating Test Sessions
-To test the hierarchical selection, create some tmux sessions:
+### Working with Claude Code
 
+**Monitoring Claude Code Output**
 ```bash
-# Create test sessions with multiple windows and panes
-tmux new-session -d -s test1 -c ~/
-tmux new-window -t test1 -n "logs" "tail -f /var/log/system.log"
-tmux new-window -t test1 -n "editor"
-tmux split-window -t test1:editor -h "htop"
+# Create a dedicated session for Claude Code
+tmux new-session -s claude-code
 
-tmux new-session -d -s test2 -c ~/
-tmux new-window -t test2 -n "server" "python -m http.server 8080"
-tmux split-window -t test2:server -v "watch -n 1 date"
+# Run Claude Code
+claude-code
 
-# List created sessions
-tmux list-sessions
+# Access web interface to monitor output
+# http://localhost:3000
 ```
 
-### Target Format Examples
-- `test1` - Send to entire session
-- `test1:0` - Send to window 0 in test1 session  
-- `test1:logs` - Send to "logs" window by name
-- `test1:editor.0` - Send to pane 0 in "editor" window
-- `test2:server.1` - Send to pane 1 in "server" window
+**Multiple Claude Code Sessions**
+```bash
+# Development session
+tmux new-session -d -s claude-dev -c ~/project
+tmux send-keys -t claude-dev "claude-code" Enter
 
-### Debug Mode
-Click the bug icon (🐛) in the target selector to view:
-- Raw hierarchy data from tmux
-- Parsed session/window/pane structure
-- Current target parsing results
+# Testing session
+tmux new-session -d -s claude-test -c ~/project/tests
+tmux send-keys -t claude-test "claude-code" Enter
+```
+
+**Sending Commands to Claude Code**
+- Use the web interface to send commands
+- Commands are sent directly to the tmux pane
+- View responses in real-time
+
+### Tips
+- Use descriptive session names for easy identification
+- The web interface auto-reconnects if the WebSocket connection drops
+- Enable "Real-time" mode for live updates during active development
+- Use manual refresh for better performance when reviewing static output
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+### Development Guidelines
+- Follow the existing code style
+- Add tests for new features
+- Update documentation as needed
+- Test with multiple tmux sessions before submitting
+
+## License
+
+MIT License - feel free to use this project for personal or commercial purposes.
