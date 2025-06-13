@@ -8,18 +8,12 @@ import {
   Stack,
   Typography,
   IconButton,
-  Chip,
   CircularProgress,
   Alert,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  DialogContentText
+  Button
 } from '@mui/material';
 import { Refresh, ExpandMore, BugReport, Settings } from '@mui/icons-material';
 import { TmuxHierarchy, TmuxTarget } from '../types';

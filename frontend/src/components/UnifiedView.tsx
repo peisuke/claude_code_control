@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -9,13 +9,12 @@ import {
   CircularProgress,
   Switch,
   FormControlLabel,
-  Divider,
   Typography
 } from '@mui/material';
 import { 
   Send, 
   KeyboardReturn, 
-  Settings, 
+ 
   ClearAll, 
   Refresh,
   PlayArrow,
@@ -45,7 +44,6 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   const [command, setCommand] = useState('');
   const [output, setOutput] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<string>('');
   const outputRef = React.useRef<HTMLDivElement>(null);
   
   const { sendCommand, sendEnter, getOutput, isLoading, error } = useTmux();
@@ -98,16 +96,15 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   };
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     try {
       const outputContent = await getOutput(selectedTarget);
       setOutput(outputContent);
-      setLastUpdate(new Date().toLocaleTimeString());
       setTimeout(scrollToBottom, 50);
     } catch (error) {
       // Error is handled by the hook
     }
-  };
+  }, [getOutput, selectedTarget]);
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -137,13 +134,12 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         handleRefresh();
       }
     }
-  }, [selectedTarget, isConnected]);
+  }, [selectedTarget, isConnected, wsSetTarget, handleRefresh]);
 
   // Handle WebSocket messages
   React.useEffect(() => {
     if (lastMessage) {
       setOutput(lastMessage.content);
-      setLastUpdate(new Date(lastMessage.timestamp).toLocaleTimeString());
       setTimeout(scrollToBottom, 50);
     }
   }, [lastMessage]);
@@ -156,7 +152,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         wsConnect();
       }
     }
-  }, [isConnected]);
+  }, [isConnected, handleRefresh, autoRefresh, wsConnected, wsConnect]);
 
   // Handle autoRefresh state changes
   React.useEffect(() => {
@@ -165,7 +161,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     } else if (!autoRefresh && wsConnected) {
       wsDisconnect();
     }
-  }, [autoRefresh, isConnected, wsConnected]);
+  }, [autoRefresh, isConnected, wsConnected, wsConnect, wsDisconnect]);
 
   return (
     <Stack spacing={2} sx={{ height: '100vh', p: 2 }}>

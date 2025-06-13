@@ -1,4 +1,4 @@
-import { CommandRequest, TmuxSettings, TmuxOutput, ApiResponse } from '../types';
+import { TmuxSettings, TmuxOutput, ApiResponse } from '../types';
 
 class TmuxAPI {
   private baseURL = '/api';

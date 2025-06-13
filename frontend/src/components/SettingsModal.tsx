@@ -17,7 +17,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  ListItemSecondaryAction
 } from '@mui/material';
 import { Close, Add, Delete, AddBox, FolderOpen, Window, ViewInAr, ExpandMore, ChevronRight } from '@mui/icons-material';
 import { tmuxAPI } from '../services/api';

@@ -16,7 +16,6 @@ A web-based tmux controller for remote development with Claude Code integration.
 - 📱 Mobile-friendly responsive interface
 - ⚙️ Session management and configuration
 - 🎨 Material-UI based clean interface
-- 🐳 Docker support for easy deployment
 - 🐛 Debug mode for troubleshooting
 
 ## Quick Start
@@ -50,16 +49,6 @@ npm run dev
 
 ### Production Deployment
 
-**Using Docker (Recommended)**
-```bash
-# Build and start
-docker-compose up --build
-
-# Or run in background
-docker-compose up -d
-```
-
-**Manual Deployment**
 ```bash
 # Build frontend
 npm run build
@@ -112,17 +101,14 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000
 │   │   ├── services/        # Business logic
 │   │   ├── websocket/       # WebSocket manager
 │   │   └── main.py          # FastAPI app
-│   ├── requirements.txt
-│   └── Dockerfile
+│   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      # React components
 │   │   ├── hooks/           # Custom hooks
 │   │   ├── services/        # API services
 │   │   └── types/           # TypeScript types
-│   ├── package.json
-│   └── Dockerfile
-├── docker-compose.yml
+│   └── package.json
 └── package.json             # Root package.json
 ```
 
@@ -131,9 +117,6 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000
 npm run dev              # Start development servers
 npm run install:all      # Install all dependencies
 npm run build           # Build frontend
-npm run docker:build    # Build Docker images
-npm run docker:up       # Start with Docker
-npm run docker:down     # Stop Docker containers
 ```
 
 ## Security Notes
