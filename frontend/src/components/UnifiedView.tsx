@@ -50,6 +50,9 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   const { 
     lastMessage, 
     isConnected: wsConnected, 
+    isReconnecting,
+    reconnectAttempts,
+    maxReconnectAttempts,
     connect: wsConnect, 
     disconnect: wsDisconnect,
     setTarget: wsSetTarget,
@@ -172,7 +175,14 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
           selectedTarget={selectedTarget}
           onTargetChange={onTargetChange}
           disabled={!isConnected || isLoading}
-          connectionStatus={<ConnectionStatus isConnected={isConnected} />}
+          connectionStatus={
+            <ConnectionStatus 
+              isConnected={isConnected && (!autoRefresh || wsConnected)} 
+              isReconnecting={autoRefresh && isReconnecting}
+              reconnectAttempts={reconnectAttempts}
+              maxReconnectAttempts={maxReconnectAttempts}
+            />
+          }
           onSettingsOpen={onSettingsOpen}
         />
       </Paper>

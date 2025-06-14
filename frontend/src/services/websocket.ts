@@ -5,10 +5,14 @@ export class WebSocketService {
   private baseUrl: string;
   private sessionName: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectInterval = 3000;
+  private maxReconnectAttempts = 10;
+  private baseReconnectInterval = 1000;
+  private maxReconnectInterval = 30000;
+  private reconnectTimeoutId?: number;
+  private shouldReconnect = true;
   private onMessageCallback?: (output: TmuxOutput) => void;
   private onConnectionCallback?: (connected: boolean) => void;
+  private onReconnectingCallback?: (attempt: number, maxAttempts: number) => void;
 
   constructor(target: string = 'default') {
     this.sessionName = target;
@@ -35,6 +39,16 @@ export class WebSocketService {
     }
   }
 
+  private calculateReconnectDelay(): number {
+    const exponentialDelay = Math.min(
+      this.baseReconnectInterval * Math.pow(2, this.reconnectAttempts),
+      this.maxReconnectInterval
+    );
+    // Add jitter to prevent thundering herd
+    const jitter = Math.random() * 0.3 * exponentialDelay;
+    return exponentialDelay + jitter;
+  }
+
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
@@ -49,7 +63,24 @@ export class WebSocketService {
 
         this.ws.onmessage = (event) => {
           try {
-            const output: TmuxOutput = JSON.parse(event.data);
+            const data = JSON.parse(event.data);
+            
+            // Handle heartbeat messages
+            if (data.type === 'heartbeat') {
+              // Send ping response
+              if (this.ws?.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: 'ping' }));
+              }
+              return;
+            }
+            
+            // Handle pong responses (if we implement client-side heartbeat)
+            if (data.type === 'pong') {
+              return;
+            }
+            
+            // Handle regular tmux output
+            const output: TmuxOutput = data;
             this.onMessageCallback?.(output);
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -60,8 +91,10 @@ export class WebSocketService {
           console.log('WebSocket disconnected', event.code, event.reason);
           this.onConnectionCallback?.(false);
           
-          if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
+          if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.scheduleReconnect();
+          } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            console.error('Max reconnection attempts reached');
           }
         };
 
@@ -77,19 +110,35 @@ export class WebSocketService {
   }
 
   disconnect(): void {
+    this.shouldReconnect = false;
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = undefined;
+    }
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
       this.ws = null;
     }
+    this.reconnectAttempts = 0;
   }
 
   private scheduleReconnect(): void {
     this.reconnectAttempts++;
-    console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    const delay = this.calculateReconnectDelay();
     
-    setTimeout(() => {
-      this.connect().catch(console.error);
-    }, this.reconnectInterval);
+    console.log(`Attempting to reconnect in ${Math.round(delay)}ms... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    this.onReconnectingCallback?.(this.reconnectAttempts, this.maxReconnectAttempts);
+    
+    this.reconnectTimeoutId = window.setTimeout(() => {
+      if (this.shouldReconnect) {
+        this.connect().catch((error) => {
+          console.error('Reconnection failed:', error);
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.scheduleReconnect();
+          }
+        });
+      }
+    }, delay);
   }
 
   onMessage(callback: (output: TmuxOutput) => void): void {
@@ -100,7 +149,31 @@ export class WebSocketService {
     this.onConnectionCallback = callback;
   }
 
+  onReconnecting(callback: (attempt: number, maxAttempts: number) => void): void {
+    this.onReconnectingCallback = callback;
+  }
+
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  isReconnecting(): boolean {
+    return this.reconnectAttempts > 0 && this.reconnectAttempts < this.maxReconnectAttempts;
+  }
+
+  getReconnectAttempts(): number {
+    return this.reconnectAttempts;
+  }
+
+  getMaxReconnectAttempts(): number {
+    return this.maxReconnectAttempts;
+  }
+  
+  enableAutoReconnect(): void {
+    this.shouldReconnect = true;
+  }
+  
+  disableAutoReconnect(): void {
+    this.shouldReconnect = false;
   }
 }
