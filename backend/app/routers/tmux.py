@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from datetime import datetime
+from typing import Optional
 import json
 import asyncio
 
@@ -68,10 +69,10 @@ async def send_enter(target: str = "default"):
 
 
 @router.get("/output")
-async def get_output(target: str = "default"):
-    """Get current tmux target output"""
+async def get_output(target: str = "default", include_history: bool = False, lines: Optional[int] = None):
+    """Get current tmux target output, optionally including scrollback history"""
     try:
-        output = await tmux_service.get_output(target)
+        output = await tmux_service.get_output(target, include_history=include_history, lines=lines)
         
         return TmuxOutput(
             content=output,

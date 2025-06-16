@@ -42,12 +42,12 @@ export const useTmux = (): UseTmuxReturn => {
     }
   }, []);
 
-  const getOutput = useCallback(async (target?: string): Promise<string> => {
+  const getOutput = useCallback(async (target?: string, includeHistory: boolean = false, lines?: number): Promise<string> => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const output = await tmuxAPI.getOutput(target);
+      const output = await tmuxAPI.getOutput(target, includeHistory, lines);
       return output.content;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get output';

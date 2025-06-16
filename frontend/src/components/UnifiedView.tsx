@@ -19,12 +19,14 @@ import {
   PlayArrow,
   Stop,
   KeyboardArrowUp,
-  KeyboardArrowDown
+  KeyboardArrowDown,
+  History
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
 import ConnectionStatus from './ConnectionStatus';
 import TmuxTargetSelector from './TmuxTargetSelector';
+import { tmuxAPI } from '../services/api';
 import Convert from 'ansi-to-html';
 
 const convert = new Convert();
@@ -128,6 +130,16 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   }, [getOutput, selectedTarget]);
 
+  const handleShowHistory = async () => {
+    try {
+      const output = await tmuxAPI.getOutput(selectedTarget, true, 2000);
+      setOutput(output.content);
+      setTimeout(scrollToBottom, 50);
+    } catch (error) {
+      console.error('Error getting history:', error);
+    }
+  };
+
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
@@ -211,15 +223,28 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         <Stack spacing={1} sx={{ p: 2, pb: 0 }}>
           {/* Output Header */}
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Button
-              variant="contained"
-              onClick={handleRefresh}
-              disabled={!isConnected || isLoading || autoRefresh}
-              sx={{ minWidth: 'auto', px: 2 }}
-              size="small"
-            >
-              {isLoading ? <CircularProgress size={16} /> : <Refresh />}
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                onClick={handleRefresh}
+                disabled={!isConnected || isLoading || autoRefresh}
+                sx={{ minWidth: 'auto', px: 2 }}
+                size="small"
+              >
+                {isLoading ? <CircularProgress size={16} /> : <Refresh />}
+              </Button>
+              
+              <Button
+                variant="outlined"
+                onClick={handleShowHistory}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+                size="small"
+                title="履歴を表示"
+              >
+                <History />
+              </Button>
+            </Stack>
             
             <FormControlLabel
               control={
@@ -318,6 +343,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             >
               Clear
             </Button>
+            
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="flex-start">

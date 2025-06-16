@@ -34,8 +34,16 @@ class TmuxAPI {
     return response.json();
   }
 
-  async getOutput(target: string = 'default'): Promise<TmuxOutput> {
-    const response = await fetch(`${this.baseURL}/tmux/output?target=${encodeURIComponent(target)}`);
+  async getOutput(target: string = 'default', includeHistory: boolean = false, lines?: number): Promise<TmuxOutput> {
+    const params = new URLSearchParams({ target });
+    if (includeHistory) {
+      params.append('include_history', 'true');
+      if (lines) {
+        params.append('lines', lines.toString());
+      }
+    }
+    
+    const response = await fetch(`${this.baseURL}/tmux/output?${params}`);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
