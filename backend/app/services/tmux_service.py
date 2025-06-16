@@ -56,8 +56,8 @@ class TmuxService:
             print(f"Error sending enter: {e}")
             return False
     
-    async def get_output(self, target: str = None) -> str:
-        """Get current tmux target output"""
+    async def get_output(self, target: str = None, include_history: bool = False, lines: int = None) -> str:
+        """Get current tmux target output, optionally including scrollback history"""
         target = target or self.default_session
         
         try:
@@ -65,7 +65,17 @@ class TmuxService:
             if not await self.session_exists(session_name):
                 return "Session not found"
             
-            cmd = ["tmux", "capture-pane", "-t", target, "-e", "-p"]
+            if include_history:
+                if lines:
+                    # Get specific number of lines from history
+                    cmd = ["tmux", "capture-pane", "-t", target, "-e", "-p", "-S", f"-{lines}"]
+                else:
+                    # Get all available history
+                    cmd = ["tmux", "capture-pane", "-t", target, "-e", "-p", "-S", "-"]
+            else:
+                # Get only current screen
+                cmd = ["tmux", "capture-pane", "-t", target, "-e", "-p"]
+            
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,

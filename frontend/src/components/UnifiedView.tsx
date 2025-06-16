@@ -14,16 +14,19 @@ import {
 import { 
   Send, 
   KeyboardReturn, 
- 
   ClearAll, 
   Refresh,
   PlayArrow,
-  Stop 
+  Stop,
+  KeyboardArrowUp,
+  KeyboardArrowDown,
+  History
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
 import ConnectionStatus from './ConnectionStatus';
 import TmuxTargetSelector from './TmuxTargetSelector';
+import { tmuxAPI } from '../services/api';
 import Convert from 'ansi-to-html';
 
 const convert = new Convert();
@@ -50,6 +53,9 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   const { 
     lastMessage, 
     isConnected: wsConnected, 
+    isReconnecting,
+    reconnectAttempts,
+    maxReconnectAttempts,
     connect: wsConnect, 
     disconnect: wsDisconnect,
     setTarget: wsSetTarget,
@@ -96,6 +102,24 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   };
 
+  const handleArrowUp = async () => {
+    try {
+      await sendCommand('\x1b[A', selectedTarget); // ESC[A for up arrow
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
+  const handleArrowDown = async () => {
+    try {
+      await sendCommand('\x1b[B', selectedTarget); // ESC[B for down arrow
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     try {
       const outputContent = await getOutput(selectedTarget);
@@ -106,8 +130,18 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   }, [getOutput, selectedTarget]);
 
+  const handleShowHistory = async () => {
+    try {
+      const output = await tmuxAPI.getOutput(selectedTarget, true, 2000);
+      setOutput(output.content);
+      setTimeout(scrollToBottom, 50);
+    } catch (error) {
+      console.error('Error getting history:', error);
+    }
+  };
+
   const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
       handleSendCommand();
     }
@@ -138,11 +172,11 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 
   // Handle WebSocket messages
   React.useEffect(() => {
-    if (lastMessage) {
+    if (lastMessage && lastMessage.target === selectedTarget) {
       setOutput(lastMessage.content);
       setTimeout(scrollToBottom, 50);
     }
-  }, [lastMessage]);
+  }, [lastMessage, selectedTarget]);
 
   // Initial load and auto-refresh setup
   React.useEffect(() => {
@@ -172,7 +206,14 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
           selectedTarget={selectedTarget}
           onTargetChange={onTargetChange}
           disabled={!isConnected || isLoading}
-          connectionStatus={<ConnectionStatus isConnected={isConnected} />}
+          connectionStatus={
+            <ConnectionStatus 
+              isConnected={isConnected && (!autoRefresh || wsConnected)} 
+              isReconnecting={autoRefresh && isReconnecting}
+              reconnectAttempts={reconnectAttempts}
+              maxReconnectAttempts={maxReconnectAttempts}
+            />
+          }
           onSettingsOpen={onSettingsOpen}
         />
       </Paper>
@@ -182,15 +223,28 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         <Stack spacing={1} sx={{ p: 2, pb: 0 }}>
           {/* Output Header */}
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Button
-              variant="contained"
-              onClick={handleRefresh}
-              disabled={!isConnected || isLoading || autoRefresh}
-              sx={{ minWidth: 'auto', px: 2 }}
-              size="small"
-            >
-              {isLoading ? <CircularProgress size={16} /> : <Refresh />}
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                onClick={handleRefresh}
+                disabled={!isConnected || isLoading || autoRefresh}
+                sx={{ minWidth: 'auto', px: 2 }}
+                size="small"
+              >
+                {isLoading ? <CircularProgress size={16} /> : <Refresh />}
+              </Button>
+              
+              <Button
+                variant="outlined"
+                onClick={handleShowHistory}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+                size="small"
+                title="履歴を表示"
+              >
+                <History />
+              </Button>
+            </Stack>
             
             <FormControlLabel
               control={
@@ -289,21 +343,45 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             >
               Clear
             </Button>
+            
           </Stack>
 
-          <TextField
-            fullWidth
-            label="コマンド"
-            placeholder="ls -la"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={!isConnected || isLoading}
-            size="small"
-            autoComplete="off"
-            multiline
-            rows={3}
-          />
+          <Stack direction="row" spacing={1} alignItems="flex-start">
+            <TextField
+              fullWidth
+              label="コマンド (Shift+Enter: 送信, Enter: 改行)"
+              placeholder="ls -la"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={!isConnected || isLoading}
+              size="small"
+              autoComplete="off"
+              multiline
+              rows={3}
+            />
+            
+            <Stack spacing={0.5}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleArrowUp}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+              >
+                <KeyboardArrowUp />
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleArrowDown}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+              >
+                <KeyboardArrowDown />
+              </Button>
+            </Stack>
+          </Stack>
         </Stack>
       </Paper>
     </Stack>

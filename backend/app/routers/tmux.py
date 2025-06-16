@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from datetime import datetime
+from typing import Optional
 import json
 import asyncio
 
@@ -68,10 +69,10 @@ async def send_enter(target: str = "default"):
 
 
 @router.get("/output")
-async def get_output(target: str = "default"):
-    """Get current tmux target output"""
+async def get_output(target: str = "default", include_history: bool = False, lines: Optional[int] = None):
+    """Get current tmux target output, optionally including scrollback history"""
     try:
-        output = await tmux_service.get_output(target)
+        output = await tmux_service.get_output(target, include_history=include_history, lines=lines)
         
         return TmuxOutput(
             content=output,
@@ -284,13 +285,51 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
         task = asyncio.create_task(monitor_target_output(target))
         background_tasks[target] = task
     
+    # Send initial heartbeat
+    try:
+        await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}))
+    except Exception as e:
+        print(f"Failed to send initial heartbeat: {e}")
+    
+    # Heartbeat task
+    async def send_heartbeat():
+        try:
+            while True:
+                await asyncio.sleep(30)  # Send heartbeat every 30 seconds
+                await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}))
+        except Exception as e:
+            print(f"Heartbeat failed: {e}")
+            return
+    
+    heartbeat_task = asyncio.create_task(send_heartbeat())
+    
     try:
         while True:
-            # Keep connection alive and handle client messages
-            message = await websocket.receive_text()
-            # Could handle target switching here if needed
+            try:
+                # Set timeout for receiving messages
+                message = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+                # Handle client messages (like heartbeat responses)
+                try:
+                    parsed = json.loads(message)
+                    if parsed.get("type") == "ping":
+                        await websocket.send_text(json.dumps({"type": "pong", "timestamp": datetime.now().isoformat()}))
+                except json.JSONDecodeError:
+                    pass  # Ignore invalid JSON
+                    
+            except asyncio.TimeoutError:
+                # No message received in 60 seconds, continue
+                continue
+            except Exception as e:
+                print(f"Error receiving message: {e}")
+                break
             
     except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    finally:
+        # Cleanup
+        heartbeat_task.cancel()
         manager.disconnect(websocket, target)
         
         # Stop background task if no active connections for this target

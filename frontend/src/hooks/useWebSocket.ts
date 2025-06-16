@@ -5,6 +5,9 @@ import { TmuxOutput } from '../types';
 interface UseWebSocketReturn {
   lastMessage: TmuxOutput | null;
   isConnected: boolean;
+  isReconnecting: boolean;
+  reconnectAttempts: number;
+  maxReconnectAttempts: number;
   connect: () => void;
   disconnect: () => void;
   setTarget: (target: string) => void;
@@ -14,6 +17,9 @@ interface UseWebSocketReturn {
 export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => {
   const [lastMessage, setLastMessage] = useState<TmuxOutput | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [maxReconnectAttempts, setMaxReconnectAttempts] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocketService | null>(null);
 
@@ -38,7 +44,16 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
             setError('WebSocket disconnected');
           } else {
             setError(null);
+            setReconnectAttempts(0);
+            setIsReconnecting(false);
           }
+        });
+
+        wsRef.current.onReconnecting((attempt: number, maxAttempts: number) => {
+          setIsReconnecting(true);
+          setReconnectAttempts(attempt);
+          setMaxReconnectAttempts(maxAttempts);
+          setError(`Reconnecting... (${attempt}/${maxAttempts})`);
         });
       }
       
@@ -65,6 +80,8 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
       wsRef.current = null;
     }
     setIsConnected(false);
+    setIsReconnecting(false);
+    setReconnectAttempts(0);
     setLastMessage(null);
   }, []);
 
@@ -77,6 +94,9 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   return {
     lastMessage,
     isConnected,
+    isReconnecting,
+    reconnectAttempts,
+    maxReconnectAttempts,
     connect,
     disconnect,
     setTarget,

@@ -75,7 +75,7 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
 
   // Handle WebSocket messages
   useEffect(() => {
-    if (lastMessage) {
+    if (lastMessage && lastMessage.target === selectedTarget) {
       setOutput(lastMessage.content);
       setLastUpdate(new Date(lastMessage.timestamp).toLocaleTimeString());
       
@@ -84,7 +84,7 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
         outputRef.current.scrollTop = outputRef.current.scrollHeight;
       }
     }
-  }, [lastMessage]);
+  }, [lastMessage, selectedTarget]);
 
   // Handle auto-refresh toggle
   const handleAutoRefreshToggle = () => {
