@@ -14,11 +14,12 @@ import {
 import { 
   Send, 
   KeyboardReturn, 
- 
   ClearAll, 
   Refresh,
   PlayArrow,
-  Stop 
+  Stop,
+  KeyboardArrowUp,
+  KeyboardArrowDown
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -99,6 +100,24 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   };
 
+  const handleArrowUp = async () => {
+    try {
+      await sendCommand('\x1b[A', selectedTarget); // ESC[A for up arrow
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
+  const handleArrowDown = async () => {
+    try {
+      await sendCommand('\x1b[B', selectedTarget); // ESC[B for down arrow
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     try {
       const outputContent = await getOutput(selectedTarget);
@@ -110,7 +129,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   }, [getOutput, selectedTarget]);
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
       handleSendCommand();
     }
@@ -141,11 +160,11 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 
   // Handle WebSocket messages
   React.useEffect(() => {
-    if (lastMessage) {
+    if (lastMessage && lastMessage.target === selectedTarget) {
       setOutput(lastMessage.content);
       setTimeout(scrollToBottom, 50);
     }
-  }, [lastMessage]);
+  }, [lastMessage, selectedTarget]);
 
   // Initial load and auto-refresh setup
   React.useEffect(() => {
@@ -301,19 +320,42 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             </Button>
           </Stack>
 
-          <TextField
-            fullWidth
-            label="コマンド"
-            placeholder="ls -la"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={!isConnected || isLoading}
-            size="small"
-            autoComplete="off"
-            multiline
-            rows={3}
-          />
+          <Stack direction="row" spacing={1} alignItems="flex-start">
+            <TextField
+              fullWidth
+              label="コマンド (Shift+Enter: 送信, Enter: 改行)"
+              placeholder="ls -la"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={!isConnected || isLoading}
+              size="small"
+              autoComplete="off"
+              multiline
+              rows={3}
+            />
+            
+            <Stack spacing={0.5}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleArrowUp}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+              >
+                <KeyboardArrowUp />
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleArrowDown}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+              >
+                <KeyboardArrowDown />
+              </Button>
+            </Stack>
+          </Stack>
         </Stack>
       </Paper>
     </Stack>

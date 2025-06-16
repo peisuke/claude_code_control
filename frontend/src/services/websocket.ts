@@ -30,12 +30,18 @@ export class WebSocketService {
   setTarget(target: string): void {
     if (this.sessionName !== target) {
       const wasConnected = this.isConnected();
-      this.disconnect();
-      this.sessionName = target;
       
-      if (wasConnected) {
-        this.connect().catch(console.error);
-      }
+      // Ensure clean disconnection
+      this.disconnect();
+      
+      // Wait for connection to fully close before reconnecting
+      setTimeout(() => {
+        this.sessionName = target;
+        
+        if (wasConnected) {
+          this.connect().catch(console.error);
+        }
+      }, 100);
     }
   }
 
@@ -81,7 +87,11 @@ export class WebSocketService {
             
             // Handle regular tmux output
             const output: TmuxOutput = data;
-            this.onMessageCallback?.(output);
+            
+            // Only process messages that match the current target
+            if (output.target === this.sessionName) {
+              this.onMessageCallback?.(output);
+            }
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
           }

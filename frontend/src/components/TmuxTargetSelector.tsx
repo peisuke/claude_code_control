@@ -108,23 +108,44 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
   }, []);
 
   const handleSessionChange = (session: string) => {
-    onTargetChange(session);
+    const sessionData = sessions[session];
+    if (sessionData && sessionData.windows) {
+      // Get the lowest numbered window
+      const windowKeys = Object.keys(sessionData.windows).sort((a, b) => parseInt(a) - parseInt(b));
+      if (windowKeys.length > 0) {
+        const firstWindow = windowKeys[0];
+        const windowData = sessionData.windows[firstWindow];
+        
+        // If the window has multiple panes, select the lowest numbered pane
+        if (windowData.panes && Object.keys(windowData.panes).length > 1) {
+          const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
+          const firstPane = paneKeys[0];
+          onTargetChange(buildTarget(session, firstWindow, firstPane));
+        } else {
+          onTargetChange(buildTarget(session, firstWindow));
+        }
+      } else {
+        onTargetChange(session);
+      }
+    } else {
+      onTargetChange(session);
+    }
   };
 
   const handleWindowChange = (window: string) => {
-    if (window === '') {
-      onTargetChange(currentTarget.session);
+    const windowData = windows[window];
+    if (windowData && windowData.panes && Object.keys(windowData.panes).length > 1) {
+      // Select the lowest numbered pane
+      const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
+      const firstPane = paneKeys[0];
+      onTargetChange(buildTarget(currentTarget.session, window, firstPane));
     } else {
       onTargetChange(buildTarget(currentTarget.session, window));
     }
   };
 
   const handlePaneChange = (pane: string) => {
-    if (pane === '' || !currentTarget.window) {
-      onTargetChange(buildTarget(currentTarget.session, currentTarget.window));
-    } else {
-      onTargetChange(buildTarget(currentTarget.session, currentTarget.window, pane));
-    }
+    onTargetChange(buildTarget(currentTarget.session, currentTarget.window, pane));
   };
 
 
@@ -209,20 +230,19 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
             <FormControl sx={{ minWidth: 150 }}>
               <InputLabel size="small">ウィンドウ</InputLabel>
               <Select
-                value={currentTarget.window || ''}
+                value={currentTarget.window || Object.keys(windows)[0] || ''}
                 onChange={(e) => handleWindowChange(e.target.value)}
                 disabled={disabled || loading}
                 label="ウィンドウ"
                 size="small"
               >
-                <MenuItem value="">
-                  <em>全て</em>
-                </MenuItem>
-                {Object.values(windows).map((window) => (
-                  <MenuItem key={window.index} value={window.index}>
-                    {window.index}: {window.name}
-                  </MenuItem>
-                ))}
+                {Object.values(windows)
+                  .sort((a, b) => parseInt(a.index) - parseInt(b.index))
+                  .map((window) => (
+                    <MenuItem key={window.index} value={window.index}>
+                      {window.index}: {window.name}
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
           )}
@@ -232,20 +252,19 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
             <FormControl sx={{ minWidth: 150 }}>
               <InputLabel size="small">ペイン</InputLabel>
               <Select
-                value={currentTarget.pane || ''}
+                value={currentTarget.pane || Object.keys(panes)[0] || ''}
                 onChange={(e) => handlePaneChange(e.target.value)}
                 disabled={disabled || loading}
                 label="ペイン"
                 size="small"
               >
-                <MenuItem value="">
-                  <em>全て</em>
-                </MenuItem>
-                {Object.values(panes).map((pane) => (
-                  <MenuItem key={pane.index} value={pane.index}>
-                    {pane.index}: {pane.command}
-                  </MenuItem>
-                ))}
+                {Object.values(panes)
+                  .sort((a, b) => parseInt(a.index) - parseInt(b.index))
+                  .map((pane) => (
+                    <MenuItem key={pane.index} value={pane.index}>
+                      {pane.index}: {pane.command}
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
           )}

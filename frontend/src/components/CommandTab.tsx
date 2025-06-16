@@ -10,7 +10,7 @@ import {
   CircularProgress,
   Divider
 } from '@mui/material';
-import { Send, KeyboardReturn, Settings, ClearAll } from '@mui/icons-material';
+import { Send, KeyboardReturn, Settings, ClearAll, KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import ConnectionStatus from './ConnectionStatus';
 import TmuxTargetSelector from './TmuxTargetSelector';
@@ -59,8 +59,24 @@ const CommandTab: React.FC<CommandTabProps> = ({
     }
   };
 
+  const handleArrowUp = async () => {
+    try {
+      await sendCommand('\x1b[A', selectedTarget); // ESC[A for up arrow
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
+  const handleArrowDown = async () => {
+    try {
+      await sendCommand('\x1b[B', selectedTarget); // ESC[B for down arrow
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
   const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
       handleSendCommand();
     }
@@ -97,18 +113,41 @@ const CommandTab: React.FC<CommandTabProps> = ({
         />
 
         {/* Command Input */}
-        <TextField
-          fullWidth
-          label="コマンド"
-          placeholder="ls -la"
-          value={command}
-          onChange={(e) => setCommand(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={!isConnected || isLoading}
-          multiline
-          rows={2}
-          size="small"
-        />
+        <Stack direction="row" spacing={1} alignItems="flex-start">
+          <TextField
+            fullWidth
+            label="コマンド (Shift+Enter: 送信, Enter: 改行)"
+            placeholder="ls -la"
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={!isConnected || isLoading}
+            multiline
+            rows={2}
+            size="small"
+          />
+          
+          <Stack spacing={0.5}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleArrowUp}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+            >
+              <KeyboardArrowUp />
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleArrowDown}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+            >
+              <KeyboardArrowDown />
+            </Button>
+          </Stack>
+        </Stack>
 
         {/* Action Buttons */}
         <Stack direction="row" spacing={2} justifyContent="space-between">
