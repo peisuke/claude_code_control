@@ -20,7 +20,9 @@ import {
   Stop,
   KeyboardArrowUp,
   KeyboardArrowDown,
-  History
+  History,
+  ExitToApp,
+  Search
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -102,6 +104,15 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   };
 
+  const handleEscape = async () => {
+    try {
+      await sendCommand('\x1b', selectedTarget); // ESC key
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      // Error is handled by the hook
+    }
+  };
+
   const handleArrowUp = async () => {
     try {
       await sendCommand('\x1b[A', selectedTarget); // ESC[A for up arrow
@@ -120,6 +131,24 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   };
 
+  const handleCtrlR = async () => {
+    try {
+      // 1. Disable auto-refresh when using Ctrl+R
+      if (autoRefresh) {
+        setAutoRefresh(false);
+        wsDisconnect();
+      }
+      
+      // 2. Send Ctrl+R to tmux
+      await sendCommand('\x12', selectedTarget);
+      
+      // 3. Update tmux display
+      setTimeout(() => handleRefresh(), 500);
+    } catch (error) {
+      console.error('Error with Ctrl+R:', error);
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     try {
       const outputContent = await getOutput(selectedTarget);
@@ -132,6 +161,12 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 
   const handleShowHistory = async () => {
     try {
+      // Disable auto-refresh when showing history
+      if (autoRefresh) {
+        setAutoRefresh(false);
+        wsDisconnect();
+      }
+      
       const output = await tmuxAPI.getOutput(selectedTarget, true, 2000);
       setOutput(output.content);
       setTimeout(scrollToBottom, 50);
@@ -305,6 +340,21 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             'tmux出力がここに表示されます...'
           )}
         </Box>
+        
+        {/* Bottom control for tmux output */}
+        <Stack direction="row" justifyContent="flex-end" sx={{ p: 1, pt: 0 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleCtrlR}
+            disabled={!isConnected || isLoading}
+            sx={{ minWidth: 'auto', px: 1 }}
+            title="Ctrl+R (履歴展開)"
+          >
+            <Search fontSize="small" sx={{ mr: 0.5 }} />
+            Ctrl+R
+          </Button>
+        </Stack>
       </Paper>
 
       {/* Command Input */}
@@ -333,17 +383,29 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               </Button>
             </Stack>
             
-            <Button
-              variant="outlined"
-              color="warning"
-              startIcon={<ClearAll />}
-              onClick={handleClear}
-              disabled={!isConnected || isLoading}
-              size="small"
-            >
-              Clear
-            </Button>
-            
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outlined"
+                startIcon={<ExitToApp />}
+                onClick={handleEscape}
+                disabled={!isConnected || isLoading}
+                size="small"
+                title="ESCキーを送信"
+              >
+                ESC
+              </Button>
+              
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<ClearAll />}
+                onClick={handleClear}
+                disabled={!isConnected || isLoading}
+                size="small"
+              >
+                Clear
+              </Button>
+            </Stack>
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="flex-start">
