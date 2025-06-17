@@ -186,4 +186,37 @@ export class WebSocketService {
   disableAutoReconnect(): void {
     this.shouldReconnect = false;
   }
+
+  // Force reconnection (useful for mobile app resume)
+  forceReconnect(): void {
+    console.log('Force reconnect called, current state:', this.ws?.readyState);
+    
+    // Always disconnect first to ensure clean state
+    this.disconnect();
+    
+    // Reset reconnection state
+    this.shouldReconnect = true;
+    this.reconnectAttempts = 0;
+    
+    // Wait a bit then reconnect
+    setTimeout(() => {
+      console.log('Starting forced reconnection...');
+      this.connect().catch(error => {
+        console.error('Forced reconnection failed:', error);
+      });
+    }, 100);
+  }
+
+  // Get current connection state for debugging
+  getConnectionState(): string {
+    if (!this.ws) return 'no-websocket';
+    
+    switch (this.ws.readyState) {
+      case WebSocket.CONNECTING: return 'connecting';
+      case WebSocket.OPEN: return 'open';
+      case WebSocket.CLOSING: return 'closing';
+      case WebSocket.CLOSED: return 'closed';
+      default: return 'unknown';
+    }
+  }
 }

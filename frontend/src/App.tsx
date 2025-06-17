@@ -34,7 +34,10 @@ const theme = createTheme({
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [selectedTarget, setSelectedTarget] = useState('default');
+  // Initialize with saved target or default
+  const [selectedTarget, setSelectedTarget] = useState(() => {
+    return localStorage.getItem('tmux-selected-target') || 'default';
+  });
 
   // Check connection status on app load
   useEffect(() => {

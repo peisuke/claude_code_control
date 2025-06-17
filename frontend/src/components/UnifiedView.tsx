@@ -232,6 +232,49 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   }, [autoRefresh, isConnected, wsConnected, wsConnect, wsDisconnect]);
 
+  // Save target selection to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('tmux-selected-target', selectedTarget);
+  }, [selectedTarget]);
+
+  // Handle page visibility change (app resume/background)
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible (app resumed)
+        console.log('App resumed, attempting reconnection...');
+        console.log('Current state:', { autoRefresh, wsConnected, isConnected });
+        
+        // Force disconnect and reconnect if auto-refresh is enabled
+        if (autoRefresh) {
+          console.log('Forcing WebSocket reconnection...');
+          // First disconnect completely
+          wsDisconnect();
+          
+          // Wait a moment then reconnect
+          setTimeout(() => {
+            console.log('Reconnecting to target:', selectedTarget);
+            wsSetTarget(selectedTarget);
+            wsConnect();
+          }, 1000);
+        }
+        
+        // Refresh output
+        setTimeout(() => {
+          handleRefresh();
+        }, 2000);
+      } else {
+        console.log('App went to background');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [autoRefresh, wsConnected, wsConnect, wsDisconnect, wsSetTarget, selectedTarget, handleRefresh, isConnected]);
+
   return (
     <Stack spacing={2} sx={{ height: '100vh', p: 2 }}>
       {/* Header */}
