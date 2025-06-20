@@ -165,10 +165,13 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
       if (autoRefresh) {
         setAutoRefresh(false);
         wsDisconnect();
+        // Wait a bit for WebSocket to fully disconnect
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       const output = await tmuxAPI.getOutput(selectedTarget, true, 2000);
-      setOutput(output.content);
+      const historyContent = output.content;
+      setOutput(historyContent);
       setTimeout(scrollToBottom, 50);
     } catch (error) {
       console.error('Error getting history:', error);
@@ -207,11 +210,11 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 
   // Handle WebSocket messages
   React.useEffect(() => {
-    if (lastMessage && lastMessage.target === selectedTarget) {
+    if (lastMessage && lastMessage.target === selectedTarget && autoRefresh) {
       setOutput(lastMessage.content);
       setTimeout(scrollToBottom, 50);
     }
-  }, [lastMessage, selectedTarget]);
+  }, [lastMessage, selectedTarget, autoRefresh]);
 
   // Initial load and auto-refresh setup
   React.useEffect(() => {
