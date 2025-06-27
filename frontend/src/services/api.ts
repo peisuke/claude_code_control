@@ -146,13 +146,13 @@ class TmuxAPI {
   }
 
   async createWindow(sessionName: string, windowName?: string): Promise<ApiResponse> {
-    const url = new URL(`${this.baseURL}/tmux/create-window`);
-    url.searchParams.append('session_name', sessionName);
+    const params = new URLSearchParams();
+    params.append('session_name', sessionName);
     if (windowName) {
-      url.searchParams.append('window_name', windowName);
+      params.append('window_name', windowName);
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(`${this.baseURL}/tmux/create-window?${params}`, {
       method: 'POST',
     });
 

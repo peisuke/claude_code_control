@@ -76,12 +76,35 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleCreateSession = async () => {
-    const newSessionName = prompt('新しいセッション名を入力してください:', '');
-    if (newSessionName && newSessionName.trim()) {
+    const newSessionName = prompt('新しいセッション名を入力してください（空の場合は自動命名）:', '');
+    
+    if (newSessionName !== null) { // Cancel was not pressed
       try {
         setLoading(true);
         setError(null);
-        await tmuxAPI.createSession(newSessionName.trim());
+        
+        let sessionName = newSessionName.trim();
+        
+        // If empty, generate auto session name
+        if (!sessionName) {
+          const existingSessions = Object.keys(hierarchy || {});
+          const numericSessions = existingSessions
+            .filter(name => /^\d+$/.test(name))
+            .map(name => parseInt(name, 10))
+            .sort((a, b) => a - b);
+          
+          let nextNumber = 0;
+          for (const num of numericSessions) {
+            if (num === nextNumber) {
+              nextNumber++;
+            } else {
+              break;
+            }
+          }
+          sessionName = nextNumber.toString();
+        }
+        
+        await tmuxAPI.createSession(sessionName);
         await loadHierarchy();
       } catch (err) {
         console.error('Error creating session:', err);

@@ -125,6 +125,10 @@ class TmuxService:
             )
             
             stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                print(f"tmux new-session failed: {stderr.decode()}")
+                
             return process.returncode == 0
             
         except Exception as e:
@@ -236,7 +240,8 @@ class TmuxService:
     async def create_window(self, session: str, window_name: str = None) -> bool:
         """Create a new window in a tmux session"""
         try:
-            cmd = ["tmux", "new-window", "-t", session]
+            # Add colon to session name to let tmux auto-assign window index
+            cmd = ["tmux", "new-window", "-d", "-t", f"{session}:"]
             if window_name:
                 cmd.extend(["-n", window_name])
             
@@ -247,6 +252,10 @@ class TmuxService:
             )
             
             stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                print(f"tmux new-window failed: {stderr.decode()}")
+                
             return process.returncode == 0
             
         except Exception as e:
