@@ -149,6 +149,18 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     }
   };
 
+  const handleCtrlC = async () => {
+    try {
+      // Send Ctrl+C to tmux
+      await sendCommand('\x03', selectedTarget);
+      
+      // Update tmux display after sending Ctrl+C
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      console.error('Error with Ctrl+C:', error);
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     try {
       const outputContent = await getOutput(selectedTarget);
@@ -390,7 +402,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         </Box>
         
         {/* Bottom control for tmux output */}
-        <Stack direction="row" justifyContent="flex-end" sx={{ p: 1, pt: 0 }}>
+        <Stack direction="row" justifyContent="space-between" sx={{ p: 1, pt: 0 }}>
           <Button
             variant="outlined"
             size="small"
@@ -401,6 +413,18 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
           >
             <Search fontSize="small" sx={{ mr: 0.5 }} />
             Ctrl+R
+          </Button>
+          
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleCtrlC}
+            disabled={!isConnected || isLoading}
+            sx={{ minWidth: 'auto', px: 1 }}
+            title="Ctrl+C (プロセス終了)"
+          >
+            <ClearAll fontSize="small" sx={{ mr: 0.5 }} />
+            Ctrl+C
           </Button>
         </Stack>
       </Paper>
