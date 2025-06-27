@@ -245,9 +245,9 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         console.log('App resumed, attempting reconnection...');
         console.log('Current state:', { autoRefresh, wsConnected, isConnected });
         
-        // Force disconnect and reconnect if auto-refresh is enabled
+        // Only reconnect and refresh if auto-refresh is enabled
         if (autoRefresh) {
-          console.log('Forcing WebSocket reconnection...');
+          console.log('Auto-refresh is enabled, forcing WebSocket reconnection...');
           // First disconnect completely
           wsDisconnect();
           
@@ -257,12 +257,14 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             wsSetTarget(selectedTarget);
             wsConnect();
           }, 1000);
+          
+          // Refresh output only if auto-refresh is enabled
+          setTimeout(() => {
+            handleRefresh();
+          }, 2000);
+        } else {
+          console.log('Auto-refresh is disabled, skipping reconnection');
         }
-        
-        // Refresh output
-        setTimeout(() => {
-          handleRefresh();
-        }, 2000);
       } else {
         console.log('App went to background');
       }
