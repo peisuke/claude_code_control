@@ -61,6 +61,8 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     connect: wsConnect, 
     disconnect: wsDisconnect,
     setTarget: wsSetTarget,
+    forceReconnect: wsForceReconnect,
+    resetAndReconnect: wsResetAndReconnect,
     error: wsError 
   } = useWebSocket(selectedTarget);
 
@@ -307,6 +309,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               isReconnecting={autoRefresh && isReconnecting}
               reconnectAttempts={reconnectAttempts}
               maxReconnectAttempts={maxReconnectAttempts}
+              onReconnect={wsResetAndReconnect}
             />
           }
           onSettingsOpen={onSettingsOpen}

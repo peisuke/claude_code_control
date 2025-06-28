@@ -1,19 +1,21 @@
 import React from 'react';
-import { Chip } from '@mui/material';
-import { Circle, Sync } from '@mui/icons-material';
+import { Chip, IconButton, Stack } from '@mui/material';
+import { Circle, Sync, Refresh } from '@mui/icons-material';
 
 interface ConnectionStatusProps {
   isConnected: boolean;
   isReconnecting?: boolean;
   reconnectAttempts?: number;
   maxReconnectAttempts?: number;
+  onReconnect?: () => void;
 }
 
 const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
   isConnected, 
   isReconnecting = false, 
   reconnectAttempts = 0, 
-  maxReconnectAttempts = 0 
+  maxReconnectAttempts = 0,
+  onReconnect
 }) => {
   const getStatusInfo = () => {
     if (isConnected) {
@@ -38,15 +40,28 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   };
 
   const { icon, label, color } = getStatusInfo();
+  const showReconnectButton = !isConnected && !isReconnecting && onReconnect;
 
   return (
-    <Chip
-      icon={icon}
-      label={label}
-      color={color}
-      variant="outlined"
-      size="small"
-    />
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Chip
+        icon={icon}
+        label={label}
+        color={color}
+        variant="outlined"
+        size="small"
+      />
+      {showReconnectButton && (
+        <IconButton
+          size="small"
+          onClick={onReconnect}
+          title="手動再接続"
+          sx={{ p: 0.5 }}
+        >
+          <Refresh fontSize="small" />
+        </IconButton>
+      )}
+    </Stack>
   );
 };
 

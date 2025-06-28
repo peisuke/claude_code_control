@@ -58,11 +58,18 @@ export class WebSocketService {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
+        // Clear any existing reconnect timeout
+        if (this.reconnectTimeoutId) {
+          clearTimeout(this.reconnectTimeoutId);
+          this.reconnectTimeoutId = undefined;
+        }
+
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
           console.log('WebSocket connected');
           this.reconnectAttempts = 0;
+          this.shouldReconnect = true;
           this.onConnectionCallback?.(true);
           resolve();
         };
@@ -101,16 +108,21 @@ export class WebSocketService {
           console.log('WebSocket disconnected', event.code, event.reason);
           this.onConnectionCallback?.(false);
           
-          if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+          // Only attempt reconnection if it wasn't a manual disconnect
+          if (this.shouldReconnect && event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.scheduleReconnect();
           } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             console.error('Max reconnection attempts reached');
+            this.shouldReconnect = false;
           }
         };
 
         this.ws.onerror = (error) => {
           console.error('WebSocket error:', error);
-          reject(error);
+          // Don't reject immediately on error, let onclose handle reconnection
+          if (this.reconnectAttempts === 0) {
+            reject(error);
+          }
         };
 
       } catch (error) {
@@ -205,6 +217,36 @@ export class WebSocketService {
         console.error('Forced reconnection failed:', error);
       });
     }, 100);
+  }
+
+  // Reset reconnection attempts and try again
+  resetAndReconnect(): void {
+    console.log('Resetting reconnection attempts and reconnecting...');
+    
+    // Reset state
+    this.reconnectAttempts = 0;
+    this.shouldReconnect = true;
+    
+    // Clear any pending reconnection
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = undefined;
+    }
+    
+    // If currently connected, disconnect first
+    if (this.isConnected()) {
+      this.disconnect();
+      setTimeout(() => {
+        this.connect().catch(error => {
+          console.error('Reset reconnection failed:', error);
+        });
+      }, 100);
+    } else {
+      // Direct reconnection attempt
+      this.connect().catch(error => {
+        console.error('Reset reconnection failed:', error);
+      });
+    }
   }
 
   // Get current connection state for debugging

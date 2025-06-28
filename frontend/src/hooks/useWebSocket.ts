@@ -11,6 +11,8 @@ interface UseWebSocketReturn {
   connect: () => void;
   disconnect: () => void;
   setTarget: (target: string) => void;
+  forceReconnect: () => void;
+  resetAndReconnect: () => void;
   error: string | null;
 }
 
@@ -85,6 +87,21 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     setLastMessage(null);
   }, []);
 
+  const forceReconnect = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.forceReconnect();
+    }
+  }, []);
+
+  const resetAndReconnect = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.resetAndReconnect();
+    }
+    setError(null);
+    setIsReconnecting(false);
+    setReconnectAttempts(0);
+  }, []);
+
   useEffect(() => {
     return () => {
       disconnect();
@@ -100,6 +117,8 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     connect,
     disconnect,
     setTarget,
+    forceReconnect,
+    resetAndReconnect,
     error,
   };
 };
