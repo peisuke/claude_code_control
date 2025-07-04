@@ -22,7 +22,8 @@ import {
   KeyboardArrowDown,
   History,
   ExitToApp,
-  Search
+  Search,
+  KeyboardTab
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -160,6 +161,18 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
       setTimeout(() => handleRefresh(), 200);
     } catch (error) {
       console.error('Error with Ctrl+C:', error);
+    }
+  };
+
+  const handleShiftTab = async () => {
+    try {
+      // Send Shift+Tab to tmux (backtab)
+      await sendCommand('\x1b[Z', selectedTarget);
+      
+      // Update tmux display after sending Shift+Tab
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      console.error('Error with Shift+Tab:', error);
     }
   };
 
@@ -406,17 +419,31 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         
         {/* Bottom control for tmux output */}
         <Stack direction="row" justifyContent="space-between" sx={{ p: 1, pt: 0 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleCtrlR}
-            disabled={!isConnected || isLoading}
-            sx={{ minWidth: 'auto', px: 1 }}
-            title="Ctrl+R (履歴展開)"
-          >
-            <Search fontSize="small" sx={{ mr: 0.5 }} />
-            Ctrl+R
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCtrlR}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title="Ctrl+R (履歴展開)"
+            >
+              <Search fontSize="small" sx={{ mr: 0.5 }} />
+              Ctrl+R
+            </Button>
+            
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleShiftTab}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title="Shift+Tab (前方移動)"
+            >
+              <KeyboardTab fontSize="small" sx={{ mr: 0.5, transform: 'rotate(180deg)' }} />
+              Shift+Tab
+            </Button>
+          </Stack>
           
           <Button
             variant="outlined"
