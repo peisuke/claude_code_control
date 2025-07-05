@@ -25,6 +25,7 @@ interface TmuxTargetSelectorProps {
   disabled?: boolean;
   connectionStatus?: React.ReactNode;
   onSettingsOpen?: () => void;
+  isTestMode?: boolean;
 }
 
 const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
@@ -32,7 +33,8 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
   onTargetChange,
   disabled = false,
   connectionStatus,
-  onSettingsOpen
+  onSettingsOpen,
+  isTestMode = false
 }) => {
   const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
   const [loading, setLoading] = useState(false);
@@ -168,28 +170,20 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
       <Stack spacing={2}>
         {/* Control Buttons */}
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton
-              onClick={loadHierarchy}
-              disabled={disabled || loading}
-              title="階層を更新"
-              size="small"
-            >
-              {loading ? <CircularProgress size={16} /> : <Refresh />}
-            </IconButton>
-
-            <IconButton
-              onClick={() => setShowDebug(!showDebug)}
-              title="デバッグ情報を表示"
-              color={showDebug ? "primary" : "default"}
-              size="small"
-            >
-              <BugReport />
-            </IconButton>
-          </Stack>
-
+          <Box />
+          
           <Stack direction="row" spacing={1} alignItems="center">
             {connectionStatus}
+            {isTestMode && (
+              <IconButton
+                onClick={() => setShowDebug(!showDebug)}
+                title="デバッグ情報を表示"
+                color={showDebug ? "primary" : "default"}
+                size="small"
+              >
+                <BugReport />
+              </IconButton>
+            )}
             {onSettingsOpen && (
               <Button
                 variant="outlined"
@@ -205,7 +199,16 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
 
         {/* Selectors - Horizontal Layout */}
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-          <FormControl sx={{ minWidth: 150 }}>
+          <IconButton
+            onClick={loadHierarchy}
+            disabled={disabled || loading}
+            title="階層を更新"
+            size="small"
+          >
+            {loading ? <CircularProgress size={16} /> : <Refresh />}
+          </IconButton>
+          
+          <FormControl sx={{ minWidth: { xs: 80, sm: 120 }, maxWidth: { xs: 100, sm: 150 } }}>
             <InputLabel size="small">セッション</InputLabel>
             <Select
               value={currentTarget.session}
@@ -227,7 +230,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
 
           {/* Window Selector */}
           {currentSession && Object.keys(windows).length > 0 && (
-            <FormControl sx={{ minWidth: 150 }}>
+            <FormControl sx={{ minWidth: { xs: 80, sm: 120 }, maxWidth: { xs: 100, sm: 150 } }}>
               <InputLabel size="small">ウィンドウ</InputLabel>
               <Select
                 value={currentTarget.window || Object.keys(windows)[0] || ''}
@@ -249,7 +252,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
 
           {/* Pane Selector */}
           {currentWindow && Object.keys(panes).length > 1 && (
-            <FormControl sx={{ minWidth: 150 }}>
+            <FormControl sx={{ minWidth: { xs: 80, sm: 120 }, maxWidth: { xs: 100, sm: 150 } }}>
               <InputLabel size="small">ペイン</InputLabel>
               <Select
                 value={currentTarget.pane || Object.keys(panes)[0] || ''}

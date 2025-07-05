@@ -326,6 +326,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             />
           }
           onSettingsOpen={onSettingsOpen}
+          isTestMode={process.env.NODE_ENV === 'development'}
         />
       </Paper>
 
@@ -370,8 +371,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                 <Box display="flex" alignItems="center" gap={0.5}>
                   {autoRefresh ? <Stop fontSize="small" /> : <PlayArrow fontSize="small" />}
                   <Typography variant="body2">
-                    リアルタイム
-                    {autoRefresh && wsConnected && ' (接続中)'}
+                    自動更新
                   </Typography>
                 </Box>
               }
