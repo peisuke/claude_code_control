@@ -26,6 +26,8 @@ import {
   FolderOpen
 } from '@mui/icons-material';
 import { tmuxAPI } from '../services/api';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface FileNode {
   name: string;
@@ -54,6 +56,55 @@ const FileView: React.FC<FileViewProps> = ({ isConnected }) => {
     const parts = path.split('/').filter(Boolean);
     if (parts.length <= 3) return path;
     return '.../' + parts.slice(-3).join('/');
+  };
+
+  // Helper function to detect language from file extension
+  const getLanguageFromFileName = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    const languageMap: { [key: string]: string } = {
+      'js': 'javascript',
+      'jsx': 'jsx',
+      'ts': 'typescript',
+      'tsx': 'tsx',
+      'py': 'python',
+      'rb': 'ruby',
+      'go': 'go',
+      'rs': 'rust',
+      'cpp': 'cpp',
+      'c': 'c',
+      'h': 'c',
+      'java': 'java',
+      'kt': 'kotlin',
+      'swift': 'swift',
+      'php': 'php',
+      'css': 'css',
+      'scss': 'scss',
+      'sass': 'sass',
+      'less': 'less',
+      'html': 'html',
+      'xml': 'xml',
+      'json': 'json',
+      'yaml': 'yaml',
+      'yml': 'yaml',
+      'toml': 'toml',
+      'md': 'markdown',
+      'sh': 'bash',
+      'bash': 'bash',
+      'zsh': 'bash',
+      'fish': 'bash',
+      'ps1': 'powershell',
+      'bat': 'batch',
+      'dockerfile': 'dockerfile',
+      'sql': 'sql',
+      'vim': 'vim',
+      'lua': 'lua',
+      'r': 'r',
+      'dart': 'dart',
+      'vue': 'vue',
+      'svelte': 'svelte'
+    };
+    
+    return languageMap[ext] || 'text';
   };
 
   // Load file tree when component mounts or connection status changes
@@ -302,16 +353,33 @@ const FileView: React.FC<FileViewProps> = ({ isConnected }) => {
               sx={{
                 flex: 1,
                 overflow: 'auto',
-                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-                fontSize: '13px',
-                backgroundColor: '#f5f5f5',
-                p: 2,
-                borderRadius: 1,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all'
+                backgroundColor: '#1e1e1e',
+                borderRadius: 1
               }}
             >
-              <pre style={{ margin: 0 }}>{fileContent}</pre>
+              <SyntaxHighlighter
+                language={getLanguageFromFileName(selectedFile)}
+                style={tomorrow}
+                customStyle={{
+                  margin: 0,
+                  padding: '16px',
+                  fontSize: '13px',
+                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                  backgroundColor: '#1e1e1e',
+                  borderRadius: '4px'
+                }}
+                showLineNumbers={true}
+                lineNumberStyle={{
+                  color: '#6e7681',
+                  backgroundColor: 'transparent',
+                  paddingRight: '16px',
+                  minWidth: '50px'
+                }}
+                wrapLines={true}
+                wrapLongLines={true}
+              >
+                {fileContent}
+              </SyntaxHighlighter>
             </Box>
           </Stack>
         </Paper>
