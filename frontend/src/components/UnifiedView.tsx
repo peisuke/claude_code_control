@@ -9,7 +9,8 @@ import {
   CircularProgress,
   Switch,
   FormControlLabel,
-  Typography
+  Typography,
+  Divider
 } from '@mui/material';
 import { 
   Send, 
@@ -23,7 +24,9 @@ import {
   History,
   ExitToApp,
   Search,
-  KeyboardTab
+  KeyboardTab,
+  Settings,
+  BugReport
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -309,14 +312,10 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 
   return (
     <Stack spacing={2} sx={{ height: '100vh', p: 2 }}>
-      {/* Header */}
+      {/* Settings and Connection Status */}
       <Paper sx={{ p: 2 }}>
-        {/* Target Selector */}
-        <TmuxTargetSelector
-          selectedTarget={selectedTarget}
-          onTargetChange={onTargetChange}
-          disabled={!isConnected || isLoading}
-          connectionStatus={
+        <Stack direction="row" justifyContent="flex-end" alignItems="center">
+          <Stack direction="row" spacing={1} alignItems="center">
             <ConnectionStatus 
               isConnected={isConnected && (!autoRefresh || wsConnected)} 
               isReconnecting={autoRefresh && isReconnecting}
@@ -324,18 +323,53 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               maxReconnectAttempts={maxReconnectAttempts}
               onReconnect={wsResetAndReconnect}
             />
-          }
-          onSettingsOpen={onSettingsOpen}
-          isTestMode={process.env.NODE_ENV === 'development'}
-        />
+            {process.env.REACT_APP_TEST_MODE === 'true' && (
+              <Button
+                variant="outlined"
+                size="small"
+                title="デバッグ情報"
+              >
+                <BugReport fontSize="small" />
+              </Button>
+            )}
+            <Button
+              variant="outlined"
+              startIcon={<Settings />}
+              onClick={onSettingsOpen}
+              size="small"
+            >
+              設定
+            </Button>
+          </Stack>
+        </Stack>
       </Paper>
 
-      {/* Output Display */}
+      {/* Output Display with Target Selector */}
       <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Stack spacing={1} sx={{ p: 2, pb: 0 }}>
+          {/* Target Selector */}
+          <TmuxTargetSelector
+            selectedTarget={selectedTarget}
+            onTargetChange={onTargetChange}
+            disabled={!isConnected || isLoading}
+          />
+          
+          <Divider />
+          
           {/* Output Header */}
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              onClick={handleShowHistory}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+              size="small"
+              title="履歴を表示"
+            >
+              <History />
+            </Button>
+            
+            <Stack direction="row" spacing={1} alignItems="center">
               <Button
                 variant="contained"
                 onClick={handleRefresh}
@@ -346,36 +380,25 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                 {isLoading ? <CircularProgress size={16} /> : <Refresh />}
               </Button>
               
-              <Button
-                variant="outlined"
-                onClick={handleShowHistory}
-                disabled={!isConnected || isLoading}
-                sx={{ minWidth: 'auto', px: 1 }}
-                size="small"
-                title="履歴を表示"
-              >
-                <History />
-              </Button>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={autoRefresh}
+                    onChange={handleAutoRefreshToggle}
+                    disabled={!isConnected}
+                    size="small"
+                  />
+                }
+                label={
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    {autoRefresh ? <Stop fontSize="small" /> : <PlayArrow fontSize="small" />}
+                    <Typography variant="body2">
+                      自動更新
+                    </Typography>
+                  </Box>
+                }
+              />
             </Stack>
-            
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={autoRefresh}
-                  onChange={handleAutoRefreshToggle}
-                  disabled={!isConnected}
-                  size="small"
-                />
-              }
-              label={
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  {autoRefresh ? <Stop fontSize="small" /> : <PlayArrow fontSize="small" />}
-                  <Typography variant="body2">
-                    自動更新
-                  </Typography>
-                </Box>
-              }
-            />
           </Stack>
 
           {/* Errors */}

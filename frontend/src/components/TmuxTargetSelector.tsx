@@ -168,35 +168,6 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
   return (
     <Box>
       <Stack spacing={2}>
-        {/* Control Buttons */}
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-          <Box />
-          
-          <Stack direction="row" spacing={1} alignItems="center">
-            {connectionStatus}
-            {isTestMode && (
-              <IconButton
-                onClick={() => setShowDebug(!showDebug)}
-                title="デバッグ情報を表示"
-                color={showDebug ? "primary" : "default"}
-                size="small"
-              >
-                <BugReport />
-              </IconButton>
-            )}
-            {onSettingsOpen && (
-              <Button
-                variant="outlined"
-                startIcon={<Settings />}
-                onClick={onSettingsOpen}
-                size="small"
-              >
-                設定
-              </Button>
-            )}
-          </Stack>
-        </Stack>
-
         {/* Selectors - Horizontal Layout */}
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <IconButton
