@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
-from .routers import tmux_router, settings_router
+from .routers import tmux_router, settings_router, file_router
 
 app = FastAPI(title=settings.app_name)
 
@@ -17,6 +17,7 @@ app.add_middleware(
 # Include routers
 app.include_router(tmux_router)
 app.include_router(settings_router)
+app.include_router(file_router)
 
 
 @app.get("/")

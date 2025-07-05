@@ -174,6 +174,37 @@ class TmuxAPI {
 
     return response.json();
   }
+
+  // File operations
+  async getFileTree(path: string = '/'): Promise<ApiResponse> {
+    const response = await fetch(`${this.baseURL}/files/tree?path=${encodeURIComponent(path)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getFileContent(path: string): Promise<ApiResponse> {
+    const response = await fetch(`${this.baseURL}/files/content?path=${encodeURIComponent(path)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async searchFiles(query: string, path: string = '/'): Promise<ApiResponse> {
+    const response = await fetch(`${this.baseURL}/files/search?query=${encodeURIComponent(query)}&path=${encodeURIComponent(path)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const tmuxAPI = new TmuxAPI();

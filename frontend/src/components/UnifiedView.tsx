@@ -26,12 +26,15 @@ import {
   Search,
   KeyboardTab,
   Settings,
-  BugReport
+  BugReport,
+  Folder,
+  Terminal
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
 import ConnectionStatus from './ConnectionStatus';
 import TmuxTargetSelector from './TmuxTargetSelector';
+import FileView from './FileView';
 import { tmuxAPI } from '../services/api';
 import Convert from 'ansi-to-html';
 
@@ -53,6 +56,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   const [command, setCommand] = useState('');
   const [output, setOutput] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [viewMode, setViewMode] = useState<'tmux' | 'file'>('tmux');
   const outputRef = React.useRef<HTMLDivElement>(null);
   
   const { sendCommand, sendEnter, getOutput, isLoading, error } = useTmux();
@@ -314,7 +318,16 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     <Stack spacing={2} sx={{ height: '100vh', p: 2 }}>
       {/* Settings and Connection Status */}
       <Paper sx={{ p: 2 }}>
-        <Stack direction="row" justifyContent="flex-end" alignItems="center">
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Button
+            variant={viewMode === 'file' ? 'contained' : 'outlined'}
+            startIcon={viewMode === 'file' ? <Terminal /> : <Folder />}
+            onClick={() => setViewMode(viewMode === 'tmux' ? 'file' : 'tmux')}
+            size="small"
+          >
+            {viewMode === 'file' ? 'Tmux' : 'File'}
+          </Button>
+          
           <Stack direction="row" spacing={1} alignItems="center">
             <ConnectionStatus 
               isConnected={isConnected && (!autoRefresh || wsConnected)} 
@@ -344,8 +357,11 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         </Stack>
       </Paper>
 
-      {/* Output Display with Target Selector */}
-      <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Main Content - Conditional rendering based on viewMode */}
+      {viewMode === 'tmux' ? (
+        // Tmux View
+        <>
+          <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Stack spacing={1} sx={{ p: 2, pb: 0 }}>
           {/* Target Selector */}
           <TmuxTargetSelector
@@ -482,10 +498,10 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
         </Stack>
       </Paper>
 
-      {/* Command Input */}
-      <Paper sx={{ p: 2 }}>
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={2} justifyContent="space-between">
+          {/* Command Input */}
+          <Paper sx={{ p: 2 }}>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2} justifyContent="space-between">
             <Stack direction="row" spacing={1}>
               <Button
                 variant="contained"
@@ -569,8 +585,13 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               </Button>
             </Stack>
           </Stack>
-        </Stack>
-      </Paper>
+            </Stack>
+          </Paper>
+        </>
+      ) : (
+        // File View
+        <FileView isConnected={isConnected} />
+      )}
     </Stack>
   );
 };
