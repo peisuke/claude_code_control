@@ -8,22 +8,18 @@ import {
   CircularProgress,
   Alert,
   IconButton,
-  TextField,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText,
-  Divider
+  ListItemText
 } from '@mui/material';
 import {
-  ExpandMore,
   ChevronRight,
   Folder,
   InsertDriveFile,
   Refresh,
-  Close,
-  FolderOpen
+  Close
 } from '@mui/icons-material';
 import { tmuxAPI } from '../services/api';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -46,7 +42,6 @@ const FileView: React.FC<FileViewProps> = ({ isConnected }) => {
   const [fileContent, setFileContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState('');
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
 

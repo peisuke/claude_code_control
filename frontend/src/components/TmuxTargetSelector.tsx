@@ -12,10 +12,9 @@ import {
   Alert,
   Accordion,
   AccordionSummary,
-  AccordionDetails,
-  Button
+  AccordionDetails
 } from '@mui/material';
-import { Refresh, ExpandMore, BugReport, Settings } from '@mui/icons-material';
+import { Refresh, ExpandMore } from '@mui/icons-material';
 import { TmuxHierarchy, TmuxTarget } from '../types';
 import { tmuxAPI } from '../services/api';
 
@@ -39,7 +38,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
   const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
+  const [showDebug] = useState(false);
   const [rawHierarchy, setRawHierarchy] = useState<any>(null);
   
   // Parse current target
