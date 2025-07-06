@@ -30,7 +30,8 @@ import {
   Folder,
   Terminal,
   Fullscreen,
-  FullscreenExit
+  FullscreenExit,
+  Delete
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -176,6 +177,18 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
       setTimeout(() => handleRefresh(), 200);
     } catch (error) {
       console.error('Error with Shift+Tab:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      // Send Backspace key to tmux
+      await sendCommand('\x7f', selectedTarget);
+      
+      // Update tmux display after sending Backspace
+      setTimeout(() => handleRefresh(), 200);
+    } catch (error) {
+      console.error('Error with Backspace:', error);
     }
   };
 
@@ -477,21 +490,35 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               title="Shift+Tab (前方移動)"
             >
               <KeyboardTab fontSize="small" sx={{ mr: 0.5, transform: 'rotate(180deg)' }} />
-              Shift+Tab
+              ⇧+Tab
             </Button>
           </Stack>
           
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleCtrlC}
-            disabled={!isConnected || isLoading}
-            sx={{ minWidth: 'auto', px: 1 }}
-            title="Ctrl+C (プロセス終了)"
-          >
-            <ClearAll fontSize="small" sx={{ mr: 0.5 }} />
-            Ctrl+C
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleEscape}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title="ESCキーを送信"
+            >
+              <ExitToApp fontSize="small" sx={{ mr: 0.5 }} />
+              ESC
+            </Button>
+            
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleCtrlC}
+              disabled={!isConnected || isLoading}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title="Ctrl+C (プロセス終了)"
+            >
+              <ClearAll fontSize="small" sx={{ mr: 0.5 }} />
+              Ctrl+C
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
           )}
@@ -525,13 +552,14 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             <Stack direction="row" spacing={1}>
               <Button
                 variant="outlined"
-                startIcon={<ExitToApp />}
-                onClick={handleEscape}
+                startIcon={<Delete />}
+                onClick={handleDelete}
                 disabled={!isConnected || isLoading}
                 size="small"
-                title="ESCキーを送信"
+                title="Backspaceキーを送信"
+                sx={{ minWidth: 'auto', px: 1 }}
               >
-                ESC
+                Del
               </Button>
               
               <Button
@@ -541,6 +569,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                 onClick={handleClear}
                 disabled={!isConnected || isLoading}
                 size="small"
+                sx={{ minWidth: 'auto', px: 1 }}
               >
                 Clear
               </Button>
