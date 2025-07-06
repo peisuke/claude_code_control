@@ -142,16 +142,10 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 
   const handleCtrlR = async () => {
     try {
-      // 1. Disable auto-refresh when using Ctrl+R
-      if (autoRefresh) {
-        setAutoRefresh(false);
-        wsDisconnect();
-      }
-      
-      // 2. Send Ctrl+R to tmux
+      // Send Ctrl+R to tmux (keep auto-refresh enabled)
       await sendCommand('\x12', selectedTarget);
       
-      // 3. Update tmux display
+      // Update tmux display
       setTimeout(() => handleRefresh(), 500);
     } catch (error) {
       console.error('Error with Ctrl+R:', error);
