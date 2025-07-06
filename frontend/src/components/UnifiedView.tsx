@@ -28,7 +28,9 @@ import {
   Settings,
   BugReport,
   Folder,
-  Terminal
+  Terminal,
+  Fullscreen,
+  FullscreenExit
 } from '@mui/icons-material';
 import { useTmux } from '../hooks/useTmux';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -57,6 +59,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   const [output, setOutput] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [viewMode, setViewMode] = useState<'tmux' | 'file'>('tmux');
+  const [commandExpanded, setCommandExpanded] = useState(false);
   const outputRef = React.useRef<HTMLDivElement>(null);
   
   const { sendCommand, sendEnter, getOutput, isLoading, error } = useTmux();
@@ -354,7 +357,8 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
       {viewMode === 'tmux' ? (
         // Tmux View
         <>
-          <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {!commandExpanded && (
+            <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Stack spacing={1} sx={{ p: 2, pb: 0 }}>
           {/* Target Selector */}
           <TmuxTargetSelector
@@ -490,9 +494,10 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
           </Button>
         </Stack>
       </Paper>
+          )}
 
           {/* Command Input */}
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, ...(commandExpanded && { flex: 1 }) }}>
             <Stack spacing={2}>
               <Stack direction="row" spacing={2} justifyContent="space-between">
             <Stack direction="row" spacing={1}>
@@ -542,7 +547,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="flex-start">
+          <Stack direction="row" spacing={1} alignItems="flex-start" sx={commandExpanded ? { flex: 1 } : {}}>
             <TextField
               fullWidth
               label="コマンド (Shift+Enter: 送信, Enter: 改行)"
@@ -554,10 +559,30 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               size="small"
               autoComplete="off"
               multiline
-              rows={3}
+              rows={commandExpanded ? 20 : 3}
+              sx={commandExpanded ? { 
+                '& .MuiInputBase-root': {
+                  height: '100%',
+                  alignItems: 'flex-start'
+                },
+                '& .MuiInputBase-input': {
+                  height: '100% !important',
+                  overflow: 'auto !important'
+                }
+              } : {}}
             />
             
             <Stack spacing={0.5}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setCommandExpanded(!commandExpanded)}
+                disabled={!isConnected || isLoading}
+                sx={{ minWidth: 'auto', px: 1 }}
+                title={commandExpanded ? "コマンド欄を縮小" : "コマンド欄を拡大"}
+              >
+                {commandExpanded ? <FullscreenExit /> : <Fullscreen />}
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
