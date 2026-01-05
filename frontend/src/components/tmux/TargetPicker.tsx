@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   Box,
   FormControl,
@@ -6,36 +6,23 @@ import {
   Select,
   MenuItem,
   Stack,
-  Typography,
-  IconButton,
-  CircularProgress,
-  Alert
+  Typography
 } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
-import { TmuxHierarchy, TmuxTarget } from '../types';
-import { tmuxAPI } from '../services/api';
+import { TmuxHierarchy, TmuxTarget } from '../../types';
 
-interface TmuxTargetSelectorProps {
+interface TargetPickerProps {
+  hierarchy: TmuxHierarchy | null;
   selectedTarget: string;
   onTargetChange: (target: string) => void;
   disabled?: boolean;
-  connectionStatus?: React.ReactNode;
-  onSettingsOpen?: () => void;
-  isTestMode?: boolean;
 }
 
-const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
+const TargetPicker: React.FC<TargetPickerProps> = ({
+  hierarchy,
   selectedTarget,
   onTargetChange,
-  disabled = false,
-  connectionStatus,
-  onSettingsOpen,
-  isTestMode = false
+  disabled = false
 }) => {
-  const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   // Parse current target
   const parseTarget = (target: string): TmuxTarget => {
     const parts = target.split(':');
@@ -50,10 +37,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
     const window = windowPaneParts[0];
     const pane = windowPaneParts[1];
     
-    const result: TmuxTarget = { session };
-    if (window) result.window = window;
-    if (pane) result.pane = pane;
-    return result;
+    return { session, window: window || undefined, pane: pane || undefined };
   };
 
   const buildTarget = (session: string, window?: string, pane?: string): string => {
@@ -66,37 +50,6 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
     }
     return target;
   };
-
-  const loadHierarchy = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      console.log('Loading tmux hierarchy...');
-      const response = await tmuxAPI.getHierarchy();
-      console.log('Raw hierarchy response:', response);
-      
-      // The hierarchy should be directly in response.data
-      const hierarchyData = response.data;
-      console.log('Hierarchy data:', hierarchyData);
-      
-      if (hierarchyData && typeof hierarchyData === 'object') {
-        // Convert the raw data to our expected format
-        const formattedHierarchy: TmuxHierarchy = {
-          sessions: hierarchyData
-        };
-        
-        console.log('Formatted hierarchy:', formattedHierarchy);
-        setHierarchy(formattedHierarchy);
-      } else {
-        throw new Error('Invalid hierarchy data format');
-      }
-    } catch (err) {
-      console.error('Error loading hierarchy:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load tmux hierarchy');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const currentTarget = parseTarget(selectedTarget);
   const sessions = hierarchy?.sessions || {};
@@ -112,21 +65,15 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
       const windowKeys = Object.keys(sessionData.windows).sort((a, b) => parseInt(a) - parseInt(b));
       if (windowKeys.length > 0) {
         const firstWindow = windowKeys[0];
-        if (firstWindow) {
-          const windowData = sessionData.windows[firstWindow];
-          
-          // If the window has multiple panes, select the lowest numbered pane
-          if (windowData?.panes && Object.keys(windowData.panes).length > 1) {
-            const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
-            const firstPane = paneKeys[0];
-            if (firstPane) {
-              onTargetChange(buildTarget(session, firstWindow, firstPane));
-            } else {
-              onTargetChange(buildTarget(session, firstWindow));
-            }
-          } else {
-            onTargetChange(buildTarget(session, firstWindow));
-          }
+        const windowData = sessionData.windows[firstWindow];
+        
+        // If the window has multiple panes, select the lowest numbered pane
+        if (windowData.panes && Object.keys(windowData.panes).length > 1) {
+          const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
+          const firstPane = paneKeys[0];
+          onTargetChange(buildTarget(session, firstWindow, firstPane));
+        } else {
+          onTargetChange(buildTarget(session, firstWindow));
         }
       } else {
         onTargetChange(session);
@@ -152,39 +99,16 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
     onTargetChange(buildTarget(currentTarget.session, currentTarget.window, pane));
   };
 
-  // Load hierarchy on mount
-  React.useEffect(() => {
-    loadHierarchy();
-  }, [loadHierarchy]);
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
-
   return (
     <Box>
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-        {/* Refresh Button */}
-        <IconButton
-          onClick={loadHierarchy}
-          disabled={disabled || loading}
-          title="階層を更新"
-          size="small"
-        >
-          {loading ? <CircularProgress size={16} /> : <Refresh />}
-        </IconButton>
-
         {/* Session Selector */}
         <FormControl sx={{ minWidth: { xs: 80, sm: 120 }, maxWidth: { xs: 100, sm: 150 } }}>
           <InputLabel size="small">セッション</InputLabel>
           <Select
             value={currentTarget.session}
             onChange={(e) => handleSessionChange(e.target.value)}
-            disabled={disabled || loading}
+            disabled={disabled}
             label="セッション"
             size="small"
           >
@@ -206,7 +130,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
             <Select
               value={currentTarget.window || Object.keys(windows)[0] || ''}
               onChange={(e) => handleWindowChange(e.target.value)}
-              disabled={disabled || loading}
+              disabled={disabled}
               label="ウィンドウ"
               size="small"
             >
@@ -228,7 +152,7 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
             <Select
               value={currentTarget.pane || Object.keys(panes)[0] || ''}
               onChange={(e) => handlePaneChange(e.target.value)}
-              disabled={disabled || loading}
+              disabled={disabled}
               label="ペイン"
               size="small"
             >
@@ -254,4 +178,4 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
   );
 };
 
-export default TmuxTargetSelector;
+export default TargetPicker;

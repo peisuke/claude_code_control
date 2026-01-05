@@ -4,20 +4,26 @@ import { Circle, Sync, Refresh, WifiOff, Warning } from '@mui/icons-material';
 
 interface ConnectionStatusProps {
   isConnected: boolean;
+  wsConnected?: boolean;
   isReconnecting?: boolean;
   reconnectAttempts?: number;
   maxReconnectAttempts?: number;
   isOnline?: boolean;
   onReconnect?: () => void;
+  error?: string | null;
+  wsError?: string | null;
 }
 
 const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ 
   isConnected, 
+  wsConnected,
   isReconnecting = false, 
   reconnectAttempts = 0, 
   maxReconnectAttempts = 0,
   isOnline = true,
-  onReconnect
+  onReconnect,
+  error,
+  wsError
 }) => {
   const getStatusInfo = () => {
     if (!isOnline) {
@@ -27,7 +33,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         color: 'error' as const,
         tooltip: 'ネットワーク接続がありません。接続を確認してください。'
       };
-    } else if (isConnected) {
+    } else if (isConnected && (wsConnected === undefined || wsConnected)) {
       return {
         icon: <Circle />,
         label: '接続中',
@@ -42,6 +48,13 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
         color: 'warning' as const,
         tooltip: 'サーバーへの再接続を試行中です...'
       };
+    } else if (isConnected && wsConnected === false) {
+      return {
+        icon: <Warning />,
+        label: 'WS切断',
+        color: 'warning' as const,
+        tooltip: 'WebSocket接続が切断されています。リアルタイム更新は無効です。'
+      };
     } else {
       return {
         icon: <Warning />,
@@ -53,11 +66,14 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   };
 
   const { icon, label, color, tooltip } = getStatusInfo();
-  const showReconnectButton = !isConnected && !isReconnecting && onReconnect && isOnline;
+  const showReconnectButton = (!isConnected || (wsConnected === false)) && !isReconnecting && onReconnect && isOnline;
+  
+  // Show error information in tooltip if available
+  const errorTooltip = error || wsError ? `${tooltip}\n\nエラー: ${error || wsError}` : tooltip;
 
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <Tooltip title={tooltip} arrow>
+      <Tooltip title={errorTooltip} arrow>
         <Chip
           icon={icon}
           label={label}

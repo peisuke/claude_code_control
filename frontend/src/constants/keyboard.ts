@@ -1,0 +1,33 @@
+// Keyboard constants for tmux command execution
+export const KEYBOARD_COMMANDS = {
+  CLEAR_SCREEN: '\x0c',
+  ESCAPE: '\x1b',
+  CTRL_C: '\x03',
+  CTRL_R: '\x12',
+  BACKSPACE: '\x7f',
+  ARROW_UP: '\x1b[A',
+  ARROW_DOWN: '\x1b[B',
+  SHIFT_TAB: '\x1b[Z',
+} as const;
+
+export const KEYBOARD_LABELS = {
+  [KEYBOARD_COMMANDS.CLEAR_SCREEN]: 'Clear',
+  [KEYBOARD_COMMANDS.ESCAPE]: 'ESC',
+  [KEYBOARD_COMMANDS.CTRL_C]: 'Ctrl+C',
+  [KEYBOARD_COMMANDS.CTRL_R]: 'Ctrl+R',
+  [KEYBOARD_COMMANDS.BACKSPACE]: 'Del',
+  [KEYBOARD_COMMANDS.ARROW_UP]: '↑',
+  [KEYBOARD_COMMANDS.ARROW_DOWN]: '↓',
+  [KEYBOARD_COMMANDS.SHIFT_TAB]: '⇧+Tab',
+} as const;
+
+export const KEYBOARD_DESCRIPTIONS = {
+  [KEYBOARD_COMMANDS.CLEAR_SCREEN]: '画面をクリア',
+  [KEYBOARD_COMMANDS.ESCAPE]: 'ESCキーを送信',
+  [KEYBOARD_COMMANDS.CTRL_C]: 'プロセス終了',
+  [KEYBOARD_COMMANDS.CTRL_R]: '履歴展開',
+  [KEYBOARD_COMMANDS.BACKSPACE]: 'Backspaceキーを送信',
+  [KEYBOARD_COMMANDS.ARROW_UP]: '上矢印キー',
+  [KEYBOARD_COMMANDS.ARROW_DOWN]: '下矢印キー',
+  [KEYBOARD_COMMANDS.SHIFT_TAB]: '前方移動',
+} as const;

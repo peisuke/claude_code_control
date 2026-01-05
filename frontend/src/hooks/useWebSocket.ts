@@ -23,7 +23,6 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [maxReconnectAttempts, setMaxReconnectAttempts] = useState(999); // Unlimited
   const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const wsRef = useRef<WebSocketService | null>(null);
 
   const connect = useCallback(() => {
@@ -79,13 +78,14 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
-      wsRef.current.disconnect();
+      wsRef.current.destroy();
       wsRef.current = null;
     }
     setIsConnected(false);
     setIsReconnecting(false);
     setReconnectAttempts(0);
     setLastMessage(null);
+    setError(null);
   }, []);
 
   const forceReconnect = useCallback(() => {
@@ -107,7 +107,6 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   useEffect(() => {
     const handleOnline = () => {
       console.log('Network back online, attempting to reconnect...');
-      setIsOnline(true);
       setError(null);
       
       // If we were trying to reconnect, force a fresh connection attempt
@@ -122,7 +121,6 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
 
     const handleOffline = () => {
       console.log('Network went offline');
-      setIsOnline(false);
       setError('Network offline');
     };
 
@@ -135,11 +133,25 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     };
   }, [isReconnecting, isConnected]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      disconnect();
+      // Direct cleanup without dependency on disconnect callback
+      if (wsRef.current) {
+        wsRef.current.destroy();
+        wsRef.current = null;
+      }
     };
-  }, [disconnect]);
+  }, []);
+
+  // Cleanup when target changes
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.disconnect();
+      }
+    };
+  }, [target]);
 
   return {
     lastMessage,
