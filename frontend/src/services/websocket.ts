@@ -337,4 +337,43 @@ export class WebSocketService {
       default: return 'unknown';
     }
   }
+
+  // Complete cleanup and destruction of the WebSocket service
+  destroy(): void {
+    console.log('Destroying WebSocket service...');
+    
+    // Disable auto-reconnection
+    this.shouldReconnect = false;
+    this.isManualDisconnect = true;
+    
+    // Stop all intervals and timeouts
+    this.stopHeartbeat();
+    this.stopConnectionCheck();
+    
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = undefined;
+    }
+    
+    // Close WebSocket connection
+    if (this.ws) {
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      this.ws.close(1000, 'Service destroyed');
+      this.ws = null;
+    }
+    
+    // Clear all callbacks to prevent memory leaks
+    this.onMessageCallback = undefined;
+    this.onConnectionCallback = undefined;
+    this.onReconnectingCallback = undefined;
+    
+    // Reset all state
+    this.reconnectAttempts = 0;
+    this.lastHeartbeatTime = 0;
+    
+    console.log('WebSocket service destroyed successfully');
+  }
 }

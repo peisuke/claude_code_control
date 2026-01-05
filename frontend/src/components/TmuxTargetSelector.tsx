@@ -50,7 +50,10 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
     const window = windowPaneParts[0];
     const pane = windowPaneParts[1];
     
-    return { session, window: window || undefined, pane: pane || undefined };
+    const result: TmuxTarget = { session };
+    if (window) result.window = window;
+    if (pane) result.pane = pane;
+    return result;
   };
 
   const buildTarget = (session: string, window?: string, pane?: string): string => {
@@ -109,15 +112,21 @@ const TmuxTargetSelector: React.FC<TmuxTargetSelectorProps> = ({
       const windowKeys = Object.keys(sessionData.windows).sort((a, b) => parseInt(a) - parseInt(b));
       if (windowKeys.length > 0) {
         const firstWindow = windowKeys[0];
-        const windowData = sessionData.windows[firstWindow];
-        
-        // If the window has multiple panes, select the lowest numbered pane
-        if (windowData.panes && Object.keys(windowData.panes).length > 1) {
-          const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
-          const firstPane = paneKeys[0];
-          onTargetChange(buildTarget(session, firstWindow, firstPane));
-        } else {
-          onTargetChange(buildTarget(session, firstWindow));
+        if (firstWindow) {
+          const windowData = sessionData.windows[firstWindow];
+          
+          // If the window has multiple panes, select the lowest numbered pane
+          if (windowData?.panes && Object.keys(windowData.panes).length > 1) {
+            const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
+            const firstPane = paneKeys[0];
+            if (firstPane) {
+              onTargetChange(buildTarget(session, firstWindow, firstPane));
+            } else {
+              onTargetChange(buildTarget(session, firstWindow));
+            }
+          } else {
+            onTargetChange(buildTarget(session, firstWindow));
+          }
         }
       } else {
         onTargetChange(session);

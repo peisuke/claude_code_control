@@ -78,13 +78,14 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
-      wsRef.current.disconnect();
+      wsRef.current.destroy();
       wsRef.current = null;
     }
     setIsConnected(false);
     setIsReconnecting(false);
     setReconnectAttempts(0);
     setLastMessage(null);
+    setError(null);
   }, []);
 
   const forceReconnect = useCallback(() => {
@@ -132,11 +133,25 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     };
   }, [isReconnecting, isConnected]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      disconnect();
+      // Direct cleanup without dependency on disconnect callback
+      if (wsRef.current) {
+        wsRef.current.destroy();
+        wsRef.current = null;
+      }
     };
-  }, [disconnect]);
+  }, []);
+
+  // Cleanup when target changes
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.disconnect();
+      }
+    };
+  }, [target]);
 
   return {
     lastMessage,
