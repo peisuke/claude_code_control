@@ -283,45 +283,57 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
     localStorage.setItem('tmux-selected-target', selectedTarget);
   }, [selectedTarget]);
 
-  // Handle page visibility change (app resume/background)
+  // Handle page visibility and focus events for mobile app resume
   React.useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Page became visible (app resumed)
-        console.log('App resumed, attempting reconnection...');
-        console.log('Current state:', { autoRefresh, wsConnected, isConnected });
-        
-        // Only reconnect and refresh if auto-refresh is enabled
-        if (autoRefresh) {
-          console.log('Auto-refresh is enabled, forcing WebSocket reconnection...');
-          // First disconnect completely
-          wsDisconnect();
-          
-          // Wait a moment then reconnect
-          setTimeout(() => {
-            console.log('Reconnecting to target:', selectedTarget);
-            wsSetTarget(selectedTarget);
-            wsConnect();
-          }, 1000);
-          
-          // Refresh output only if auto-refresh is enabled
-          setTimeout(() => {
-            handleRefresh();
-          }, 2000);
-        } else {
-          console.log('Auto-refresh is disabled, skipping reconnection');
-        }
+        console.log('App resumed (visibilitychange), attempting reconnection...');
+        handleAppResume();
       } else {
-        console.log('App went to background');
+        console.log('App went to background (visibilitychange)');
       }
     };
 
+    const handleFocus = () => {
+      console.log('App focused, checking connection...');
+      handleAppResume();
+    };
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.log('App resumed from cache (pageshow), forcing reconnection...');
+        handleAppResume();
+      }
+    };
+
+    const handleAppResume = () => {
+      console.log('Current state:', { autoRefresh, wsConnected, isConnected });
+      
+      if (autoRefresh) {
+        console.log('Auto-refresh enabled, forcing reconnection...');
+        // Force a complete reconnection
+        wsResetAndReconnect();
+        
+        // Refresh output after a delay
+        setTimeout(() => {
+          handleRefresh();
+        }, 1500);
+      } else {
+        console.log('Auto-refresh disabled, skipping reconnection');
+      }
+    };
+
+    // Add all event listeners for comprehensive mobile support
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pageshow', handlePageShow);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
     };
-  }, [autoRefresh, wsConnected, wsConnect, wsDisconnect, wsSetTarget, selectedTarget, handleRefresh, isConnected]);
+  }, [autoRefresh, wsConnected, wsResetAndReconnect, selectedTarget, handleRefresh, isConnected]);
 
   return (
     <Stack spacing={2} sx={{ height: '100vh', p: 2 }}>

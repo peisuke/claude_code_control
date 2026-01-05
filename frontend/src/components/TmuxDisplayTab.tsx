@@ -38,10 +38,14 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
     error: wsError 
   } = useWebSocket(selectedTarget);
 
-  // Scroll to bottom helper function
+  // Smart scroll to bottom - only scrolls if content overflows
   const scrollToBottom = () => {
     if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+      const { scrollHeight, clientHeight } = outputRef.current;
+      // Only scroll if content is taller than visible area
+      if (scrollHeight > clientHeight) {
+        outputRef.current.scrollTop = scrollHeight - clientHeight;
+      }
     }
   };
 
@@ -79,10 +83,8 @@ const TmuxDisplayTab: React.FC<TmuxDisplayTabProps> = ({ isConnected, selectedTa
       setOutput(lastMessage.content);
       setLastUpdate(new Date(lastMessage.timestamp).toLocaleTimeString());
       
-      // Auto-scroll to bottom
-      if (outputRef.current) {
-        outputRef.current.scrollTop = outputRef.current.scrollHeight;
-      }
+      // Smart auto-scroll
+      setTimeout(scrollToBottom, 50);
     }
   }, [lastMessage, selectedTarget]);
 

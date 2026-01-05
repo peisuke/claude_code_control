@@ -5,11 +5,15 @@ export class WebSocketService {
   private baseUrl: string;
   private sessionName: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
-  private baseReconnectInterval = 1000;
-  private maxReconnectInterval = 30000;
+  private maxReconnectAttempts = -1; // Unlimited attempts
+  private baseReconnectInterval = 100;
+  private maxReconnectInterval = 10000;
   private reconnectTimeoutId?: number;
   private shouldReconnect = true;
+  private heartbeatIntervalId?: number;
+  private lastHeartbeatTime = 0;
+  private connectionCheckIntervalId?: number;
+  private isManualDisconnect = false;
   private onMessageCallback?: (output: TmuxOutput) => void;
   private onConnectionCallback?: (connected: boolean) => void;
   private onReconnectingCallback?: (attempt: number, maxAttempts: number) => void;
@@ -46,13 +50,60 @@ export class WebSocketService {
   }
 
   private calculateReconnectDelay(): number {
+    // Faster initial reconnections for mobile app resume scenarios
+    if (this.reconnectAttempts === 0) return 100;
+    if (this.reconnectAttempts === 1) return 1000;
+    if (this.reconnectAttempts === 2) return 3000;
+    if (this.reconnectAttempts === 3) return 5000;
+    
     const exponentialDelay = Math.min(
-      this.baseReconnectInterval * Math.pow(2, this.reconnectAttempts),
+      this.baseReconnectInterval * Math.pow(2, Math.min(this.reconnectAttempts, 6)),
       this.maxReconnectInterval
     );
     // Add jitter to prevent thundering herd
     const jitter = Math.random() * 0.3 * exponentialDelay;
     return exponentialDelay + jitter;
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatIntervalId = window.setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        try {
+          this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+          this.lastHeartbeatTime = Date.now();
+        } catch (error) {
+          console.error('Failed to send ping:', error);
+        }
+      }
+    }, 10000); // Send ping every 10 seconds
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatIntervalId) {
+      clearInterval(this.heartbeatIntervalId);
+      this.heartbeatIntervalId = undefined;
+    }
+  }
+
+  private startConnectionCheck(): void {
+    this.stopConnectionCheck();
+    this.connectionCheckIntervalId = window.setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN && this.lastHeartbeatTime > 0) {
+        // Check if we haven't received a heartbeat response in 25 seconds
+        if (Date.now() - this.lastHeartbeatTime > 25000) {
+          console.log('Heartbeat timeout detected, forcing reconnection');
+          this.forceReconnect();
+        }
+      }
+    }, 5000); // Check every 5 seconds
+  }
+
+  private stopConnectionCheck(): void {
+    if (this.connectionCheckIntervalId) {
+      clearInterval(this.connectionCheckIntervalId);
+      this.connectionCheckIntervalId = undefined;
+    }
   }
 
   connect(): Promise<void> {
@@ -70,6 +121,10 @@ export class WebSocketService {
           console.log('WebSocket connected');
           this.reconnectAttempts = 0;
           this.shouldReconnect = true;
+          this.isManualDisconnect = false;
+          this.lastHeartbeatTime = Date.now();
+          this.startHeartbeat();
+          this.startConnectionCheck();
           this.onConnectionCallback?.(true);
           resolve();
         };
@@ -80,15 +135,17 @@ export class WebSocketService {
             
             // Handle heartbeat messages
             if (data.type === 'heartbeat') {
-              // Send ping response
+              // Update last heartbeat time and send ping response
+              this.lastHeartbeatTime = Date.now();
               if (this.ws?.readyState === WebSocket.OPEN) {
-                this.ws.send(JSON.stringify({ type: 'ping' }));
+                this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
               }
               return;
             }
             
-            // Handle pong responses (if we implement client-side heartbeat)
+            // Handle pong responses
             if (data.type === 'pong') {
+              this.lastHeartbeatTime = Date.now();
               return;
             }
             
@@ -106,14 +163,13 @@ export class WebSocketService {
 
         this.ws.onclose = (event) => {
           console.log('WebSocket disconnected', event.code, event.reason);
+          this.stopHeartbeat();
+          this.stopConnectionCheck();
           this.onConnectionCallback?.(false);
           
           // Only attempt reconnection if it wasn't a manual disconnect
-          if (this.shouldReconnect && event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          if (this.shouldReconnect && !this.isManualDisconnect && event.code !== 1000) {
             this.scheduleReconnect();
-          } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('Max reconnection attempts reached');
-            this.shouldReconnect = false;
           }
         };
 
@@ -133,6 +189,9 @@ export class WebSocketService {
 
   disconnect(): void {
     this.shouldReconnect = false;
+    this.isManualDisconnect = true;
+    this.stopHeartbeat();
+    this.stopConnectionCheck();
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
       this.reconnectTimeoutId = undefined;
@@ -148,16 +207,15 @@ export class WebSocketService {
     this.reconnectAttempts++;
     const delay = this.calculateReconnectDelay();
     
-    console.log(`Attempting to reconnect in ${Math.round(delay)}ms... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    this.onReconnectingCallback?.(this.reconnectAttempts, this.maxReconnectAttempts);
+    console.log(`Attempting to reconnect in ${Math.round(delay)}ms... (attempt ${this.reconnectAttempts})`);
+    this.onReconnectingCallback?.(this.reconnectAttempts, this.maxReconnectAttempts > 0 ? this.maxReconnectAttempts : 999);
     
     this.reconnectTimeoutId = window.setTimeout(() => {
-      if (this.shouldReconnect) {
+      if (this.shouldReconnect && !this.isManualDisconnect) {
         this.connect().catch((error) => {
           console.error('Reconnection failed:', error);
-          if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.scheduleReconnect();
-          }
+          // Continue attempting reconnection indefinitely
+          this.scheduleReconnect();
         });
       }
     }, delay);
@@ -203,11 +261,23 @@ export class WebSocketService {
   forceReconnect(): void {
     console.log('Force reconnect called, current state:', this.ws?.readyState);
     
-    // Always disconnect first to ensure clean state
-    this.disconnect();
+    // Stop any ongoing operations
+    this.stopHeartbeat();
+    this.stopConnectionCheck();
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = undefined;
+    }
+    
+    // Close existing connection if any
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
     
     // Reset reconnection state
     this.shouldReconnect = true;
+    this.isManualDisconnect = false;
     this.reconnectAttempts = 0;
     
     // Wait a bit then reconnect
@@ -215,6 +285,8 @@ export class WebSocketService {
       console.log('Starting forced reconnection...');
       this.connect().catch(error => {
         console.error('Forced reconnection failed:', error);
+        // Continue attempting if it fails
+        this.scheduleReconnect();
       });
     }, 100);
   }
@@ -223,9 +295,14 @@ export class WebSocketService {
   resetAndReconnect(): void {
     console.log('Resetting reconnection attempts and reconnecting...');
     
+    // Stop any ongoing operations
+    this.stopHeartbeat();
+    this.stopConnectionCheck();
+    
     // Reset state
     this.reconnectAttempts = 0;
     this.shouldReconnect = true;
+    this.isManualDisconnect = false;
     
     // Clear any pending reconnection
     if (this.reconnectTimeoutId) {
@@ -233,20 +310,19 @@ export class WebSocketService {
       this.reconnectTimeoutId = undefined;
     }
     
-    // If currently connected, disconnect first
-    if (this.isConnected()) {
-      this.disconnect();
-      setTimeout(() => {
-        this.connect().catch(error => {
-          console.error('Reset reconnection failed:', error);
-        });
-      }, 100);
-    } else {
-      // Direct reconnection attempt
+    // Close existing connection if any
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    
+    // Direct reconnection attempt
+    setTimeout(() => {
       this.connect().catch(error => {
         console.error('Reset reconnection failed:', error);
+        this.scheduleReconnect();
       });
-    }
+    }, 100);
   }
 
   // Get current connection state for debugging

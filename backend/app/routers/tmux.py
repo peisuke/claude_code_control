@@ -295,7 +295,7 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
     async def send_heartbeat():
         try:
             while True:
-                await asyncio.sleep(30)  # Send heartbeat every 30 seconds
+                await asyncio.sleep(15)  # Send heartbeat every 15 seconds
                 await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}))
         except Exception as e:
             print(f"Heartbeat failed: {e}")
@@ -306,8 +306,8 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
     try:
         while True:
             try:
-                # Set timeout for receiving messages
-                message = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+                # Set timeout for receiving messages - reduced for faster detection
+                message = await asyncio.wait_for(websocket.receive_text(), timeout=20.0)
                 # Handle client messages (like heartbeat responses)
                 try:
                     parsed = json.loads(message)
@@ -317,7 +317,7 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
                     pass  # Ignore invalid JSON
                     
             except asyncio.TimeoutError:
-                # No message received in 60 seconds, continue
+                # No message received in 20 seconds, continue
                 continue
             except Exception as e:
                 print(f"Error receiving message: {e}")

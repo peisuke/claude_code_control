@@ -21,8 +21,9 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   const [isConnected, setIsConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [maxReconnectAttempts, setMaxReconnectAttempts] = useState(10);
+  const [maxReconnectAttempts, setMaxReconnectAttempts] = useState(999); // Unlimited
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const wsRef = useRef<WebSocketService | null>(null);
 
   const connect = useCallback(() => {
@@ -101,6 +102,38 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     setIsReconnecting(false);
     setReconnectAttempts(0);
   }, []);
+
+  // Handle network state changes
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('Network back online, attempting to reconnect...');
+      setIsOnline(true);
+      setError(null);
+      
+      // If we were trying to reconnect, force a fresh connection attempt
+      if (isReconnecting || !isConnected) {
+        setTimeout(() => {
+          if (wsRef.current) {
+            wsRef.current.forceReconnect();
+          }
+        }, 1000);
+      }
+    };
+
+    const handleOffline = () => {
+      console.log('Network went offline');
+      setIsOnline(false);
+      setError('Network offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [isReconnecting, isConnected]);
 
   useEffect(() => {
     return () => {
