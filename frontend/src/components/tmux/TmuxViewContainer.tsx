@@ -48,12 +48,13 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           output={output}
           isConnected={isConnected}
           autoScroll={true}
+          onShowHistory={onShowHistory}
+          isLoading={isLoading}
         />
         <TmuxKeyboard
           isConnected={isConnected}
           isLoading={isLoading}
           onSendCommand={onSendKeyboardCommand}
-          onShowHistory={onShowHistory}
         />
       </Paper>
 

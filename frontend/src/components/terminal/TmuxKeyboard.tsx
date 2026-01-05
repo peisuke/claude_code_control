@@ -1,7 +1,6 @@
 import React from 'react';
 import { Stack, Button } from '@mui/material';
 import {
-  History,
   ExitToApp,
   Search,
   KeyboardTab,
@@ -13,14 +12,12 @@ interface TmuxKeyboardProps {
   isConnected: boolean;
   isLoading: boolean;
   onSendCommand: (command: string) => Promise<void>;
-  onShowHistory: () => Promise<void>;
 }
 
 const TmuxKeyboard: React.FC<TmuxKeyboardProps> = ({
   isConnected,
   isLoading,
-  onSendCommand,
-  onShowHistory
+  onSendCommand
 }) => {
   const handleKeyCommand = async (command: string) => {
     await onSendCommand(command);
@@ -33,17 +30,6 @@ const TmuxKeyboard: React.FC<TmuxKeyboardProps> = ({
       {/* Bottom control for tmux output - matches original layout */}
       <Stack direction="row" justifyContent="space-between" sx={{ p: 1, pt: 0 }}>
         <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            onClick={onShowHistory}
-            disabled={disabled}
-            sx={{ minWidth: 'auto', px: 1 }}
-            size="small"
-            title="履歴を表示"
-          >
-            <History />
-          </Button>
-          
           <Button
             variant="outlined"
             size="small"
