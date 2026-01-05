@@ -25,7 +25,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
       isConnected={isConnected}
     >
       {(state, handlers) => (
-        <Stack spacing={2} sx={{ height: '100vh', p: 2, overflow: 'hidden' }}>
+        <Stack spacing={1.5} sx={{ height: '100vh', p: 1, overflow: 'hidden' }}>
           {/* Control Panel - Fixed height */}
           <Paper sx={{ flexShrink: 0 }}>
             <ControlPanel
@@ -43,7 +43,6 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               autoRefresh={state.autoRefresh}
               onAutoRefreshToggle={handlers.handleAutoRefreshToggle}
               isLoading={state.isLoading}
-              onRefresh={handlers.handleRefresh}
               error={state.error}
               wsError={state.wsError}
             />

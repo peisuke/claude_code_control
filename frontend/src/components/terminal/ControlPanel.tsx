@@ -1,24 +1,22 @@
 import React from 'react';
-import { 
-  Paper, 
-  Stack, 
-  Button, 
-  Switch, 
-  FormControlLabel, 
-  Typography, 
-  Box, 
-  Divider, 
-  CircularProgress, 
-  Alert 
+import {
+  Paper,
+  Stack,
+  Button,
+  Switch,
+  FormControlLabel,
+  Typography,
+  Box,
+  Divider,
+  Alert
 } from '@mui/material';
-import { 
-  Folder, 
-  Terminal, 
-  Settings, 
-  BugReport, 
-  Refresh, 
-  PlayArrow, 
-  Stop 
+import {
+  Folder,
+  Terminal,
+  Settings,
+  BugReport,
+  PlayArrow,
+  Stop
 } from '@mui/icons-material';
 import { VIEW_MODES, LABELS } from '../../constants/ui';
 import ConnectionStatus from '../ConnectionStatus';
@@ -28,7 +26,7 @@ interface ControlPanelProps {
   // View mode
   viewMode: 'tmux' | 'file';
   onViewModeToggle: () => void;
-  
+
   // Connection
   isConnected: boolean;
   wsConnected: boolean;
@@ -36,22 +34,21 @@ interface ControlPanelProps {
   reconnectAttempts: number;
   maxReconnectAttempts: number;
   onReconnect: () => void;
-  
+
   // Settings
   onSettingsOpen: () => void;
-  
+
   // Target selection
   selectedTarget: string;
   onTargetChange: (target: string) => void;
-  
+
   // Auto refresh
   autoRefresh: boolean;
   onAutoRefreshToggle: () => void;
-  
-  // Manual refresh
+
+  // Loading state (for target selector)
   isLoading: boolean;
-  onRefresh: () => Promise<void>;
-  
+
   // Errors
   error?: string | null;
   wsError?: string | null;
@@ -72,16 +69,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   autoRefresh,
   onAutoRefreshToggle,
   isLoading,
-  onRefresh,
   error,
   wsError
 }) => {
   const isOnline = navigator.onLine;
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={1.5}>
       {/* Header Controls */}
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 1.5 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Button
             variant={viewMode === VIEW_MODES.FILE ? 'contained' : 'outlined'}
@@ -124,7 +120,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 
       {/* Tmux Controls - only show in tmux mode */}
       {viewMode === VIEW_MODES.TMUX && (
-        <Paper sx={{ p: 2 }}>
+        <Paper sx={{ p: 1.5 }}>
           <Stack spacing={1}>
             {/* Target Selector */}
             <TmuxTargetSelector
@@ -136,17 +132,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             <Divider />
             
             {/* Output Controls */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Button
-                variant="contained"
-                onClick={onRefresh}
-                disabled={!isConnected || isLoading || autoRefresh}
-                sx={{ minWidth: 'auto', px: 2 }}
-                size="small"
-              >
-                {isLoading ? <CircularProgress size={16} /> : <Refresh />}
-              </Button>
-              
+            <Stack direction="row" justifyContent="flex-end" alignItems="center">
               <FormControlLabel
                 control={
                   <Switch
