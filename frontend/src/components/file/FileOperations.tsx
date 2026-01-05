@@ -17,6 +17,8 @@ interface FileOperationsProps {
   onFileDeselect: () => void;
   onFileContentChange?: (hasContent: boolean) => void;
   fileContent?: string;
+  isImage?: boolean;
+  mimeType?: string;
   loading?: boolean;
   error?: string | null;
 }
@@ -26,6 +28,8 @@ const FileOperations: React.FC<FileOperationsProps> = ({
   onFileDeselect,
   onFileContentChange,
   fileContent = '',
+  isImage = false,
+  mimeType = '',
   loading = false,
   error = null
 }) => {
@@ -116,34 +120,60 @@ const FileOperations: React.FC<FileOperationsProps> = ({
             sx={{
               flex: 1,
               overflow: 'auto',
-              backgroundColor: '#1e1e1e',
-              borderRadius: 1
+              backgroundColor: isImage ? '#f5f5f5' : '#1e1e1e',
+              borderRadius: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: isImage ? 'center' : 'flex-start'
             }}
           >
             {fileContent || fileContent === '' ? (
-              <SyntaxHighlighter
-                language={getLanguageFromFileName(selectedFile)}
-                style={tomorrow}
-                customStyle={{
-                  margin: 0,
-                  padding: '16px',
-                  fontSize: '13px',
-                  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-                  backgroundColor: '#1e1e1e',
-                  borderRadius: '4px'
-                }}
-                showLineNumbers={true}
-                lineNumberStyle={{
-                  color: '#6e7681',
-                  backgroundColor: 'transparent',
-                  paddingRight: '16px',
-                  minWidth: '50px'
-                }}
-                wrapLines={true}
-                wrapLongLines={true}
-              >
-                {fileContent || '(空のファイル)'}
-              </SyntaxHighlighter>
+              isImage ? (
+                <Box
+                  sx={{
+                    p: 2,
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}
+                >
+                  <img
+                    src={`data:${mimeType};base64,${fileContent}`}
+                    alt={selectedFile.split('/').pop()}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      objectFit: 'contain'
+                    }}
+                  />
+                </Box>
+              ) : (
+                <SyntaxHighlighter
+                  language={getLanguageFromFileName(selectedFile)}
+                  style={tomorrow}
+                  customStyle={{
+                    margin: 0,
+                    padding: '16px',
+                    fontSize: '13px',
+                    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                    backgroundColor: '#1e1e1e',
+                    borderRadius: '4px'
+                  }}
+                  showLineNumbers={true}
+                  lineNumberStyle={{
+                    color: '#6e7681',
+                    backgroundColor: 'transparent',
+                    paddingRight: '16px',
+                    minWidth: '50px'
+                  }}
+                  wrapLines={true}
+                  wrapLongLines={true}
+                >
+                  {fileContent || '(空のファイル)'}
+                </SyntaxHighlighter>
+              )
             ) : (
               <Box sx={{ p: 2, color: 'text.secondary', textAlign: 'center' }}>
                 <Typography>ファイルの内容を読み込み中...</Typography>
