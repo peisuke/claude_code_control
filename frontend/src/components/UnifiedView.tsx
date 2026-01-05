@@ -40,8 +40,6 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               onSettingsOpen={onSettingsOpen}
               selectedTarget={selectedTarget}
               onTargetChange={onTargetChange}
-              autoRefresh={state.autoRefresh}
-              onAutoRefreshToggle={handlers.handleAutoRefreshToggle}
               isLoading={state.isLoading}
               error={state.error}
               wsError={state.wsError}
@@ -59,9 +57,10 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               onSendCommand={handlers.handleSendCommand}
               onSendEnter={handlers.handleSendEnter}
               onSendKeyboardCommand={handlers.handleKeyboardCommand}
-              onShowHistory={handlers.handleShowHistory}
               onToggleExpanded={() => handlers.setCommandExpanded(!state.commandExpanded)}
               isLoading={state.isLoading}
+              selectedTarget={selectedTarget}
+              onOutputUpdate={handlers.setOutput}
             />
           )}
           

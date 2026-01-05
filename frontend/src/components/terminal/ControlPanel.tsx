@@ -3,20 +3,13 @@ import {
   Paper,
   Stack,
   Button,
-  Switch,
-  FormControlLabel,
-  Typography,
-  Box,
-  Divider,
   Alert
 } from '@mui/material';
 import {
   Folder,
   Terminal,
   Settings,
-  BugReport,
-  PlayArrow,
-  Stop
+  BugReport
 } from '@mui/icons-material';
 import { VIEW_MODES, LABELS } from '../../constants/ui';
 import ConnectionStatus from '../ConnectionStatus';
@@ -42,10 +35,6 @@ interface ControlPanelProps {
   selectedTarget: string;
   onTargetChange: (target: string) => void;
 
-  // Auto refresh
-  autoRefresh: boolean;
-  onAutoRefreshToggle: () => void;
-
   // Loading state (for target selector)
   isLoading: boolean;
 
@@ -66,8 +55,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onSettingsOpen,
   selectedTarget,
   onTargetChange,
-  autoRefresh,
-  onAutoRefreshToggle,
   isLoading,
   error,
   wsError
@@ -89,9 +76,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </Button>
           
           <Stack direction="row" spacing={1} alignItems="center">
-            <ConnectionStatus 
-              isConnected={isConnected && (!autoRefresh || wsConnected)} 
-              isReconnecting={autoRefresh && isReconnecting}
+            <ConnectionStatus
+              isConnected={isConnected && wsConnected}
+              isReconnecting={isReconnecting}
               reconnectAttempts={reconnectAttempts}
               maxReconnectAttempts={maxReconnectAttempts}
               isOnline={isOnline}
@@ -128,35 +115,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               onTargetChange={onTargetChange}
               disabled={!isConnected || isLoading}
             />
-            
-            <Divider />
-            
-            {/* Output Controls */}
-            <Stack direction="row" justifyContent="flex-end" alignItems="center">
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={autoRefresh}
-                    onChange={onAutoRefreshToggle}
-                    disabled={!isConnected}
-                    size="small"
-                  />
-                }
-                label={
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    {autoRefresh ? <Stop fontSize="small" /> : <PlayArrow fontSize="small" />}
-                    <Typography variant="body2">
-                      {LABELS.BUTTONS.AUTO_REFRESH}
-                    </Typography>
-                    {autoRefresh && wsConnected && (
-                      <Typography variant="caption" color="success.main">
-                        (接続中)
-                      </Typography>
-                    )}
-                  </Box>
-                }
-              />
-            </Stack>
 
             {/* Error Messages */}
             {error && (
@@ -164,7 +122,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 {error}
               </Alert>
             )}
-            {wsError && autoRefresh && (
+            {wsError && (
               <Alert severity="warning">
                 WebSocket: {wsError}
               </Alert>

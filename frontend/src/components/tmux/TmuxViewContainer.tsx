@@ -3,6 +3,7 @@ import { Paper } from '@mui/material';
 import TerminalOutput from '../terminal/TerminalOutput';
 import CommandInputArea from '../terminal/CommandInputArea';
 import TmuxKeyboard from '../terminal/TmuxKeyboard';
+import { useScrollBasedOutput } from '../../hooks/useScrollBasedOutput';
 
 interface TmuxViewContainerProps {
   output: string;
@@ -13,9 +14,10 @@ interface TmuxViewContainerProps {
   onSendCommand: () => Promise<void>;
   onSendEnter: () => Promise<void>;
   onSendKeyboardCommand: (command: string) => Promise<void>;
-  onShowHistory: () => Promise<void>;
   onToggleExpanded: () => void;
   isLoading: boolean;
+  selectedTarget: string;
+  onOutputUpdate: (output: string) => void;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -27,29 +29,48 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onSendCommand,
   onSendEnter,
   onSendKeyboardCommand,
-  onShowHistory,
   onToggleExpanded,
-  isLoading
+  isLoading,
+  selectedTarget,
+  onOutputUpdate
 }) => {
+  // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
+  const {
+    output: scrollBasedOutput,
+    isLoadingHistory,
+    handleScroll,
+    setOutput,
+    outputRef
+  } = useScrollBasedOutput({
+    selectedTarget,
+    isConnected,
+    initialOutput: output
+  });
+
+  // Update scroll-based output when WebSocket updates arrive
+  React.useEffect(() => {
+    setOutput(output);
+  }, [output, setOutput]);
+
   return (
     <>
       {/* Terminal Output - Fixed container, always present for stable layout */}
-      <Paper sx={{ 
-        flex: 1, 
+      <Paper sx={{
+        flex: 1,
         minHeight: 0,
-        display: 'flex', 
-        flexDirection: 'column', 
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
         visibility: commandExpanded ? 'hidden' : 'visible',
         height: commandExpanded ? '0' : 'auto',
         transition: 'height 0.3s ease-in-out, visibility 0.3s ease-in-out'
       }}>
-        <TerminalOutput 
-          output={output}
+        <TerminalOutput
+          output={scrollBasedOutput}
           isConnected={isConnected}
-          autoScroll={true}
-          onShowHistory={onShowHistory}
-          isLoading={isLoading}
+          onScroll={handleScroll}
+          outputRef={outputRef}
+          isLoadingHistory={isLoadingHistory}
         />
         <TmuxKeyboard
           isConnected={isConnected}
