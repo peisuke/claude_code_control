@@ -11,14 +11,13 @@ import {
   CircularProgress, 
   Alert 
 } from '@mui/material';
-import { 
-  Folder, 
-  Terminal, 
-  Settings, 
-  BugReport, 
-  Refresh, 
-  PlayArrow, 
-  Stop 
+import {
+  Folder,
+  Terminal,
+  Settings,
+  Refresh,
+  PlayArrow,
+  Stop
 } from '@mui/icons-material';
 import { VIEW_MODES, LABELS } from '../../constants/ui';
 import ConnectionStatus from '../ConnectionStatus';
@@ -93,23 +92,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </Button>
           
           <Stack direction="row" spacing={1} alignItems="center">
-            <ConnectionStatus 
-              isConnected={isConnected && (!autoRefresh || wsConnected)} 
+            <ConnectionStatus
+              isConnected={isConnected && (!autoRefresh || wsConnected)}
               isReconnecting={autoRefresh && isReconnecting}
               reconnectAttempts={reconnectAttempts}
               maxReconnectAttempts={maxReconnectAttempts}
               isOnline={isOnline}
               onReconnect={onReconnect}
             />
-            {process.env.REACT_APP_TEST_MODE === 'true' && (
-              <Button
-                variant="outlined"
-                size="small"
-                title="デバッグ情報"
-              >
-                <BugReport fontSize="small" />
-              </Button>
-            )}
             <Button
               variant="outlined"
               startIcon={<Settings />}
