@@ -39,6 +39,9 @@ export const VIEW_MODES = {
 } as const;
 
 export const LABELS = {
+  HEADERS: {
+    TMUX_CONTROLLER: 'tmux Controller',
+  },
   CONNECTION_STATUS: {
     CONNECTED: '接続中',
     DISCONNECTED: '切断',
@@ -54,6 +57,8 @@ export const LABELS = {
     MANUAL_RECONNECT: '手動で再接続を試行',
     EXPAND_COMMAND: 'コマンド欄を拡大',
     COLLAPSE_COMMAND: 'コマンド欄を縮小',
+    TMUX_MODE: 'tmux',
+    FILE_MODE: 'ファイル',
   },
   PLACEHOLDERS: {
     COMMAND_INPUT: 'ls -la',
@@ -64,5 +69,8 @@ export const LABELS = {
     SERVER_CONNECTED: 'サーバーと正常に接続されています',
     RECONNECTING: 'サーバーへの再接続を試行中です...',
     SERVER_DISCONNECTED: 'サーバーとの接続が切断されています。手動で再接続してください。',
+    MANUAL_REFRESH: '手動でターミナル出力を更新',
+    SETTINGS: '設定画面を開く',
   },
+  AUTO_REFRESH: '自動更新',
 } as const;

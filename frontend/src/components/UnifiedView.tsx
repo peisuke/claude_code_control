@@ -3,7 +3,7 @@ import { Stack, Paper } from '@mui/material';
 import ControlPanel from './terminal/ControlPanel';
 import TmuxViewContainer from './tmux/TmuxViewContainer';
 import FileView from './FileView';
-import ViewStateManager from './view/ViewStateManager';
+import ViewStateCoordinator from './view/ViewStateCoordinator';
 import { VIEW_MODES } from '../constants/ui';
 
 interface UnifiedViewProps {
@@ -20,7 +20,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   onTargetChange
 }) => {
   return (
-    <ViewStateManager 
+    <ViewStateCoordinator 
       selectedTarget={selectedTarget}
       isConnected={isConnected}
     >
@@ -74,7 +74,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
           )}
         </Stack>
       )}
-    </ViewStateManager>
+    </ViewStateCoordinator>
   );
 };
 
