@@ -255,15 +255,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
     setDeleteDialog(initialDeleteDialog);
   };
 
-  if (!hierarchy || Object.keys(sessions).length === 0) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          セッションがありません
-        </Typography>
-      </Box>
-    );
-  }
+  const sessionEntries = Object.entries(sessions);
 
   return (
     <>
@@ -285,7 +277,17 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
           </ListItemButton>
         </ListItem>
 
-        {Object.entries(sessions).map(([sessionName, sessionData]) => {
+        {/* Empty state message */}
+        {sessionEntries.length === 0 && (
+          <ListItem>
+            <ListItemText
+              primary="セッションがありません"
+              primaryTypographyProps={{ variant: 'body2', color: 'text.secondary' }}
+            />
+          </ListItem>
+        )}
+
+        {sessionEntries.map(([sessionName, sessionData]) => {
           const isSessionExpanded = expandedSessions[sessionName];
           const isSessionSelected = currentTarget.session === sessionName && !currentTarget.window;
           const windows = sessionData.windows || {};
