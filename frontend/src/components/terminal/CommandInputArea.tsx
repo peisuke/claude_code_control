@@ -28,7 +28,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   isExpanded,
   onToggleExpanded
 }) => {
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
       onSendCommand();
@@ -39,7 +39,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   const disabled = !isConnected || isLoading;
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} sx={isExpanded ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}>
       {/* Command Buttons */}
       <Stack direction="row" spacing={2} justifyContent="space-between">
         <Stack direction="row" spacing={1}>
@@ -93,29 +93,32 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
       </Stack>
 
       {/* Command Input */}
-      <Stack direction="row" spacing={1} alignItems="flex-start" sx={isExpanded ? { flex: 1, minHeight: 0 } : {}}>
+      <Stack direction="row" spacing={1} alignItems="stretch" sx={isExpanded ? { flex: 1, minHeight: 0, height: '100%' } : { alignItems: 'flex-start' }}>
         <TextField
           fullWidth
           label="コマンド (Shift+Enter: 送信, Enter: 改行)"
           placeholder={LABELS.PLACEHOLDERS.COMMAND_INPUT}
           value={command}
           onChange={(e) => onCommandChange(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           disabled={disabled}
           size="small"
           autoComplete="off"
           multiline
-          rows={isExpanded ? LAYOUT.COMMAND_INPUT_EXPANDED_ROWS : LAYOUT.COMMAND_INPUT_MIN_ROWS}
-          sx={isExpanded ? { 
+          {...(!isExpanded && { rows: LAYOUT.COMMAND_INPUT_MIN_ROWS })}
+          sx={isExpanded ? {
             flex: 1,
             minHeight: 0,
+            height: '100%',
             '& .MuiInputBase-root': {
               height: '100%',
               alignItems: 'flex-start'
             },
-            '& .MuiInputBase-input': {
+            // !important is needed to override MUI's internal textarea styles
+            '& textarea': {
               height: '100% !important',
-              overflow: 'auto !important'
+              overflow: 'auto !important',
+              resize: 'none'
             }
           } : {}}
         />
