@@ -93,7 +93,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
       </Stack>
 
       {/* Command Input */}
-      <Stack direction="row" spacing={1} alignItems="flex-start" sx={isExpanded ? { flex: 1, minHeight: 0 } : {}}>
+      <Stack direction="row" spacing={1} alignItems="stretch" sx={isExpanded ? { flex: 1, minHeight: 0, height: '100%' } : { alignItems: 'flex-start' }}>
         <TextField
           fullWidth
           label="コマンド (Shift+Enter: 送信, Enter: 改行)"
@@ -109,13 +109,15 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
           sx={isExpanded ? {
             flex: 1,
             minHeight: 0,
+            height: '100%',
             '& .MuiInputBase-root': {
               height: '100%',
               alignItems: 'flex-start'
             },
-            '& .MuiInputBase-input': {
+            '& .MuiInputBase-input, & textarea': {
               height: '100% !important',
-              overflow: 'auto !important'
+              overflow: 'auto !important',
+              resize: 'none'
             }
           } : {}}
         />

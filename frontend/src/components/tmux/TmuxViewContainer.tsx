@@ -59,16 +59,13 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       flexDirection: 'column',
       overflow: 'hidden'
     }}>
-      {/* Terminal Output - Fixed container, always present for stable layout */}
+      {/* Terminal Output - Hidden when command input is expanded */}
       <Paper sx={{
-        flex: 1,
+        flex: commandExpanded ? 0 : 1,
         minHeight: 0,
-        display: 'flex',
+        display: commandExpanded ? 'none' : 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
-        visibility: commandExpanded ? 'hidden' : 'visible',
-        height: commandExpanded ? '0' : 'auto',
-        transition: 'height 0.3s ease-in-out, visibility 0.3s ease-in-out'
+        overflow: 'hidden'
       }}>
         <TerminalOutput
           output={scrollBasedOutput}
