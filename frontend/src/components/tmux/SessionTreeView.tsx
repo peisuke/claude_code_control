@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   List,
@@ -36,22 +36,32 @@ interface SessionTreeViewProps {
   onRefresh?: () => void;
 }
 
+interface DeleteDialogState {
+  open: boolean;
+  type: 'session' | 'window';
+  name: string;
+  sessionName: string;
+  windowIndex?: string;
+}
+
+const initialDeleteDialog: DeleteDialogState = {
+  open: false,
+  type: 'session',
+  name: '',
+  sessionName: '',
+  windowIndex: undefined
+};
+
 const SessionTreeView: React.FC<SessionTreeViewProps> = ({
   hierarchy,
   selectedTarget,
   onTargetChange,
   onRefresh
 }) => {
-  const [expandedSessions, setExpandedSessions] = React.useState<Record<string, boolean>>({});
-  const [expandedWindows, setExpandedWindows] = React.useState<Record<string, boolean>>({});
+  const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
+  const [expandedWindows, setExpandedWindows] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    type: 'session' | 'window';
-    name: string;
-    sessionName: string;
-    windowIndex?: string;
-  }>({ open: false, type: 'session', name: '', sessionName: '' });
+  const [deleteDialog, setDeleteDialog] = useState(initialDeleteDialog);
 
   // Parse current target
   const parseTarget = (target: string) => {
@@ -79,7 +89,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
   const sessions = hierarchy?.sessions || {};
 
   // Auto-expand the currently selected session and window
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentTarget.session) {
       setExpandedSessions(prev => ({ ...prev, [currentTarget.session]: true }));
     }
@@ -167,7 +177,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
         onRefresh?.();
       } catch (err) {
         console.error('Error creating session:', err);
-        alert(err instanceof Error ? err.message : 'Failed to create session');
+        alert(err instanceof Error ? err.message : 'セッションの作成に失敗しました');
       } finally {
         setLoading(false);
       }
@@ -185,7 +195,8 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
       open: true,
       type: 'session',
       name: sessionName,
-      sessionName: sessionName
+      sessionName: sessionName,
+      windowIndex: undefined
     });
   };
 
@@ -198,7 +209,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
         onRefresh?.();
       } catch (err) {
         console.error('Error creating window:', err);
-        alert(err instanceof Error ? err.message : 'Failed to create window');
+        alert(err instanceof Error ? err.message : 'ウィンドウの作成に失敗しました');
       } finally {
         setLoading(false);
       }
@@ -233,15 +244,15 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
       onRefresh?.();
     } catch (err) {
       console.error('Error deleting:', err);
-      alert(err instanceof Error ? err.message : 'Failed to delete');
+      alert(err instanceof Error ? err.message : '削除に失敗しました');
     } finally {
       setLoading(false);
-      setDeleteDialog({ open: false, type: 'session', name: '', sessionName: '' });
+      setDeleteDialog(initialDeleteDialog);
     }
   };
 
   const handleCloseDeleteDialog = () => {
-    setDeleteDialog({ open: false, type: 'session', name: '', sessionName: '' });
+    setDeleteDialog(initialDeleteDialog);
   };
 
   if (!hierarchy || Object.keys(sessions).length === 0) {

@@ -16,7 +16,6 @@ import { tmuxAPI } from '../../services/api';
 
 interface SessionManagerProps {
   onHierarchyLoad: (hierarchy: TmuxHierarchy) => void;
-  isTestMode?: boolean;
   showDebug?: boolean;
 }
 
@@ -26,7 +25,6 @@ export interface SessionManagerRef {
 
 const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
   onHierarchyLoad,
-  isTestMode = false,
   showDebug = false
 }, ref) => {
   const [loading, setLoading] = useState(false);
@@ -38,23 +36,14 @@ const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
     setLoading(true);
     setError(null);
     try {
-      console.log('Loading tmux hierarchy...');
       const response = await tmuxAPI.getHierarchy();
-      console.log('Raw hierarchy response:', response);
-      
       setRawHierarchy(response.data);
-      
-      // The hierarchy should be directly in response.data
+
       const hierarchyData = response.data;
-      console.log('Hierarchy data:', hierarchyData);
-      
       if (hierarchyData && typeof hierarchyData === 'object') {
-        // Convert the raw data to our expected format
         const formattedHierarchy: TmuxHierarchy = {
           sessions: hierarchyData
         };
-        
-        console.log('Formatted hierarchy:', formattedHierarchy);
         setHierarchy(formattedHierarchy);
         onHierarchyLoad(formattedHierarchy);
       } else {
@@ -62,7 +51,7 @@ const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
       }
     } catch (err) {
       console.error('Error loading hierarchy:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load tmux hierarchy');
+      setError(err instanceof Error ? err.message : '階層の読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
