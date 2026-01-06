@@ -91,7 +91,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   } = useFileContent();
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.100' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       {/* Top Toolbar */}
       <Paper sx={{ flexShrink: 0 }}>
         <Toolbar variant="dense">
