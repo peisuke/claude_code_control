@@ -6,7 +6,6 @@ import TmuxViewContainer from '../tmux/TmuxViewContainer';
 import FileOperations from '../file/FileOperations';
 import ConnectionStatus from '../ConnectionStatus';
 import ViewModeSwitch from '../terminal/ViewModeSwitch';
-import RefreshControls from '../terminal/RefreshControls';
 import { VIEW_MODES } from '../../constants/ui';
 import { tmuxAPI } from '../../services/api';
 
@@ -35,15 +34,12 @@ interface DesktopLayoutProps {
   onSendCommand: () => Promise<void>;
   onSendEnter: () => Promise<void>;
   onSendKeyboardCommand: (cmd: string) => Promise<void>;
-  onShowHistory: () => Promise<void>;
   commandExpanded: boolean;
   onToggleExpanded: () => void;
 
-  // Refresh state
-  autoRefresh: boolean;
-  onAutoRefreshToggle: () => void;
+  // Output state
   isLoading: boolean;
-  onRefresh: () => Promise<void>;
+  onOutputUpdate: (output: string) => void;
   error: string | null;
 
   // Settings
@@ -68,19 +64,18 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   onSendCommand,
   onSendEnter,
   onSendKeyboardCommand,
-  onShowHistory,
   commandExpanded,
   onToggleExpanded,
-  autoRefresh,
-  onAutoRefreshToggle,
   isLoading,
-  onRefresh,
+  onOutputUpdate,
   error,
   onSettingsOpen
 }) => {
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [hasFileContent, setHasFileContent] = useState<boolean>(false);
   const [fileContent, setFileContent] = useState<string>('');
+  const [isImage, setIsImage] = useState<boolean>(false);
+  const [mimeType, setMimeType] = useState<string>('');
   const [fileLoading, setFileLoading] = useState<boolean>(false);
   const [fileError, setFileError] = useState<string | null>(null);
 
@@ -105,6 +100,8 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
       const response = await tmuxAPI.getFileContent(path);
       if (response.success && response.data?.content !== undefined) {
         setFileContent(response.data.content);
+        setIsImage(response.data.is_image || false);
+        setMimeType(response.data.mime_type || '');
         setHasFileContent(true);
       } else {
         throw new Error(response.message || 'Failed to load file content');
@@ -129,16 +126,6 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
             {/* View Mode Switch */}
             <ViewModeSwitch viewMode={viewMode} onViewModeToggle={onViewModeToggle} />
-
-            {/* Refresh Controls - Only show in tmux mode */}
-            {viewMode === VIEW_MODES.TMUX && (
-              <RefreshControls
-                autoRefresh={autoRefresh}
-                onAutoRefreshToggle={onAutoRefreshToggle}
-                isLoading={isLoading}
-                onRefresh={onRefresh}
-              />
-            )}
 
             {/* Connection Status */}
             <ConnectionStatus
@@ -188,9 +175,10 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               onSendCommand={onSendCommand}
               onSendEnter={onSendEnter}
               onSendKeyboardCommand={onSendKeyboardCommand}
-              onShowHistory={onShowHistory}
               onToggleExpanded={onToggleExpanded}
               isLoading={isLoading}
+              selectedTarget={selectedTarget}
+              onOutputUpdate={onOutputUpdate}
             />
           )}
 
@@ -203,6 +191,8 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                   onFileDeselect={handleFileDeselect}
                   onFileContentChange={setHasFileContent}
                   fileContent={fileContent}
+                  isImage={isImage}
+                  mimeType={mimeType}
                   loading={fileLoading}
                   error={fileError}
                 />
