@@ -178,12 +178,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             <Typography variant="body2" color="text.secondary">
               現在のパス:
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontFamily: 'monospace', 
-                backgroundColor: 'grey.100', 
-                px: 1, 
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: 'monospace',
+                backgroundColor: 'action.hover',
+                px: 1,
                 borderRadius: 0.5,
                 maxWidth: '300px',
                 overflow: 'hidden',
