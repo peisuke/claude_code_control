@@ -12,7 +12,8 @@ import {
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  useTheme
 } from '@mui/material';
 import {
   ChevronRight,
@@ -44,6 +45,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onDirectoryChange,
   onFileOpen
 }) => {
+  const theme = useTheme();
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -178,12 +180,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             <Typography variant="body2" color="text.secondary">
               現在のパス:
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontFamily: 'monospace', 
-                backgroundColor: 'grey.100', 
-                px: 1, 
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: 'monospace',
+                backgroundColor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200',
+                px: 1,
                 borderRadius: 0.5,
                 maxWidth: '300px',
                 overflow: 'hidden',

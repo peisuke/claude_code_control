@@ -5,10 +5,16 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Typography,
   Box,
+  FormControlLabel,
+  Switch,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Close, DarkMode } from '@mui/icons-material';
+import { useThemeContext } from '../contexts/ThemeContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -16,6 +22,12 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { darkMode, setDarkMode } = useThemeContext();
+
+  const handleDarkModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDarkMode(event.target.checked);
+  };
+
   return (
     <Dialog
       open={isOpen}
@@ -28,10 +40,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       </DialogTitle>
 
       <DialogContent>
-        <Box sx={{ py: 4, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            設定項目はありません
-          </Typography>
+        <Box sx={{ py: 1 }}>
+          <List>
+            <ListItem>
+              <ListItemIcon>
+                <DarkMode />
+              </ListItemIcon>
+              <ListItemText
+                primary="ダークモード"
+                secondary="画面の配色をダークテーマに切り替えます"
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={darkMode}
+                    onChange={handleDarkModeChange}
+                    color="primary"
+                  />
+                }
+                label=""
+              />
+            </ListItem>
+          </List>
         </Box>
       </DialogContent>
 

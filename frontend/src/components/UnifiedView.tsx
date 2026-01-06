@@ -93,7 +93,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             />
           ) : (
             /* Mobile Layout - Show on screens < md */
-            <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.100' }}>
+            <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
               {/* Mobile Top Bar */}
               <Paper sx={{ flexShrink: 0 }}>
                 <Toolbar variant="dense">

@@ -1,35 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
+import { Box } from '@mui/material';
 import UnifiedView from './components/UnifiedView';
 import SettingsModal from './components/SettingsModal';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { tmuxAPI } from './services/api';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
-    ].join(','),
-  },
-});
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
@@ -71,17 +45,16 @@ function App() {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ height: '100vh', bgcolor: 'grey.100' }}>
-        <UnifiedView 
+    <ThemeProvider>
+      <Box sx={{ height: '100vh', bgcolor: 'background.default' }}>
+        <UnifiedView
           isConnected={isConnected}
           onSettingsOpen={handleSettingsOpen}
           selectedTarget={selectedTarget}
           onTargetChange={handleTargetChange}
         />
       </Box>
-      
+
       <SettingsModal
         isOpen={settingsOpen}
         onClose={handleSettingsClose}
