@@ -39,7 +39,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   const disabled = !isConnected || isLoading;
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} sx={isExpanded ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}>
       {/* Command Buttons */}
       <Stack direction="row" spacing={2} justifyContent="space-between">
         <Stack direction="row" spacing={1}>
@@ -105,8 +105,8 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
           size="small"
           autoComplete="off"
           multiline
-          rows={isExpanded ? LAYOUT.COMMAND_INPUT_EXPANDED_ROWS : LAYOUT.COMMAND_INPUT_MIN_ROWS}
-          sx={isExpanded ? { 
+          {...(!isExpanded && { rows: LAYOUT.COMMAND_INPUT_MIN_ROWS })}
+          sx={isExpanded ? {
             flex: 1,
             minHeight: 0,
             '& .MuiInputBase-root': {
