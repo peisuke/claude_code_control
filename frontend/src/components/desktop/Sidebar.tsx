@@ -20,6 +20,8 @@ interface SidebarProps {
   onDirectoryChange: (path: string) => void;
   onFileOpen?: (path: string) => void;
   isConnected: boolean;
+  viewMode: 'tmux' | 'file';
+  onViewModeChange: (mode: 'tmux' | 'file') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -29,13 +31,18 @@ const Sidebar: React.FC<SidebarProps> = ({
   onFileSelect,
   onDirectoryChange,
   onFileOpen,
-  isConnected
+  isConnected,
+  viewMode,
+  onViewModeChange
 }) => {
-  const [activeTab, setActiveTab] = useState(0);
   const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
 
+  // Sync activeTab with viewMode
+  const activeTab = viewMode === 'tmux' ? 0 : 1;
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+    // Tab 0 = tmux, Tab 1 = file
+    onViewModeChange(newValue === 0 ? 'tmux' : 'file');
   };
 
   const handleHierarchyLoad = useCallback((newHierarchy: TmuxHierarchy) => {

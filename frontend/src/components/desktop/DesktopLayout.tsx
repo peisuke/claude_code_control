@@ -5,14 +5,13 @@ import Sidebar from './Sidebar';
 import TmuxViewContainer from '../tmux/TmuxViewContainer';
 import FileOperations from '../file/FileOperations';
 import ConnectionStatus from '../ConnectionStatus';
-import ViewModeSwitch from '../terminal/ViewModeSwitch';
 import { VIEW_MODES } from '../../constants/ui';
 import { tmuxAPI } from '../../services/api';
 
 interface DesktopLayoutProps {
   // View state
   viewMode: 'tmux' | 'file';
-  onViewModeToggle: () => void;
+  onViewModeChange: (mode: 'tmux' | 'file') => void;
 
   // Connection state
   isConnected: boolean;
@@ -48,7 +47,7 @@ interface DesktopLayoutProps {
 
 const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   viewMode,
-  onViewModeToggle,
+  onViewModeChange,
   isConnected,
   wsConnected,
   isReconnecting,
@@ -124,9 +123,6 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
           </Typography>
 
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            {/* View Mode Switch */}
-            <ViewModeSwitch viewMode={viewMode} onViewModeToggle={onViewModeToggle} />
-
             {/* Connection Status */}
             <ConnectionStatus
               isConnected={isConnected}
@@ -159,6 +155,8 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
             onDirectoryChange={handleDirectoryChange}
             onFileOpen={handleFileOpen}
             isConnected={isConnected}
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
           />
         </Box>
 

@@ -1,10 +1,12 @@
-import React from 'react';
-import { Stack, Paper, useMediaQuery, useTheme } from '@mui/material';
-import ControlPanel from './terminal/ControlPanel';
+import React, { useState } from 'react';
+import { Paper, useMediaQuery, useTheme, Drawer, IconButton, Box, Toolbar, Typography } from '@mui/material';
+import { Menu as MenuIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import TmuxViewContainer from './tmux/TmuxViewContainer';
 import FileView from './FileView';
 import ViewStateCoordinator from './view/ViewStateCoordinator';
 import DesktopLayout from './desktop/DesktopLayout';
+import Sidebar from './desktop/Sidebar';
+import ConnectionStatus from './ConnectionStatus';
 import { VIEW_MODES } from '../constants/ui';
 
 interface UnifiedViewProps {
@@ -22,19 +24,40 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
 }) => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string>('');
+
+  const handleDrawerToggle = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const handleFileSelect = (path: string) => {
+    setSelectedFile(path);
+  };
+
+  const handleDirectoryChange = (path: string) => {
+    // Handled within FileExplorer
+  };
 
   return (
     <ViewStateCoordinator
       selectedTarget={selectedTarget}
       isConnected={isConnected}
     >
-      {(state, handlers) => (
-        <>
-          {/* Desktop Layout - Show on screens >= md (960px) */}
-          {isDesktop ? (
+      {(state, handlers) => {
+        const handleViewModeChange = (mode: 'tmux' | 'file') => {
+          if (mode !== state.viewMode) {
+            handlers.handleViewModeToggle();
+          }
+        };
+
+        return (
+          <>
+            {/* Desktop Layout - Show on screens >= md (960px) */}
+            {isDesktop ? (
             <DesktopLayout
               viewMode={state.viewMode as 'tmux' | 'file'}
-              onViewModeToggle={handlers.handleViewModeToggle}
+              onViewModeChange={handleViewModeChange}
               isConnected={isConnected}
               wsConnected={state.wsConnected}
               isReconnecting={state.isReconnecting}
@@ -59,55 +82,96 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
             />
           ) : (
             /* Mobile Layout - Show on screens < md */
-            <Stack spacing={1.5} sx={{ height: '100vh', p: 1, overflow: 'hidden' }}>
-              {/* Control Panel - Fixed height */}
+            <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.100' }}>
+              {/* Mobile Top Bar */}
               <Paper sx={{ flexShrink: 0 }}>
-                <ControlPanel
-                  viewMode={state.viewMode as 'tmux' | 'file'}
-                  onViewModeToggle={handlers.handleViewModeToggle}
-                  isConnected={isConnected}
-                  wsConnected={state.wsConnected}
-                  isReconnecting={state.isReconnecting}
-                  reconnectAttempts={state.reconnectAttempts}
-                  maxReconnectAttempts={state.maxReconnectAttempts}
-                  onReconnect={handlers.wsResetAndReconnect}
-                  onSettingsOpen={onSettingsOpen}
-                  selectedTarget={selectedTarget}
-                  onTargetChange={onTargetChange}
-                  isLoading={state.isLoading}
-                  error={state.error}
-                  wsError={state.wsError}
-                />
+                <Toolbar variant="dense">
+                  <IconButton
+                    edge="start"
+                    onClick={handleDrawerToggle}
+                    sx={{ mr: 2 }}
+                  >
+                    <MenuIcon />
+                  </IconButton>
+
+                  <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                    Tmux Controller
+                  </Typography>
+
+                  <ConnectionStatus
+                    isConnected={isConnected}
+                    wsConnected={state.wsConnected}
+                    isReconnecting={state.isReconnecting}
+                    reconnectAttempts={state.reconnectAttempts}
+                    maxReconnectAttempts={state.maxReconnectAttempts}
+                    onReconnect={handlers.wsResetAndReconnect}
+                    error={state.error}
+                    wsError={state.wsError}
+                  />
+
+                  <IconButton onClick={onSettingsOpen} size="small">
+                    <SettingsIcon />
+                  </IconButton>
+                </Toolbar>
               </Paper>
 
-              {/* Tmux View Container */}
-              {state.viewMode === VIEW_MODES.TMUX && (
-                <TmuxViewContainer
-                  output={state.output}
-                  isConnected={isConnected}
-                  commandExpanded={state.commandExpanded}
-                  command={state.command}
-                  onCommandChange={handlers.setCommand}
-                  onSendCommand={handlers.handleSendCommand}
-                  onSendEnter={handlers.handleSendEnter}
-                  onSendKeyboardCommand={handlers.handleKeyboardCommand}
-                  onToggleExpanded={() => handlers.setCommandExpanded(!state.commandExpanded)}
-                  isLoading={state.isLoading}
+              {/* Mobile Drawer */}
+              <Drawer
+                anchor="left"
+                open={drawerOpen}
+                onClose={handleDrawerToggle}
+                sx={{
+                  '& .MuiDrawer-paper': {
+                    width: '100%',
+                    maxWidth: 360
+                  }
+                }}
+              >
+                <Sidebar
                   selectedTarget={selectedTarget}
-                  onOutputUpdate={handlers.setOutput}
+                  onTargetChange={onTargetChange}
+                  selectedFile={selectedFile}
+                  onFileSelect={handleFileSelect}
+                  onDirectoryChange={handleDirectoryChange}
+                  isConnected={isConnected}
+                  viewMode={state.viewMode as 'tmux' | 'file'}
+                  onViewModeChange={(mode) => {
+                    handleViewModeChange(mode);
+                    setDrawerOpen(false); // Close drawer after selection
+                  }}
                 />
-              )}
+              </Drawer>
 
-              {/* File View - Show when in file mode */}
-              {state.viewMode === VIEW_MODES.FILE && (
-                <Paper sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                  <FileView isConnected={isConnected} />
-                </Paper>
-              )}
-            </Stack>
+              {/* Main Content */}
+              <Box sx={{ flex: 1, overflow: 'hidden', p: 1 }}>
+                {state.viewMode === VIEW_MODES.TMUX && (
+                  <TmuxViewContainer
+                    output={state.output}
+                    isConnected={isConnected}
+                    commandExpanded={state.commandExpanded}
+                    command={state.command}
+                    onCommandChange={handlers.setCommand}
+                    onSendCommand={handlers.handleSendCommand}
+                    onSendEnter={handlers.handleSendEnter}
+                    onSendKeyboardCommand={handlers.handleKeyboardCommand}
+                    onToggleExpanded={() => handlers.setCommandExpanded(!state.commandExpanded)}
+                    isLoading={state.isLoading}
+                    selectedTarget={selectedTarget}
+                    onOutputUpdate={handlers.setOutput}
+                  />
+                )}
+
+                {state.viewMode === VIEW_MODES.FILE && (
+                  <Paper sx={{ height: '100%', overflow: 'hidden' }}>
+                    <FileView isConnected={isConnected} />
+                  </Paper>
+                )}
+              </Box>
+            </Box>
           )}
         </>
-      )}
+        );
+      }}
     </ViewStateCoordinator>
   );
 };
