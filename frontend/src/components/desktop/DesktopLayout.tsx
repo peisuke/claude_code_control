@@ -133,6 +133,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               isReconnecting={isReconnecting}
               reconnectAttempts={reconnectAttempts}
               maxReconnectAttempts={maxReconnectAttempts}
+              isOnline={navigator.onLine}
               onReconnect={onReconnect}
               error={error}
               wsError={wsError}

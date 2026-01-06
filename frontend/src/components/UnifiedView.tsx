@@ -142,6 +142,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                     isReconnecting={state.isReconnecting}
                     reconnectAttempts={state.reconnectAttempts}
                     maxReconnectAttempts={state.maxReconnectAttempts}
+                    isOnline={navigator.onLine}
                     onReconnect={handlers.wsResetAndReconnect}
                     error={state.error}
                     wsError={state.wsError}
