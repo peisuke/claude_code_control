@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   IconButton,
@@ -16,15 +16,17 @@ import { tmuxAPI } from '../../services/api';
 
 interface SessionManagerProps {
   onHierarchyLoad: (hierarchy: TmuxHierarchy) => void;
-  isTestMode?: boolean;
   showDebug?: boolean;
 }
 
-const SessionManager: React.FC<SessionManagerProps> = ({
+export interface SessionManagerRef {
+  refresh: () => void;
+}
+
+const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
   onHierarchyLoad,
-  isTestMode = false,
   showDebug = false
-}) => {
+}, ref) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rawHierarchy, setRawHierarchy] = useState<any>(null);
@@ -34,23 +36,14 @@ const SessionManager: React.FC<SessionManagerProps> = ({
     setLoading(true);
     setError(null);
     try {
-      console.log('Loading tmux hierarchy...');
       const response = await tmuxAPI.getHierarchy();
-      console.log('Raw hierarchy response:', response);
-      
       setRawHierarchy(response.data);
-      
-      // The hierarchy should be directly in response.data
+
       const hierarchyData = response.data;
-      console.log('Hierarchy data:', hierarchyData);
-      
       if (hierarchyData && typeof hierarchyData === 'object') {
-        // Convert the raw data to our expected format
         const formattedHierarchy: TmuxHierarchy = {
           sessions: hierarchyData
         };
-        
-        console.log('Formatted hierarchy:', formattedHierarchy);
         setHierarchy(formattedHierarchy);
         onHierarchyLoad(formattedHierarchy);
       } else {
@@ -58,11 +51,16 @@ const SessionManager: React.FC<SessionManagerProps> = ({
       }
     } catch (err) {
       console.error('Error loading hierarchy:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load tmux hierarchy');
+      setError(err instanceof Error ? err.message : '階層の読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
   }, [onHierarchyLoad]);
+
+  // Expose refresh method via ref
+  useImperativeHandle(ref, () => ({
+    refresh: loadHierarchy
+  }), [loadHierarchy]);
 
   useEffect(() => {
     loadHierarchy();
@@ -139,6 +137,8 @@ const SessionManager: React.FC<SessionManagerProps> = ({
       </Stack>
     </Box>
   );
-};
+});
+
+SessionManager.displayName = 'SessionManager';
 
 export default SessionManager;

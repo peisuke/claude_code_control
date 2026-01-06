@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { FolderOpen, Terminal } from '@mui/icons-material';
 import SessionTreeView from '../tmux/SessionTreeView';
-import SessionManager from '../tmux/SessionManager';
+import SessionManager, { SessionManagerRef } from '../tmux/SessionManager';
 import FileExplorer from '../file/FileExplorer';
 import { TmuxHierarchy } from '../../types';
 
@@ -34,6 +34,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   onViewModeChange
 }) => {
   const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
+  const sessionManagerRef = useRef<SessionManagerRef>(null);
+
+  const handleRefresh = useCallback(() => {
+    sessionManagerRef.current?.refresh();
+  }, []);
 
   // Sync activeTab with viewMode
   const activeTab = viewMode === 'tmux' ? 0 : 1;
@@ -68,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {activeTab === 0 && (
         <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ p: 1 }}>
-            <SessionManager onHierarchyLoad={handleHierarchyLoad} />
+            <SessionManager ref={sessionManagerRef} onHierarchyLoad={handleHierarchyLoad} />
           </Box>
           <Divider />
           <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -76,6 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               hierarchy={hierarchy}
               selectedTarget={selectedTarget}
               onTargetChange={onTargetChange}
+              onRefresh={handleRefresh}
             />
           </Box>
         </Box>
