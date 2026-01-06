@@ -2,13 +2,16 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 import os
 import pathlib
+import base64
+import mimetypes
 
 from ..models import ApiResponse
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
 # Configuration
-ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.md', '.txt', '.yml', '.yaml', '.toml', '.css', '.html', '.sh', '.env', '.log', '.conf', '.cfg', '.ini', '.xml', '.sql', '.csv', '.php', '.rb', '.go', '.rs', '.cpp', '.c', '.h', '.java', '.kt', '.swift', '.dart', '.vue', '.svelte', '.scss', '.sass', '.less', '.R', '.m', '.pl', '.lua', '.vim', '.zsh', '.bash', '.fish', '.ps1', '.bat', '.dockerfile', '.gitignore', '.gitattributes', '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc', '.config', '.profile', '.bashrc', '.zshrc', '.vimrc', ''}
+ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.md', '.txt', '.yml', '.yaml', '.toml', '.css', '.html', '.sh', '.env', '.log', '.conf', '.cfg', '.ini', '.xml', '.sql', '.csv', '.php', '.rb', '.go', '.rs', '.cpp', '.c', '.h', '.java', '.kt', '.swift', '.dart', '.vue', '.svelte', '.scss', '.sass', '.less', '.R', '.m', '.pl', '.lua', '.vim', '.zsh', '.bash', '.fish', '.ps1', '.bat', '.dockerfile', '.gitignore', '.gitattributes', '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc', '.config', '.profile', '.bashrc', '.zshrc', '.vimrc', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico', ''}
+IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico'}
 MAX_FILE_SIZE = 1024 * 1024 * 5  # 5MB
 BASE_PATH = '/'  # Filesystem root as base
 INITIAL_PATH = os.getcwd()  # Current working directory as starting point
@@ -175,43 +178,74 @@ async def get_file_content(path: str):
     try:
         # Use absolute path directly
         full_path = os.path.abspath(path)
-        
+
         if not is_safe_path(full_path):
             raise HTTPException(status_code=403, detail="Access denied")
-        
+
         if not os.path.exists(full_path):
             raise HTTPException(status_code=404, detail="File not found")
-            
+
         if not os.path.isfile(full_path):
             raise HTTPException(status_code=400, detail="Path is not a file")
-            
+
         # Check file size
         file_size = os.path.getsize(full_path)
         if file_size > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File too large")
-            
-        # Read file content
-        try:
-            with open(full_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        except UnicodeDecodeError:
-            # Try with different encoding
+
+        # Check if file is an image
+        file_ext = os.path.splitext(full_path)[1].lower()
+        is_image = file_ext in IMAGE_EXTENSIONS
+
+        if is_image:
+            # Read binary content and encode to base64
             try:
-                with open(full_path, 'r', encoding='latin-1') as f:
+                with open(full_path, 'rb') as f:
+                    binary_content = f.read()
+                    base64_content = base64.b64encode(binary_content).decode('utf-8')
+
+                # Get MIME type
+                mime_type, _ = mimetypes.guess_type(full_path)
+                if not mime_type:
+                    mime_type = 'application/octet-stream'
+
+                return ApiResponse(
+                    success=True,
+                    message="Image file retrieved successfully",
+                    data={
+                        'path': path,
+                        'content': base64_content,
+                        'size': file_size,
+                        'is_image': True,
+                        'mime_type': mime_type
+                    }
+                )
+            except Exception as e:
+                raise HTTPException(status_code=422, detail=f"Unable to read image file: {str(e)}")
+        else:
+            # Read text file content
+            try:
+                with open(full_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-            except:
-                raise HTTPException(status_code=422, detail="Unable to decode file content")
-                
-        return ApiResponse(
-            success=True,
-            message="File content retrieved successfully",
-            data={
-                'path': path,
-                'content': content,
-                'size': file_size
-            }
-        )
-        
+            except UnicodeDecodeError:
+                # Try with different encoding
+                try:
+                    with open(full_path, 'r', encoding='latin-1') as f:
+                        content = f.read()
+                except:
+                    raise HTTPException(status_code=422, detail="Unable to decode file content")
+
+            return ApiResponse(
+                success=True,
+                message="File content retrieved successfully",
+                data={
+                    'path': path,
+                    'content': content,
+                    'size': file_size,
+                    'is_image': False
+                }
+            )
+
     except HTTPException:
         raise
     except Exception as e:

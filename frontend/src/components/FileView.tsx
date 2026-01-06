@@ -12,6 +12,8 @@ const FileView: React.FC<FileViewProps> = ({ isConnected }) => {
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [hasFileContent, setHasFileContent] = useState<boolean>(false);
   const [fileContent, setFileContent] = useState<string>('');
+  const [isImage, setIsImage] = useState<boolean>(false);
+  const [mimeType, setMimeType] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +44,13 @@ const FileView: React.FC<FileViewProps> = ({ isConnected }) => {
   const handleFileOpen = async (path: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await tmuxAPI.getFileContent(path);
       if (response.success && response.data?.content !== undefined) {
         setFileContent(response.data.content);
+        setIsImage(response.data.is_image || false);
+        setMimeType(response.data.mime_type || '');
         setHasFileContent(true);
       } else {
         throw new Error(response.message || 'Failed to load file content');
@@ -79,6 +83,8 @@ const FileView: React.FC<FileViewProps> = ({ isConnected }) => {
           onFileDeselect={handleFileDeselect}
           onFileContentChange={setHasFileContent}
           fileContent={fileContent}
+          isImage={isImage}
+          mimeType={mimeType}
           loading={loading}
           error={error}
         />
