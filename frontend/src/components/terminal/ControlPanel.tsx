@@ -8,8 +8,7 @@ import {
 import {
   Folder,
   Terminal,
-  Settings,
-  BugReport
+  Settings
 } from '@mui/icons-material';
 import { VIEW_MODES, LABELS } from '../../constants/ui';
 import ConnectionStatus from '../ConnectionStatus';
@@ -84,15 +83,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               isOnline={isOnline}
               onReconnect={onReconnect}
             />
-            {process.env.REACT_APP_TEST_MODE === 'true' && (
-              <Button
-                variant="outlined"
-                size="small"
-                title="デバッグ情報"
-              >
-                <BugReport fontSize="small" />
-              </Button>
-            )}
             <Button
               variant="outlined"
               startIcon={<Settings />}
