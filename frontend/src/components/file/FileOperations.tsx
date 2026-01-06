@@ -94,9 +94,9 @@ const FileOperations: React.FC<FileOperationsProps> = ({
     <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* File Content - Show when loaded */}
       {fileContent !== undefined ? (
-        <Stack sx={{ p: 2, height: '100%' }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography 
+        <Stack sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2, flexShrink: 0 }}>
+            <Typography
               variant="subtitle1"
               sx={{
                 overflow: 'hidden',
@@ -108,8 +108,8 @@ const FileOperations: React.FC<FileOperationsProps> = ({
             >
               {selectedFile.split('/').pop()}
             </Typography>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleCloseFile}
               title="閉じる"
             >
@@ -119,11 +119,12 @@ const FileOperations: React.FC<FileOperationsProps> = ({
           <Box
             sx={{
               flex: 1,
+              minHeight: 0,
               overflow: 'auto',
               backgroundColor: isImage ? '#f5f5f5' : '#1e1e1e',
               borderRadius: 1,
               display: 'flex',
-              justifyContent: 'center',
+              justifyContent: isImage ? 'center' : 'flex-start',
               alignItems: isImage ? 'center' : 'flex-start'
             }}
           >
@@ -159,7 +160,11 @@ const FileOperations: React.FC<FileOperationsProps> = ({
                     fontSize: '13px',
                     fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
                     backgroundColor: '#1e1e1e',
-                    borderRadius: '4px'
+                    borderRadius: '4px',
+                    width: '100%',
+                    minWidth: 0,
+                    height: 'auto',
+                    overflow: 'visible'
                   }}
                   showLineNumbers={true}
                   lineNumberStyle={{

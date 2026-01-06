@@ -71,6 +71,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   onSettingsOpen
 }) => {
   const [selectedFile, setSelectedFile] = useState<string>('');
+  const [openedFile, setOpenedFile] = useState<string>('');
   const [hasFileContent, setHasFileContent] = useState<boolean>(false);
   const [fileContent, setFileContent] = useState<string>('');
   const [isImage, setIsImage] = useState<boolean>(false);
@@ -84,6 +85,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
 
   const handleFileDeselect = () => {
     setSelectedFile('');
+    setOpenedFile('');
     setHasFileContent(false);
   };
 
@@ -98,6 +100,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
     try {
       const response = await tmuxAPI.getFileContent(path);
       if (response.success && response.data?.content !== undefined) {
+        setOpenedFile(path);
         setFileContent(response.data.content);
         setIsImage(response.data.is_image || false);
         setMimeType(response.data.mime_type || '');
@@ -146,7 +149,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
       {/* Main Content Area */}
       <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', p: 2, gap: 2 }}>
         {/* Left Sidebar */}
-        <Box sx={{ width: 300, flexShrink: 0, overflow: 'hidden' }}>
+        <Box sx={{ width: 360, flexShrink: 0, overflow: 'hidden' }}>
           <Sidebar
             selectedTarget={selectedTarget}
             onTargetChange={onTargetChange}
@@ -182,10 +185,10 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
 
           {/* File View */}
           {viewMode === VIEW_MODES.FILE && (
-            <Paper sx={{ height: '100%', overflow: 'hidden' }}>
+            <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {hasFileContent ? (
                 <FileOperations
-                  selectedFile={selectedFile}
+                  selectedFile={openedFile}
                   onFileDeselect={handleFileDeselect}
                   onFileContentChange={setHasFileContent}
                   fileContent={fileContent}
