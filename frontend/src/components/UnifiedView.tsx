@@ -25,7 +25,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
       isConnected={isConnected}
     >
       {(state, handlers) => (
-        <Stack spacing={2} sx={{ height: '100vh', p: 2, overflow: 'hidden' }}>
+        <Stack spacing={1.5} sx={{ height: '100vh', p: 1, overflow: 'hidden' }}>
           {/* Control Panel - Fixed height */}
           <Paper sx={{ flexShrink: 0 }}>
             <ControlPanel
@@ -40,10 +40,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               onSettingsOpen={onSettingsOpen}
               selectedTarget={selectedTarget}
               onTargetChange={onTargetChange}
-              autoRefresh={state.autoRefresh}
-              onAutoRefreshToggle={handlers.handleAutoRefreshToggle}
               isLoading={state.isLoading}
-              onRefresh={handlers.handleRefresh}
               error={state.error}
               wsError={state.wsError}
             />
@@ -60,9 +57,10 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               onSendCommand={handlers.handleSendCommand}
               onSendEnter={handlers.handleSendEnter}
               onSendKeyboardCommand={handlers.handleKeyboardCommand}
-              onShowHistory={handlers.handleShowHistory}
               onToggleExpanded={() => handlers.setCommandExpanded(!state.commandExpanded)}
               isLoading={state.isLoading}
+              selectedTarget={selectedTarget}
+              onOutputUpdate={handlers.setOutput}
             />
           )}
           

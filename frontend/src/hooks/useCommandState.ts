@@ -3,11 +3,8 @@ import { useTmuxCommands } from './useTmuxCommands';
 
 interface UseCommandStateProps {
   selectedTarget: string;
-  autoRefresh: boolean;
-  setAutoRefresh: (value: boolean) => void;
   onRefresh: () => Promise<void>;
   onOutput: (output: string) => void;
-  wsDisconnect: () => void;
 }
 
 interface CommandState {
@@ -19,7 +16,6 @@ interface CommandHandlers {
   handleSendCommand: () => Promise<void>;
   handleSendEnter: () => Promise<void>;
   handleKeyboardCommand: (keyCommand: string) => Promise<void>;
-  handleShowHistory: () => Promise<void>;
   setCommand: (command: string) => void;
   setCommandExpanded: (expanded: boolean) => void;
 }
@@ -35,22 +31,16 @@ interface UseCommandStateReturn {
  */
 export const useCommandState = ({
   selectedTarget,
-  autoRefresh,
-  setAutoRefresh,
   onRefresh,
-  onOutput,
-  wsDisconnect
+  onOutput
 }: UseCommandStateProps): UseCommandStateReturn => {
   const [command, setCommand] = useState('');
   const [commandExpanded, setCommandExpanded] = useState(false);
 
   // Initialize tmux commands hook
-  const { sendCommand, sendEnter, sendKeyboardCommand, showHistory } = useTmuxCommands({
+  const { sendCommand, sendEnter, sendKeyboardCommand } = useTmuxCommands({
     onRefresh,
-    onOutput,
-    autoRefresh,
-    setAutoRefresh,
-    wsDisconnect
+    onOutput
   });
 
   // Handle command send
@@ -84,15 +74,6 @@ export const useCommandState = ({
     }
   }, [sendKeyboardCommand, selectedTarget]);
 
-  // Handle show history
-  const handleShowHistory = useCallback(async () => {
-    try {
-      await showHistory(selectedTarget);
-    } catch (error) {
-      console.error('Error getting history:', error);
-    }
-  }, [showHistory, selectedTarget]);
-
   const state: CommandState = {
     command,
     commandExpanded
@@ -102,7 +83,6 @@ export const useCommandState = ({
     handleSendCommand,
     handleSendEnter,
     handleKeyboardCommand,
-    handleShowHistory,
     setCommand,
     setCommandExpanded
   };

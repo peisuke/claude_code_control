@@ -1,72 +1,69 @@
-import React, { useRef, useEffect } from 'react';
-import { Box, Stack, Button } from '@mui/material';
-import { History } from '@mui/icons-material';
+import React from 'react';
+import { Box, Stack, CircularProgress, Typography } from '@mui/material';
 import Convert from 'ansi-to-html';
 import { TERMINAL, LABELS } from '../../constants/ui';
-import { ScrollUtils } from '../../utils/scroll';
 
 const convert = new Convert();
 
 interface TerminalOutputProps {
   output: string;
   isConnected: boolean;
-  autoScroll?: boolean;
-  onShowHistory?: () => Promise<void>;
-  isLoading?: boolean;
+  onScroll?: (e: React.UIEvent<HTMLElement>) => void;
+  outputRef?: React.RefObject<HTMLDivElement>;
+  isLoadingHistory?: boolean;
 }
 
 const TerminalOutput: React.FC<TerminalOutputProps> = ({
   output,
   isConnected,
-  autoScroll = true,
-  onShowHistory,
-  isLoading = false
+  onScroll,
+  outputRef,
+  isLoadingHistory = false
 }) => {
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll when output changes
-  useEffect(() => {
-    if (output && autoScroll) {
-      ScrollUtils.scrollToBottom(outputRef.current);
-    }
-  }, [output, autoScroll]);
-
   return (
-    <Stack sx={{ flex: 1, minHeight: 0 }}>
-      {/* Header with History button */}
-      {onShowHistory && (
-        <Stack direction="row" justifyContent="flex-start" sx={{ p: 1, pb: 0 }}>
-          <Button
-            variant="outlined"
-            onClick={onShowHistory}
-            disabled={!isConnected || isLoading}
-            sx={{ minWidth: 'auto', px: 1 }}
-            size="small"
-            title="履歴を表示"
-          >
-            <History />
-          </Button>
-        </Stack>
+    <Stack sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
+      {/* Loading indicator for history */}
+      {isLoadingHistory && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 8,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10,
+            backgroundColor: 'background.paper',
+            borderRadius: 1,
+            px: 2,
+            py: 1,
+            boxShadow: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <CircularProgress size={16} />
+          <Typography variant="caption">履歴を読み込み中...</Typography>
+        </Box>
       )}
-      
+
       {/* Terminal Output */}
       <Box
         ref={outputRef}
+        onScroll={onScroll}
         sx={{
           flex: 1,
           minHeight: 0,
           overflow: 'auto',
           fontFamily: TERMINAL.FONT_FAMILY,
-          fontSize: { 
-            xs: TERMINAL.FONT_SIZES.xs, 
-            sm: TERMINAL.FONT_SIZES.sm, 
-            md: TERMINAL.FONT_SIZES.md 
+          fontSize: {
+            xs: TERMINAL.FONT_SIZES.xs,
+            sm: TERMINAL.FONT_SIZES.sm,
+            md: TERMINAL.FONT_SIZES.md
           },
           backgroundColor: TERMINAL.BACKGROUND_COLOR,
           color: TERMINAL.TEXT_COLOR,
           p: 2,
           m: 2,
-          mt: onShowHistory ? 1 : 1,
           borderRadius: 1,
           whiteSpace: 'pre',
           WebkitOverflowScrolling: 'touch',
@@ -78,10 +75,10 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
         }}
       >
         {output ? (
-          <div 
-            dangerouslySetInnerHTML={{ 
-              __html: convert.toHtml(output) 
-            }} 
+          <div
+            dangerouslySetInnerHTML={{
+              __html: convert.toHtml(output)
+            }}
           />
         ) : (
           LABELS.PLACEHOLDERS.TMUX_OUTPUT
