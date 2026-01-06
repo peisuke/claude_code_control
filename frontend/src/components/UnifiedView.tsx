@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Paper, useMediaQuery, useTheme, Drawer, IconButton, Box, Toolbar, Typography } from '@mui/material';
 import { Menu as MenuIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import TmuxViewContainer from './tmux/TmuxViewContainer';
@@ -8,7 +8,7 @@ import DesktopLayout from './desktop/DesktopLayout';
 import Sidebar from './desktop/Sidebar';
 import ConnectionStatus from './ConnectionStatus';
 import { VIEW_MODES } from '../constants/ui';
-import { tmuxAPI } from '../services/api';
+import { useFileContent } from '../hooks/useFileContent';
 
 interface UnifiedViewProps {
   isConnected: boolean;
@@ -26,56 +26,29 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<string>('');
-  const [openedFile, setOpenedFile] = useState<string>('');
-  const [hasFileContent, setHasFileContent] = useState<boolean>(false);
-  const [fileContent, setFileContent] = useState<string>('');
-  const [isImage, setIsImage] = useState<boolean>(false);
-  const [mimeType, setMimeType] = useState<string>('');
-  const [fileLoading, setFileLoading] = useState<boolean>(false);
-  const [fileError, setFileError] = useState<string | null>(null);
 
-  const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
-  };
+  const handleDrawerToggle = useCallback(() => {
+    setDrawerOpen(prev => !prev);
+  }, []);
 
-  const handleFileSelect = (path: string) => {
-    setSelectedFile(path);
-  };
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
 
-  const handleDirectoryChange = (path: string) => {
-    // Handled within FileExplorer
-  };
-
-  const handleFileDeselect = () => {
-    setSelectedFile('');
-    setOpenedFile('');
-    setHasFileContent(false);
-  };
-
-  const handleFileOpen = async (path: string) => {
-    setFileLoading(true);
-    setFileError(null);
-
-    try {
-      const response = await tmuxAPI.getFileContent(path);
-      if (response.success && response.data?.content !== undefined) {
-        setOpenedFile(path);
-        setFileContent(response.data.content);
-        setIsImage(response.data.is_image || false);
-        setMimeType(response.data.mime_type || '');
-        setHasFileContent(true);
-        setDrawerOpen(false); // Close drawer after opening file
-      } else {
-        throw new Error(response.message || 'Failed to load file content');
-      }
-    } catch (err) {
-      setFileError(err instanceof Error ? err.message : 'Failed to load file content');
-      console.error('Failed to open file:', err);
-    } finally {
-      setFileLoading(false);
-    }
-  };
+  // Use file content hook with drawer close callback for mobile
+  const {
+    selectedFile,
+    openedFile,
+    hasFileContent,
+    fileContent,
+    isImage,
+    mimeType,
+    fileLoading,
+    fileError,
+    handleFileSelect,
+    handleFileDeselect,
+    handleFileOpen,
+  } = useFileContent(closeDrawer);
 
   return (
     <ViewStateCoordinator
@@ -174,7 +147,6 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                   }}
                   selectedFile={selectedFile}
                   onFileSelect={handleFileSelect}
-                  onDirectoryChange={handleDirectoryChange}
                   onFileOpen={handleFileOpen}
                   isConnected={isConnected}
                   viewMode={state.viewMode as 'tmux' | 'file'}
@@ -207,7 +179,6 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                       <FileOperations
                         selectedFile={openedFile}
                         onFileDeselect={handleFileDeselect}
-                        onFileContentChange={setHasFileContent}
                         fileContent={fileContent}
                         isImage={isImage}
                         mimeType={mimeType}

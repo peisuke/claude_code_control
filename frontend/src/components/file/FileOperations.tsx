@@ -4,7 +4,9 @@ import {
   Paper,
   Stack,
   Typography,
-  IconButton
+  IconButton,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import {
   Close
@@ -15,7 +17,6 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 interface FileOperationsProps {
   selectedFile: string;
   onFileDeselect: () => void;
-  onFileContentChange?: (hasContent: boolean) => void;
   fileContent?: string;
   isImage?: boolean;
   mimeType?: string;
@@ -26,7 +27,6 @@ interface FileOperationsProps {
 const FileOperations: React.FC<FileOperationsProps> = ({
   selectedFile,
   onFileDeselect,
-  onFileContentChange,
   fileContent = '',
   isImage = false,
   mimeType = '',
@@ -84,11 +84,38 @@ const FileOperations: React.FC<FileOperationsProps> = ({
   };
 
   const handleCloseFile = () => {
-    onFileContentChange?.(false);
     onFileDeselect();
-    // Clear selected file from session storage
     sessionStorage.removeItem('fileViewSelectedFile');
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 2 }}>
+          <CircularProgress size={24} />
+          <Typography variant="body1" color="text.secondary">
+            ファイルを読み込み中...
+          </Typography>
+        </Box>
+      </Paper>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 2 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="subtitle1">{selectedFile.split('/').pop()}</Typography>
+          <IconButton size="small" onClick={handleCloseFile} title="閉じる">
+            <Close />
+          </IconButton>
+        </Stack>
+        <Alert severity="error">{error}</Alert>
+      </Paper>
+    );
+  }
 
   return (
     <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

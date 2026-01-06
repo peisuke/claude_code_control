@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Box, Paper, Stack, IconButton, Toolbar, Typography } from '@mui/material';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import Sidebar from './Sidebar';
@@ -6,7 +6,7 @@ import TmuxViewContainer from '../tmux/TmuxViewContainer';
 import FileOperations from '../file/FileOperations';
 import ConnectionStatus from '../ConnectionStatus';
 import { VIEW_MODES } from '../../constants/ui';
-import { tmuxAPI } from '../../services/api';
+import { useFileContent } from '../../hooks/useFileContent';
 
 interface DesktopLayoutProps {
   // View state
@@ -70,51 +70,19 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   error,
   onSettingsOpen
 }) => {
-  const [selectedFile, setSelectedFile] = useState<string>('');
-  const [openedFile, setOpenedFile] = useState<string>('');
-  const [hasFileContent, setHasFileContent] = useState<boolean>(false);
-  const [fileContent, setFileContent] = useState<string>('');
-  const [isImage, setIsImage] = useState<boolean>(false);
-  const [mimeType, setMimeType] = useState<string>('');
-  const [fileLoading, setFileLoading] = useState<boolean>(false);
-  const [fileError, setFileError] = useState<string | null>(null);
-
-  const handleFileSelect = (path: string) => {
-    setSelectedFile(path);
-  };
-
-  const handleFileDeselect = () => {
-    setSelectedFile('');
-    setOpenedFile('');
-    setHasFileContent(false);
-  };
-
-  const handleDirectoryChange = (path: string) => {
-    // Directory changes are handled within Sidebar
-  };
-
-  const handleFileOpen = async (path: string) => {
-    setFileLoading(true);
-    setFileError(null);
-
-    try {
-      const response = await tmuxAPI.getFileContent(path);
-      if (response.success && response.data?.content !== undefined) {
-        setOpenedFile(path);
-        setFileContent(response.data.content);
-        setIsImage(response.data.is_image || false);
-        setMimeType(response.data.mime_type || '');
-        setHasFileContent(true);
-      } else {
-        throw new Error(response.message || 'Failed to load file content');
-      }
-    } catch (err) {
-      setFileError(err instanceof Error ? err.message : 'Failed to load file content');
-      console.error('Failed to open file:', err);
-    } finally {
-      setFileLoading(false);
-    }
-  };
+  const {
+    selectedFile,
+    openedFile,
+    hasFileContent,
+    fileContent,
+    isImage,
+    mimeType,
+    fileLoading,
+    fileError,
+    handleFileSelect,
+    handleFileDeselect,
+    handleFileOpen,
+  } = useFileContent();
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'grey.100' }}>
@@ -156,7 +124,6 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
             onTargetChange={onTargetChange}
             selectedFile={selectedFile}
             onFileSelect={handleFileSelect}
-            onDirectoryChange={handleDirectoryChange}
             onFileOpen={handleFileOpen}
             isConnected={isConnected}
             viewMode={viewMode}
@@ -191,7 +158,6 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
                 <FileOperations
                   selectedFile={openedFile}
                   onFileDeselect={handleFileDeselect}
-                  onFileContentChange={setHasFileContent}
                   fileContent={fileContent}
                   isImage={isImage}
                   mimeType={mimeType}

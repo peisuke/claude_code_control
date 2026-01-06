@@ -17,7 +17,6 @@ interface SidebarProps {
   onTargetChange: (target: string) => void;
   selectedFile: string;
   onFileSelect: (path: string) => void;
-  onDirectoryChange: (path: string) => void;
   onFileOpen?: (path: string) => void;
   isConnected: boolean;
   viewMode: 'tmux' | 'file';
@@ -29,7 +28,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   onTargetChange,
   selectedFile,
   onFileSelect,
-  onDirectoryChange,
   onFileOpen,
   isConnected,
   viewMode,
@@ -90,7 +88,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             isConnected={isConnected}
             selectedFile={selectedFile}
             onFileSelect={onFileSelect}
-            onDirectoryChange={onDirectoryChange}
             onFileOpen={onFileOpen}
           />
         </Box>
