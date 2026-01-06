@@ -177,10 +177,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                   onFileOpen={handleFileOpen}
                   isConnected={isConnected}
                   viewMode={state.viewMode as 'tmux' | 'file'}
-                  onViewModeChange={(mode) => {
-                    handleViewModeChange(mode);
-                    setDrawerOpen(false); // Close drawer after tab change
-                  }}
+                  onViewModeChange={handleViewModeChange}
                 />
               </Drawer>
 

@@ -60,9 +60,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     >
       {/* Header with Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth">
-          <Tab icon={<Terminal fontSize="small" />} label="セッション" iconPosition="start" />
-          <Tab icon={<FolderOpen fontSize="small" />} label="ファイル" iconPosition="start" />
+        <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ minHeight: 40 }}>
+          <Tab icon={<Terminal fontSize="small" />} label="セッション" iconPosition="start" sx={{ minHeight: 40, py: 0.5 }} />
+          <Tab icon={<FolderOpen fontSize="small" />} label="ファイル" iconPosition="start" sx={{ minHeight: 40, py: 0.5 }} />
         </Tabs>
       </Box>
 
