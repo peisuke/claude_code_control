@@ -84,12 +84,10 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       {/* Command Input - Full height when expanded */}
       <Paper sx={{
         p: 1.5,
-        flexShrink: commandExpanded ? 1 : 0,
         flex: commandExpanded ? 1 : 'none',
         minHeight: commandExpanded ? 0 : 'auto',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'flex 0.3s ease-in-out',
         overflow: 'hidden'
       }}>
         <CommandInputArea

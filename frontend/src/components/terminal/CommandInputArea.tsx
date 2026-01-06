@@ -28,7 +28,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   isExpanded,
   onToggleExpanded
 }) => {
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
       onSendCommand();
@@ -100,7 +100,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
           placeholder={LABELS.PLACEHOLDERS.COMMAND_INPUT}
           value={command}
           onChange={(e) => onCommandChange(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           disabled={disabled}
           size="small"
           autoComplete="off"
@@ -114,7 +114,8 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
               height: '100%',
               alignItems: 'flex-start'
             },
-            '& .MuiInputBase-input, & textarea': {
+            // !important is needed to override MUI's internal textarea styles
+            '& textarea': {
               height: '100% !important',
               overflow: 'auto !important',
               resize: 'none'
