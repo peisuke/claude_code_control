@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   IconButton,
@@ -20,11 +20,15 @@ interface SessionManagerProps {
   showDebug?: boolean;
 }
 
-const SessionManager: React.FC<SessionManagerProps> = ({
+export interface SessionManagerRef {
+  refresh: () => void;
+}
+
+const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
   onHierarchyLoad,
   isTestMode = false,
   showDebug = false
-}) => {
+}, ref) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rawHierarchy, setRawHierarchy] = useState<any>(null);
@@ -63,6 +67,11 @@ const SessionManager: React.FC<SessionManagerProps> = ({
       setLoading(false);
     }
   }, [onHierarchyLoad]);
+
+  // Expose refresh method via ref
+  useImperativeHandle(ref, () => ({
+    refresh: loadHierarchy
+  }), [loadHierarchy]);
 
   useEffect(() => {
     loadHierarchy();
@@ -139,6 +148,8 @@ const SessionManager: React.FC<SessionManagerProps> = ({
       </Stack>
     </Box>
   );
-};
+});
+
+SessionManager.displayName = 'SessionManager';
 
 export default SessionManager;
