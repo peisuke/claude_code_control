@@ -33,7 +33,7 @@ interface FileExplorerProps {
   isConnected: boolean;
   selectedFile: string;
   onFileSelect: (path: string) => void;
-  onDirectoryChange: (path: string) => void;
+  onDirectoryChange?: (path: string) => void;
   onFileOpen?: (path: string) => void;
 }
 
@@ -70,7 +70,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         setBreadcrumbs(actualPath ? actualPath.split('/').filter(Boolean) : []);
         // Save current path to session storage
         sessionStorage.setItem('fileViewCurrentPath', actualPath);
-        onDirectoryChange(actualPath);
+        onDirectoryChange?.(actualPath);
       } else {
         throw new Error(response.message || 'Failed to load file tree');
       }

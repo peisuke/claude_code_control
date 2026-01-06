@@ -1,5 +1,5 @@
 import React from 'react';
-import { Paper } from '@mui/material';
+import { Paper, Box } from '@mui/material';
 import TerminalOutput from '../terminal/TerminalOutput';
 import CommandInputArea from '../terminal/CommandInputArea';
 import TmuxKeyboard from '../terminal/TmuxKeyboard';
@@ -53,7 +53,12 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   }, [output, setOutput]);
 
   return (
-    <>
+    <Box sx={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden'
+    }}>
       {/* Terminal Output - Fixed container, always present for stable layout */}
       <Paper sx={{
         flex: 1,
@@ -99,7 +104,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           onToggleExpanded={onToggleExpanded}
         />
       </Paper>
-    </>
+    </Box>
   );
 };
 
