@@ -120,6 +120,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
               handleDirectoryClick(node.path);
             } else {
               onFileSelect(node.path);
+              onFileOpen?.(node.path);
             }
           }}
           selected={selectedFile === node.path}
@@ -152,37 +153,23 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
         {/* Breadcrumbs and Navigation */}
         <Stack spacing={1}>
-          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Button 
-                size="small" 
-                onClick={() => handleBreadcrumbClick(-1)}
-                startIcon={<Folder />}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              size="small"
+              onClick={() => handleBreadcrumbClick(-1)}
+              startIcon={<Folder />}
+              variant="outlined"
+            >
+              ルート
+            </Button>
+            {currentPath && currentPath !== '/' && (
+              <Button
+                size="small"
+                onClick={handleGoToParent}
+                startIcon={<ChevronRight style={{ transform: 'rotate(180deg)' }} />}
                 variant="outlined"
               >
-                ルート
-              </Button>
-              {currentPath && currentPath !== '/' && (
-                <Button 
-                  size="small" 
-                  onClick={handleGoToParent}
-                  startIcon={<ChevronRight style={{ transform: 'rotate(180deg)' }} />}
-                  variant="outlined"
-                >
-                  親フォルダ
-                </Button>
-              )}
-            </Stack>
-            
-            {/* Open File Button */}
-            {selectedFile && onFileOpen && (
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => onFileOpen(selectedFile)}
-                startIcon={<InsertDriveFile />}
-              >
-                Open
+                親フォルダ
               </Button>
             )}
           </Stack>
