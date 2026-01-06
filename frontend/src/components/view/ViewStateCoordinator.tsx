@@ -40,17 +40,17 @@ export interface CoordinatedHandlers {
   handleSendCommand: () => Promise<void>;
   handleSendEnter: () => Promise<void>;
   handleKeyboardCommand: (keyCommand: string) => Promise<void>;
-  handleShowHistory: () => Promise<void>;
   setCommand: (command: string) => void;
   setCommandExpanded: (expanded: boolean) => void;
-  
+
   // View handlers
   handleViewModeToggle: () => void;
   handleAutoRefreshToggle: () => void;
-  
+
   // Output handlers
   handleRefresh: () => Promise<void>;
-  
+  setOutput: (output: string) => void;
+
   // Connection handlers
   wsResetAndReconnect: () => void;
 }
@@ -111,11 +111,8 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
     handlers: commandHandlers
   } = useCommandState({
     selectedTarget,
-    autoRefresh: viewState.autoRefresh,
-    setAutoRefresh: viewHandlers.setAutoRefresh,
     onRefresh: outputHandlers.handleRefresh,
-    onOutput: outputHandlers.setOutput,
-    wsDisconnect: connectionHandlers.wsDisconnect
+    onOutput: outputHandlers.setOutput
   });
 
   // Coordinate auto-refresh logic
@@ -159,6 +156,7 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
   const coordinatedHandlers: CoordinatedHandlers = {
     ...commandHandlers,
     ...outputHandlers,
+    setOutput: outputHandlers.setOutput,
     handleViewModeToggle: viewHandlers.handleViewModeToggle,
     handleAutoRefreshToggle,
     wsResetAndReconnect: connectionHandlers.wsResetAndReconnect

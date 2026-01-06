@@ -81,12 +81,9 @@ const ViewStateManager: React.FC<ViewStateManagerProps> = ({
   }, [getOutput, selectedTarget, setOutput, scrollToBottom]);
 
   // Initialize tmux commands hook
-  const { sendCommand, sendEnter, sendKeyboardCommand, showHistory } = useTmuxCommands({
+  const { sendCommand, sendEnter, sendKeyboardCommand } = useTmuxCommands({
     onRefresh: handleRefresh,
-    onOutput: setOutput,
-    autoRefresh,
-    setAutoRefresh,
-    wsDisconnect
+    onOutput: setOutput
   });
 
   // Handle command send
@@ -118,15 +115,11 @@ const ViewStateManager: React.FC<ViewStateManagerProps> = ({
     }
   }, [sendKeyboardCommand, selectedTarget]);
 
-  // Handle show history
+  // History is now handled by scroll-based loading in TerminalOutput
   const handleShowHistory = useCallback(async () => {
-    try {
-      await showHistory(selectedTarget);
-      setTimeout(() => scrollToBottom(), TIMING.SCROLL_ANIMATION_DELAY);
-    } catch (error) {
-      console.error('Error getting history:', error);
-    }
-  }, [showHistory, selectedTarget, scrollToBottom]);
+    // No-op: History is now loaded automatically when scrolling
+    console.log('History is now loaded automatically when scrolling to top');
+  }, []);
 
   // Handle view mode toggle
   const handleViewModeToggle = useCallback(() => {

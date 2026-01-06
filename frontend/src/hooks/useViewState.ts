@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useLocalStorageString, useLocalStorageBoolean } from './useLocalStorageState';
+import { useLocalStorageString } from './useLocalStorageState';
 import { VIEW_MODES } from '../constants/ui';
 
 interface ViewState {
@@ -21,9 +21,11 @@ interface UseViewStateReturn {
 /**
  * Manages UI view state and mode switching
  * Single Responsibility: View mode management only
+ * Note: Auto-refresh is now always enabled for scroll-based history loading
  */
 export const useViewState = (): UseViewStateReturn => {
-  const [autoRefresh, setAutoRefresh] = useLocalStorageBoolean('tmux-auto-refresh', true);
+  // Auto-refresh is always enabled for scroll-based infinite history
+  const autoRefresh = true;
   const [viewMode, setViewMode] = useLocalStorageString('tmux-view-mode', VIEW_MODES.TMUX);
 
   // Handle view mode toggle
@@ -32,11 +34,16 @@ export const useViewState = (): UseViewStateReturn => {
     setViewMode(newMode);
   }, [viewMode, setViewMode]);
 
-  // Handle auto-refresh toggle (logic moved to useAutoRefreshState)
+  // Auto-refresh toggle is now a no-op (kept for backward compatibility)
   const handleAutoRefreshToggle = useCallback(() => {
-    const newAutoRefresh = !autoRefresh;
-    setAutoRefresh(newAutoRefresh);
-  }, [autoRefresh, setAutoRefresh]);
+    // Auto-refresh is always on, so this does nothing
+    console.log('Auto-refresh is always enabled');
+  }, []);
+
+  // setAutoRefresh is now a no-op (kept for backward compatibility)
+  const setAutoRefresh = useCallback(() => {
+    // Auto-refresh is always on, so this does nothing
+  }, []);
 
   const state: ViewState = {
     autoRefresh,

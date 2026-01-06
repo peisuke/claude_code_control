@@ -1,24 +1,15 @@
 import React from 'react';
-import { 
-  Paper, 
-  Stack, 
-  Button, 
-  Switch, 
-  FormControlLabel, 
-  Typography, 
-  Box, 
-  Divider, 
-  CircularProgress, 
-  Alert 
+import {
+  Paper,
+  Stack,
+  Button,
+  Alert
 } from '@mui/material';
-import { 
-  Folder, 
-  Terminal, 
-  Settings, 
-  BugReport, 
-  Refresh, 
-  PlayArrow, 
-  Stop 
+import {
+  Folder,
+  Terminal,
+  Settings,
+  BugReport
 } from '@mui/icons-material';
 import { VIEW_MODES, LABELS } from '../../constants/ui';
 import ConnectionStatus from '../ConnectionStatus';
@@ -28,7 +19,7 @@ interface ControlPanelProps {
   // View mode
   viewMode: 'tmux' | 'file';
   onViewModeToggle: () => void;
-  
+
   // Connection
   isConnected: boolean;
   wsConnected: boolean;
@@ -36,22 +27,17 @@ interface ControlPanelProps {
   reconnectAttempts: number;
   maxReconnectAttempts: number;
   onReconnect: () => void;
-  
+
   // Settings
   onSettingsOpen: () => void;
-  
+
   // Target selection
   selectedTarget: string;
   onTargetChange: (target: string) => void;
-  
-  // Auto refresh
-  autoRefresh: boolean;
-  onAutoRefreshToggle: () => void;
-  
-  // Manual refresh
+
+  // Loading state (for target selector)
   isLoading: boolean;
-  onRefresh: () => Promise<void>;
-  
+
   // Errors
   error?: string | null;
   wsError?: string | null;
@@ -69,19 +55,16 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onSettingsOpen,
   selectedTarget,
   onTargetChange,
-  autoRefresh,
-  onAutoRefreshToggle,
   isLoading,
-  onRefresh,
   error,
   wsError
 }) => {
   const isOnline = navigator.onLine;
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={1.5}>
       {/* Header Controls */}
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 1.5 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Button
             variant={viewMode === VIEW_MODES.FILE ? 'contained' : 'outlined'}
@@ -93,9 +76,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </Button>
           
           <Stack direction="row" spacing={1} alignItems="center">
-            <ConnectionStatus 
-              isConnected={isConnected && (!autoRefresh || wsConnected)} 
-              isReconnecting={autoRefresh && isReconnecting}
+            <ConnectionStatus
+              isConnected={isConnected && wsConnected}
+              isReconnecting={isReconnecting}
               reconnectAttempts={reconnectAttempts}
               maxReconnectAttempts={maxReconnectAttempts}
               isOnline={isOnline}
@@ -124,7 +107,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 
       {/* Tmux Controls - only show in tmux mode */}
       {viewMode === VIEW_MODES.TMUX && (
-        <Paper sx={{ p: 2 }}>
+        <Paper sx={{ p: 1.5 }}>
           <Stack spacing={1}>
             {/* Target Selector */}
             <TmuxTargetSelector
@@ -132,45 +115,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               onTargetChange={onTargetChange}
               disabled={!isConnected || isLoading}
             />
-            
-            <Divider />
-            
-            {/* Output Controls */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Button
-                variant="contained"
-                onClick={onRefresh}
-                disabled={!isConnected || isLoading || autoRefresh}
-                sx={{ minWidth: 'auto', px: 2 }}
-                size="small"
-              >
-                {isLoading ? <CircularProgress size={16} /> : <Refresh />}
-              </Button>
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={autoRefresh}
-                    onChange={onAutoRefreshToggle}
-                    disabled={!isConnected}
-                    size="small"
-                  />
-                }
-                label={
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    {autoRefresh ? <Stop fontSize="small" /> : <PlayArrow fontSize="small" />}
-                    <Typography variant="body2">
-                      {LABELS.BUTTONS.AUTO_REFRESH}
-                    </Typography>
-                    {autoRefresh && wsConnected && (
-                      <Typography variant="caption" color="success.main">
-                        (接続中)
-                      </Typography>
-                    )}
-                  </Box>
-                }
-              />
-            </Stack>
 
             {/* Error Messages */}
             {error && (
@@ -178,7 +122,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 {error}
               </Alert>
             )}
-            {wsError && autoRefresh && (
+            {wsError && (
               <Alert severity="warning">
                 WebSocket: {wsError}
               </Alert>
