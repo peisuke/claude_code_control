@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Paper, Stack, IconButton, Toolbar, Typography } from '@mui/material';
-import { Settings as SettingsIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import Sidebar from './Sidebar';
 import TmuxViewContainer from '../tmux/TmuxViewContainer';
 import FileOperations from '../file/FileOperations';
@@ -70,6 +70,12 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   error,
   onSettingsOpen
 }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const handleSidebarToggle = useCallback(() => {
+    setSidebarOpen(prev => !prev);
+  }, []);
+
   const {
     selectedFile,
     openedFile,
@@ -89,6 +95,14 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
       {/* Top Toolbar */}
       <Paper sx={{ flexShrink: 0 }}>
         <Toolbar variant="dense">
+          <IconButton
+            edge="start"
+            onClick={handleSidebarToggle}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+
           <Typography variant="h6" component="div" sx={{ flexGrow: 0, mr: 3 }}>
             Tmux Controller
           </Typography>
@@ -118,18 +132,20 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
       {/* Main Content Area */}
       <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', p: 2, gap: 2 }}>
         {/* Left Sidebar */}
-        <Box sx={{ width: 360, flexShrink: 0, overflow: 'hidden' }}>
-          <Sidebar
-            selectedTarget={selectedTarget}
-            onTargetChange={onTargetChange}
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
-            onFileOpen={handleFileOpen}
-            isConnected={isConnected}
-            viewMode={viewMode}
-            onViewModeChange={onViewModeChange}
-          />
-        </Box>
+        {sidebarOpen && (
+          <Box sx={{ width: 360, flexShrink: 0, overflow: 'hidden' }}>
+            <Sidebar
+              selectedTarget={selectedTarget}
+              onTargetChange={onTargetChange}
+              selectedFile={selectedFile}
+              onFileSelect={handleFileSelect}
+              onFileOpen={handleFileOpen}
+              isConnected={isConnected}
+              viewMode={viewMode}
+              onViewModeChange={onViewModeChange}
+            />
+          </Box>
+        )}
 
         {/* Right Main Panel */}
         <Box sx={{ flex: 1, overflow: 'hidden' }}>
