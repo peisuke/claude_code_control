@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Request
 from datetime import datetime
 from typing import Optional
 import json
 import asyncio
 import logging
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..models import CommandRequest, TmuxOutput, ApiResponse
 
@@ -12,6 +14,7 @@ from ..services import TmuxService
 from ..websocket import ConnectionManager
 
 router = APIRouter(prefix="/api/tmux", tags=["tmux"])
+limiter = Limiter(key_func=get_remote_address)
 tmux_service = TmuxService()
 manager = ConnectionManager()
 
@@ -21,12 +24,13 @@ last_outputs = {}
 
 
 @router.post("/send-command")
-async def send_command(request: CommandRequest):
-    """Send command to tmux session"""
+@limiter.limit("30/minute")
+async def send_command(request: Request, command_request: CommandRequest):
+    """Send command to tmux session (rate limited: 30/minute)"""
     try:
         success = await tmux_service.send_command(
-            request.command, 
-            request.target
+            command_request.command,
+            command_request.target
         )
         
         if success:
@@ -48,8 +52,9 @@ async def send_command(request: CommandRequest):
 
 
 @router.post("/send-enter")
-async def send_enter(target: str = "default"):
-    """Send Enter key to tmux target"""
+@limiter.limit("60/minute")
+async def send_enter(request: Request, target: str = "default"):
+    """Send Enter key to tmux target (rate limited: 60/minute)"""
     try:
         success = await tmux_service.send_enter(target)
         
@@ -132,8 +137,9 @@ async def get_hierarchy():
 
 
 @router.post("/create-session")
-async def create_session(session_name: str):
-    """Create a new tmux session"""
+@limiter.limit("10/minute")
+async def create_session(request: Request, session_name: str):
+    """Create a new tmux session (rate limited: 10/minute)"""
     try:
         success = await tmux_service.create_session(session_name)
         
@@ -156,8 +162,9 @@ async def create_session(session_name: str):
 
 
 @router.delete("/session/{session_name}")
-async def delete_session(session_name: str):
-    """Delete a tmux session"""
+@limiter.limit("10/minute")
+async def delete_session(request: Request, session_name: str):
+    """Delete a tmux session (rate limited: 10/minute)"""
     try:
         success = await tmux_service.kill_session(session_name)
         
@@ -180,8 +187,9 @@ async def delete_session(session_name: str):
 
 
 @router.post("/create-window")
-async def create_window(session_name: str, window_name: str = None):
-    """Create a new window in a tmux session"""
+@limiter.limit("20/minute")
+async def create_window(request: Request, session_name: str, window_name: str = None):
+    """Create a new window in a tmux session (rate limited: 20/minute)"""
     try:
         success = await tmux_service.create_window(session_name, window_name)
         
@@ -207,8 +215,9 @@ async def create_window(session_name: str, window_name: str = None):
 
 
 @router.delete("/window/{session_name}/{window_index}")
-async def delete_window(session_name: str, window_index: str):
-    """Delete a window from a tmux session"""
+@limiter.limit("20/minute")
+async def delete_window(request: Request, session_name: str, window_index: str):
+    """Delete a window from a tmux session (rate limited: 20/minute)"""
     try:
         success = await tmux_service.kill_window(session_name, window_index)
         
