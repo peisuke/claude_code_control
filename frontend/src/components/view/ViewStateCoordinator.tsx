@@ -45,7 +45,6 @@ export interface CoordinatedHandlers {
 
   // View handlers
   handleViewModeToggle: () => void;
-  handleAutoRefreshToggle: () => void;
 
   // Output handlers
   handleRefresh: () => Promise<void>;
@@ -130,19 +129,6 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
     }
   }, [selectedTarget, connectionHandlers]);
 
-  // Enhanced auto-refresh toggle that manages WebSocket connection
-  const handleAutoRefreshToggle = () => {
-    viewHandlers.handleAutoRefreshToggle();
-    
-    // Coordinate with connection state
-    const newAutoRefresh = !viewState.autoRefresh;
-    if (newAutoRefresh) {
-      connectionHandlers.wsConnect();
-    } else {
-      connectionHandlers.wsDisconnect();
-    }
-  };
-
   // Combine all state into coordinated state
   const coordinatedState: CoordinatedState = {
     ...commandState,
@@ -157,7 +143,6 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
     ...outputHandlers,
     setOutput: outputHandlers.setOutput,
     handleViewModeToggle: viewHandlers.handleViewModeToggle,
-    handleAutoRefreshToggle,
     wsResetAndReconnect: connectionHandlers.wsResetAndReconnect
   };
 

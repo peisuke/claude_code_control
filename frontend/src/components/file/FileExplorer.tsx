@@ -22,19 +22,12 @@ import {
   Refresh
 } from '@mui/icons-material';
 import { tmuxAPI } from '../../services/api';
-
-interface FileNode {
-  name: string;
-  path: string;
-  type: 'file' | 'directory';
-  children?: FileNode[];
-}
+import { FileNode } from '../../types';
 
 interface FileExplorerProps {
   isConnected: boolean;
   selectedFile: string;
   onFileSelect: (path: string) => void;
-  onDirectoryChange?: (path: string) => void;
   onFileOpen?: (path: string) => void;
 }
 
@@ -42,7 +35,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   isConnected,
   selectedFile,
   onFileSelect,
-  onDirectoryChange,
   onFileOpen
 }) => {
   const theme = useTheme();
@@ -72,7 +64,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
         setBreadcrumbs(actualPath ? actualPath.split('/').filter(Boolean) : []);
         // Save current path to session storage
         sessionStorage.setItem('fileViewCurrentPath', actualPath);
-        onDirectoryChange?.(actualPath);
       } else {
         throw new Error(response.message || 'Failed to load file tree');
       }
@@ -81,7 +72,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [onDirectoryChange]);
+  }, []);
 
   // Load file tree when component mounts or connection status changes
   useEffect(() => {

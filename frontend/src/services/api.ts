@@ -1,4 +1,4 @@
-import { TmuxSettings, TmuxOutput, ApiResponse } from '../types';
+import { TmuxSettings, TmuxOutput, ApiResponse, FileTreeResponse, FileContentResponse, TmuxSession } from '../types';
 
 class TmuxAPI {
   private baseURL = process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : '/api';
@@ -52,29 +52,8 @@ class TmuxAPI {
     return response.json();
   }
 
-  async getSessions(): Promise<string[]> {
-    const response = await fetch(`${this.baseURL}/tmux/sessions`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result: ApiResponse = await response.json();
-    return result.data?.sessions || [];
-  }
-
-  async getHierarchy(): Promise<ApiResponse> {
+  async getHierarchy(): Promise<ApiResponse<Record<string, TmuxSession>>> {
     const response = await fetch(`${this.baseURL}/tmux/hierarchy`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  async getStatus(): Promise<ApiResponse> {
-    const response = await fetch(`${this.baseURL}/tmux/status`);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -176,9 +155,9 @@ class TmuxAPI {
   }
 
   // File operations
-  async getFileTree(path: string = '/'): Promise<ApiResponse> {
+  async getFileTree(path: string = '/'): Promise<ApiResponse<FileTreeResponse>> {
     const response = await fetch(`${this.baseURL}/files/tree?path=${encodeURIComponent(path)}`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -186,19 +165,9 @@ class TmuxAPI {
     return response.json();
   }
 
-  async getFileContent(path: string): Promise<ApiResponse> {
+  async getFileContent(path: string): Promise<ApiResponse<FileContentResponse>> {
     const response = await fetch(`${this.baseURL}/files/content?path=${encodeURIComponent(path)}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
 
-    return response.json();
-  }
-
-  async searchFiles(query: string, path: string = '/'): Promise<ApiResponse> {
-    const response = await fetch(`${this.baseURL}/files/search?query=${encodeURIComponent(query)}&path=${encodeURIComponent(path)}`);
-    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

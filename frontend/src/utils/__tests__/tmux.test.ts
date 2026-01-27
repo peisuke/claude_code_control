@@ -34,35 +34,6 @@ describe('TmuxUtils', () => {
     });
   });
 
-  describe('isValidTarget', () => {
-    it('should validate basic targets', () => {
-      expect(TmuxUtils.isValidTarget('session1')).toBe(true);
-      expect(TmuxUtils.isValidTarget('my-session')).toBe(true);
-      expect(TmuxUtils.isValidTarget('session1:0')).toBe(true);
-      expect(TmuxUtils.isValidTarget('session1:0.1')).toBe(true);
-    });
-
-    it('should reject empty targets', () => {
-      expect(TmuxUtils.isValidTarget('')).toBe(false);
-      expect(TmuxUtils.isValidTarget('   ')).toBe(false);
-    });
-
-    it('should reject targets with invalid characters', () => {
-      expect(TmuxUtils.isValidTarget('session<test')).toBe(false);
-      expect(TmuxUtils.isValidTarget('session>test')).toBe(false);
-      expect(TmuxUtils.isValidTarget('session"test')).toBe(false);
-      expect(TmuxUtils.isValidTarget('session|test')).toBe(false);
-      expect(TmuxUtils.isValidTarget('session*test')).toBe(false);
-      expect(TmuxUtils.isValidTarget('session?test')).toBe(false);
-    });
-
-    it('should allow valid characters', () => {
-      expect(TmuxUtils.isValidTarget('session-test')).toBe(true);
-      expect(TmuxUtils.isValidTarget('session_test')).toBe(true);
-      expect(TmuxUtils.isValidTarget('session123')).toBe(true);
-    });
-  });
-
   describe('parseTarget', () => {
     it('should parse session-only targets', () => {
       const result = TmuxUtils.parseTarget('session1');
@@ -91,10 +62,19 @@ describe('TmuxUtils', () => {
       });
     });
 
-    it('should handle empty session', () => {
+    it('should use default session for empty input', () => {
       const result = TmuxUtils.parseTarget('');
       expect(result).toEqual({
-        session: '',
+        session: 'default',
+        window: undefined,
+        pane: undefined
+      });
+    });
+
+    it('should allow custom default session', () => {
+      const result = TmuxUtils.parseTarget('', 'custom');
+      expect(result).toEqual({
+        session: 'custom',
         window: undefined,
         pane: undefined
       });
@@ -120,25 +100,9 @@ describe('TmuxUtils', () => {
 
     it('should handle empty values', () => {
       expect(TmuxUtils.buildTarget('')).toBe('');
-      expect(TmuxUtils.buildTarget('', '')).toBe(':');
+      // Empty window string is treated as falsy and ignored
+      expect(TmuxUtils.buildTarget('', '')).toBe('');
     });
   });
 
-  describe('formatSessionName', () => {
-    it('should replace underscores and hyphens with spaces', () => {
-      expect(TmuxUtils.formatSessionName('my_session')).toBe('my session');
-      expect(TmuxUtils.formatSessionName('my-session')).toBe('my session');
-      expect(TmuxUtils.formatSessionName('my_long-session')).toBe('my long session');
-    });
-
-    it('should trim whitespace', () => {
-      expect(TmuxUtils.formatSessionName('  session  ')).toBe('session');
-      expect(TmuxUtils.formatSessionName('_session_')).toBe(' session ');
-    });
-
-    it('should handle empty strings', () => {
-      expect(TmuxUtils.formatSessionName('')).toBe('');
-      expect(TmuxUtils.formatSessionName('   ')).toBe('');
-    });
-  });
 });

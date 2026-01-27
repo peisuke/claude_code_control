@@ -5,7 +5,6 @@ import { useLocalStorageBoolean } from '../hooks/useLocalStorageState';
 
 interface ThemeContextType {
   darkMode: boolean;
-  toggleDarkMode: () => void;
   setDarkMode: (value: boolean) => void;
 }
 
@@ -41,10 +40,6 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [darkMode, setDarkMode] = useLocalStorageBoolean('dark-mode', false);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   const theme = useMemo(
     () =>
       createTheme({
@@ -71,7 +66,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const contextValue = useMemo(
     () => ({
       darkMode,
-      toggleDarkMode,
       setDarkMode,
     }),
     [darkMode, setDarkMode]

@@ -242,14 +242,6 @@ export class WebSocketService {
   getMaxReconnectAttempts(): number {
     return this.maxReconnectAttempts;
   }
-  
-  enableAutoReconnect(): void {
-    this.shouldReconnect = true;
-  }
-  
-  disableAutoReconnect(): void {
-    this.shouldReconnect = false;
-  }
 
   // Force reconnection (useful for mobile app resume)
   forceReconnect(): void {

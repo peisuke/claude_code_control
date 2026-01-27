@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from typing import List, Optional
+from typing import List
 import os
 import base64
 import logging
@@ -252,50 +252,4 @@ async def get_file_content(path: str):
         raise HTTPException(
             status_code=500,
             detail=f"Error reading file: {str(e)}"
-        )
-
-@router.get("/search")
-async def search_files(query: str, path: str = "/"):
-    """Search for files by name"""
-    try:
-        if not is_safe_path(path):
-            raise HTTPException(status_code=403, detail="Access denied")
-            
-        if not query or len(query) < 2:
-            raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
-            
-        full_path = os.path.join(BASE_PATH, path.lstrip('/'))
-        results = []
-        
-        for root, dirs, files in os.walk(full_path):
-            # Skip hidden and common directories
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', '__pycache__', 'dist', 'build']]
-            
-            for file in files:
-                if query.lower() in file.lower():
-                    if any(file.endswith(ext) for ext in ALLOWED_EXTENSIONS):
-                        file_path = os.path.join(root, file)
-                        relative_path = os.path.relpath(file_path, BASE_PATH)
-                        results.append({
-                            'name': file,
-                            'path': '/' + relative_path.replace('\\', '/'),
-                            'type': 'file'
-                        })
-                        
-            # Limit results
-            if len(results) >= 50:
-                break
-                
-        return ApiResponse(
-            success=True,
-            message=f"Found {len(results)} results",
-            data={'results': results}
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error searching files: {str(e)}"
         )

@@ -1,5 +1,8 @@
 from typing import Dict, List
 from fastapi import WebSocket
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
@@ -27,7 +30,7 @@ class ConnectionManager:
         try:
             await websocket.send_text(message)
         except Exception as e:
-            print(f"Error sending message: {e}")
+            logger.debug(f"Error sending message: {e}")
             self.disconnect(websocket, session_name)
     
     async def broadcast_to_session(self, session_name: str, message: str):
@@ -39,7 +42,7 @@ class ConnectionManager:
             try:
                 await connection.send_text(message)
             except Exception as e:
-                print(f"Error broadcasting to connection in session {session_name}: {e}")
+                logger.debug(f"Error broadcasting to connection in session {session_name}: {e}")
                 disconnected.append(connection)
         
         # Remove disconnected connections

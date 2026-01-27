@@ -9,8 +9,6 @@ interface ViewState {
 
 interface ViewHandlers {
   handleViewModeToggle: () => void;
-  handleAutoRefreshToggle: () => void;
-  setAutoRefresh: (value: boolean) => void;
 }
 
 interface UseViewStateReturn {
@@ -34,25 +32,13 @@ export const useViewState = (): UseViewStateReturn => {
     setViewMode(newMode);
   }, [viewMode, setViewMode]);
 
-  // Auto-refresh toggle is now a no-op (kept for backward compatibility)
-  const handleAutoRefreshToggle = useCallback(() => {
-    // Auto-refresh is always on, so this does nothing
-  }, []);
-
-  // setAutoRefresh is now a no-op (kept for backward compatibility)
-  const setAutoRefresh = useCallback(() => {
-    // Auto-refresh is always on, so this does nothing
-  }, []);
-
   const state: ViewState = {
     autoRefresh,
     viewMode
   };
 
   const handlers: ViewHandlers = {
-    handleViewModeToggle,
-    handleAutoRefreshToggle,
-    setAutoRefresh
+    handleViewModeToggle
   };
 
   return {

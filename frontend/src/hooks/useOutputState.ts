@@ -2,11 +2,12 @@ import { useCallback, useEffect } from 'react';
 import { useTerminalOutput } from './useTerminalOutput';
 import { useTmux } from './useTmux';
 import { TIMING } from '../constants/ui';
+import { TmuxOutput } from '../types';
 
 interface UseOutputStateProps {
   selectedTarget: string;
   isConnected: boolean;
-  lastMessage: any;
+  lastMessage: TmuxOutput | null;
   autoRefresh: boolean;
 }
 

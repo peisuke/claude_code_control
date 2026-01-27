@@ -3,8 +3,11 @@ from datetime import datetime
 from typing import Optional
 import json
 import asyncio
+import logging
 
 from ..models import CommandRequest, TmuxOutput, ApiResponse
+
+logger = logging.getLogger(__name__)
 from ..services import TmuxService
 from ..websocket import ConnectionManager
 
@@ -269,7 +272,7 @@ async def monitor_target_output(target: str):
             await asyncio.sleep(2)  # Check every 2 seconds
             
         except Exception as e:
-            print(f"Error in monitor task for target {target}: {e}")
+            logger.error(f"Error in monitor task for target {target}: {e}")
             await asyncio.sleep(5)
 
 
@@ -289,7 +292,7 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
     try:
         await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}))
     except Exception as e:
-        print(f"Failed to send initial heartbeat: {e}")
+        logger.warning(f"Failed to send initial heartbeat: {e}")
     
     # Heartbeat task
     async def send_heartbeat():
@@ -298,7 +301,7 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
                 await asyncio.sleep(15)  # Send heartbeat every 15 seconds
                 await websocket.send_text(json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}))
         except Exception as e:
-            print(f"Heartbeat failed: {e}")
+            logger.debug(f"Heartbeat stopped: {e}")
             return
     
     heartbeat_task = asyncio.create_task(send_heartbeat())
@@ -320,13 +323,13 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
                 # No message received in 20 seconds, continue
                 continue
             except Exception as e:
-                print(f"Error receiving message: {e}")
+                logger.debug(f"Error receiving message: {e}")
                 break
             
     except WebSocketDisconnect:
         pass
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error: {e}")
     finally:
         # Cleanup
         heartbeat_task.cancel()

@@ -11,7 +11,7 @@ import {
   Typography
 } from '@mui/material';
 import { Refresh, ExpandMore } from '@mui/icons-material';
-import { TmuxHierarchy } from '../../types';
+import { TmuxHierarchy, TmuxSession } from '../../types';
 import { tmuxAPI } from '../../services/api';
 
 interface SessionManagerProps {
@@ -29,7 +29,7 @@ const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
 }, ref) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rawHierarchy, setRawHierarchy] = useState<any>(null);
+  const [rawHierarchy, setRawHierarchy] = useState<Record<string, TmuxSession> | null>(null);
   const [hierarchy, setHierarchy] = useState<TmuxHierarchy | null>(null);
 
   const loadHierarchy = useCallback(async () => {
@@ -37,10 +37,10 @@ const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
     setError(null);
     try {
       const response = await tmuxAPI.getHierarchy();
-      setRawHierarchy(response.data);
-
       const hierarchyData = response.data;
-      if (hierarchyData && typeof hierarchyData === 'object') {
+      setRawHierarchy(hierarchyData ?? null);
+
+      if (hierarchyData) {
         const formattedHierarchy: TmuxHierarchy = {
           sessions: hierarchyData
         };
