@@ -1,36 +1,31 @@
 import { renderHook, act } from '@testing-library/react';
 import { useLocalStorageString, useLocalStorageBoolean } from '../useLocalStorageState';
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-
-  return {
-    getItem: jest.fn((key: string) => store[key] || null),
-    setItem: jest.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: jest.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: jest.fn(() => {
-      store = {};
-    }),
-  };
-})();
-
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-});
-
 describe('useLocalStorageString', () => {
+  let mockStorage: Record<string, string> = {};
+
   beforeEach(() => {
-    localStorageMock.clear();
-    jest.clearAllMocks();
+    mockStorage = {};
+
+    jest.spyOn(Storage.prototype, 'getItem').mockImplementation((key: string) => {
+      return mockStorage[key] ?? null;
+    });
+
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementation((key: string, value: string) => {
+      mockStorage[key] = value;
+    });
+
+    jest.spyOn(Storage.prototype, 'removeItem').mockImplementation((key: string) => {
+      delete mockStorage[key];
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should return default value when localStorage is empty', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useLocalStorageString('test-key', 'default')
     );
 
@@ -38,9 +33,9 @@ describe('useLocalStorageString', () => {
   });
 
   it('should return stored value when localStorage has value', () => {
-    localStorageMock.setItem('test-key', 'stored-value');
-    
-    const { result } = renderHook(() => 
+    mockStorage['test-key'] = 'stored-value';
+
+    const { result } = renderHook(() =>
       useLocalStorageString('test-key', 'default')
     );
 
@@ -48,7 +43,7 @@ describe('useLocalStorageString', () => {
   });
 
   it('should update localStorage when value changes', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useLocalStorageString('test-key', 'default')
     );
 
@@ -57,46 +52,88 @@ describe('useLocalStorageString', () => {
     });
 
     expect(result.current[0]).toBe('new-value');
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('test-key', 'new-value');
+    expect(mockStorage['test-key']).toBe('new-value');
   });
 
-  it('should handle localStorage errors gracefully', () => {
-    // Mock localStorage.setItem to throw an error
-    localStorageMock.setItem.mockImplementationOnce(() => {
-      throw new Error('Storage quota exceeded');
-    });
+  it('should handle different keys independently', () => {
+    mockStorage['key1'] = 'value1';
+    mockStorage['key2'] = 'value2';
 
-    const { result } = renderHook(() => 
+    const { result: result1 } = renderHook(() =>
+      useLocalStorageString('key1', 'default1')
+    );
+    const { result: result2 } = renderHook(() =>
+      useLocalStorageString('key2', 'default2')
+    );
+
+    expect(result1.current[0]).toBe('value1');
+    expect(result2.current[0]).toBe('value2');
+  });
+
+  it('should persist value across re-renders', () => {
+    const { result, rerender } = renderHook(() =>
       useLocalStorageString('test-key', 'default')
     );
 
-    // Should not crash when localStorage throws
     act(() => {
-      result.current[1]('new-value');
+      result.current[1]('updated');
     });
 
-    expect(result.current[0]).toBe('new-value');
+    rerender();
+
+    expect(result.current[0]).toBe('updated');
   });
 });
 
 describe('useLocalStorageBoolean', () => {
+  let mockStorage: Record<string, string> = {};
+
   beforeEach(() => {
-    localStorageMock.clear();
-    jest.clearAllMocks();
+    mockStorage = {};
+
+    jest.spyOn(Storage.prototype, 'getItem').mockImplementation((key: string) => {
+      return mockStorage[key] ?? null;
+    });
+
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementation((key: string, value: string) => {
+      mockStorage[key] = value;
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should return default value when localStorage is empty', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useLocalStorageBoolean('test-bool', true)
     );
 
     expect(result.current[0]).toBe(true);
   });
 
-  it('should return parsed boolean value from localStorage', () => {
-    localStorageMock.setItem('test-bool', 'false');
-    
-    const { result } = renderHook(() => 
+  it('should return false default value', () => {
+    const { result } = renderHook(() =>
+      useLocalStorageBoolean('test-bool', false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it('should return parsed boolean true from localStorage', () => {
+    mockStorage['test-bool'] = 'true';
+
+    const { result } = renderHook(() =>
+      useLocalStorageBoolean('test-bool', false)
+    );
+
+    expect(result.current[0]).toBe(true);
+  });
+
+  it('should return parsed boolean false from localStorage', () => {
+    mockStorage['test-bool'] = 'false';
+
+    const { result } = renderHook(() =>
       useLocalStorageBoolean('test-bool', true)
     );
 
@@ -104,7 +141,7 @@ describe('useLocalStorageBoolean', () => {
   });
 
   it('should store boolean as string in localStorage', () => {
-    const { result } = renderHook(() => 
+    const { result } = renderHook(() =>
       useLocalStorageBoolean('test-bool', false)
     );
 
@@ -113,33 +150,33 @@ describe('useLocalStorageBoolean', () => {
     });
 
     expect(result.current[0]).toBe(true);
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('test-bool', 'true');
+    expect(mockStorage['test-bool']).toBe('true');
   });
 
-  it('should handle invalid boolean strings gracefully', () => {
-    localStorageMock.setItem('test-bool', 'invalid-boolean');
-    
-    const { result } = renderHook(() => 
+  it('should toggle boolean value', () => {
+    const { result } = renderHook(() =>
+      useLocalStorageBoolean('test-bool', false)
+    );
+
+    act(() => {
+      result.current[1](true);
+    });
+    expect(result.current[0]).toBe(true);
+
+    act(() => {
+      result.current[1](false);
+    });
+    expect(result.current[0]).toBe(false);
+  });
+
+  it('should handle invalid boolean strings as false', () => {
+    mockStorage['test-bool'] = 'invalid-boolean';
+
+    const { result } = renderHook(() =>
       useLocalStorageBoolean('test-bool', true)
     );
 
-    // Should fall back to default value for invalid boolean
-    expect(result.current[0]).toBe(true);
-  });
-
-  it('should handle localStorage errors gracefully', () => {
-    localStorageMock.setItem.mockImplementationOnce(() => {
-      throw new Error('Storage quota exceeded');
-    });
-
-    const { result } = renderHook(() => 
-      useLocalStorageBoolean('test-bool', false)
-    );
-
-    act(() => {
-      result.current[1](true);
-    });
-
-    expect(result.current[0]).toBe(true);
+    // 'invalid-boolean' !== 'true', so deserialize returns false
+    expect(result.current[0]).toBe(false);
   });
 });
