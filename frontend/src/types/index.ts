@@ -1,9 +1,3 @@
-export interface TmuxSettings {
-  session_name: string;
-  auto_create_session: boolean;
-  capture_history: boolean;
-}
-
 export interface TmuxOutput {
   content: string;
   timestamp: string;

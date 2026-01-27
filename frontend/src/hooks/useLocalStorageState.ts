@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Hook to manage state that persists in localStorage
+ * @internal Used only by useLocalStorageString and useLocalStorageBoolean
  */
-export function useLocalStorageState<T>(
+function useLocalStorageState<T>(
   key: string, 
   defaultValue: T,
   serializer: {

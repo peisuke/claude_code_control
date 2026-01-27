@@ -12,7 +12,7 @@ interface ViewStateCoordinatorProps {
 }
 
 // Combined state interface (maintains backward compatibility)
-export interface CoordinatedState {
+interface CoordinatedState {
   // Command state
   command: string;
   commandExpanded: boolean;
@@ -35,7 +35,7 @@ export interface CoordinatedState {
 }
 
 // Combined handlers interface (maintains backward compatibility)
-export interface CoordinatedHandlers {
+interface CoordinatedHandlers {
   // Command handlers
   handleSendCommand: () => Promise<void>;
   handleSendEnter: () => Promise<void>;
