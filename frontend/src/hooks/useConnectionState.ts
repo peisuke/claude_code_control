@@ -56,19 +56,14 @@ export const useConnectionState = ({
 
   // Handle app visibility changes for mobile resume
   const handleAppResume = useCallback(() => {
-    console.log('App resumed, checking connection state:', { autoRefresh, wsConnected, isConnected });
-    
     if (autoRefresh) {
-      console.log('Auto-refresh enabled, forcing reconnection...');
       wsResetAndReconnect();
-      
+
       setTimeout(() => {
         onRefresh();
       }, TIMING.APP_RESUME_RECONNECT_DELAY);
-    } else {
-      console.log('Auto-refresh disabled, skipping reconnection');
     }
-  }, [autoRefresh, wsConnected, isConnected, wsResetAndReconnect, onRefresh]);
+  }, [autoRefresh, wsResetAndReconnect, onRefresh]);
 
   useAppVisibility({ 
     onAppResume: handleAppResume, 

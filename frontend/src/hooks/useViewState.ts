@@ -37,7 +37,6 @@ export const useViewState = (): UseViewStateReturn => {
   // Auto-refresh toggle is now a no-op (kept for backward compatibility)
   const handleAutoRefreshToggle = useCallback(() => {
     // Auto-refresh is always on, so this does nothing
-    console.log('Auto-refresh is always enabled');
   }, []);
 
   // setAutoRefresh is now a no-op (kept for backward compatibility)

@@ -4,7 +4,7 @@ from typing import Optional
 import json
 import asyncio
 
-from ..models import CommandRequest, TmuxOutput, ApiResponse, TmuxHierarchy
+from ..models import CommandRequest, TmuxOutput, ApiResponse
 from ..services import TmuxService
 from ..websocket import ConnectionManager
 

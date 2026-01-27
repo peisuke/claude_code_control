@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 import os
-import pathlib
 import base64
+import logging
 import mimetypes
 
 from ..models import ApiResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
@@ -114,7 +116,7 @@ def get_file_tree(directory: str, max_depth: int = 1, current_depth: int = 0) ->
     except PermissionError:
         pass
     except Exception as e:
-        print(f"[ERROR] Error reading directory {directory}: {e}")
+        logger.error(f"Error reading directory {directory}: {e}")
         
     return items
 
@@ -131,19 +133,19 @@ async def get_tree(path: str = ""):
         else:
             target_path = os.path.abspath(path)
             
-        print(f"[DEBUG] get_tree called with path: {path}")
-        print(f"[DEBUG] target_path: {target_path}")
+        logger.debug(f"get_tree called with path: {path}")
+        logger.debug(f"target_path: {target_path}")
         
         if not is_safe_path(target_path):
-            print(f"[DEBUG] Access denied for path: {target_path}")
+            logger.warning(f"Access denied for path: {target_path}")
             raise HTTPException(status_code=403, detail="Access denied")
         
         if not os.path.exists(target_path):
-            print(f"[DEBUG] Path not found: {target_path}")
+            logger.debug(f"Path not found: {target_path}")
             raise HTTPException(status_code=404, detail="Path not found")
             
         if not os.path.isdir(target_path):
-            print(f"[DEBUG] Path is not a directory: {target_path}")
+            logger.debug(f"Path is not a directory: {target_path}")
             raise HTTPException(status_code=400, detail="Path is not a directory")
         
         # Check if this is a potentially slow directory
@@ -154,9 +156,7 @@ async def get_tree(path: str = ""):
         tree = get_file_tree(target_path)
         end_time = time.time()
         
-        print(f"[DEBUG] Tree generated in {end_time - start_time:.2f}s, items count: {len(tree)}")
-        if tree:
-            print(f"[DEBUG] First few items: {[item['name'] for item in tree[:5]]}")
+        logger.debug(f"Tree generated in {end_time - start_time:.2f}s, items count: {len(tree)}")
         
         return ApiResponse(
             success=True,

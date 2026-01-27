@@ -43,7 +43,7 @@ export class WebSocketService {
         this.sessionName = target;
         
         if (wasConnected) {
-          this.connect().catch(console.error);
+          this.connect().catch(() => {});
         }
       }, 100);
     }
@@ -72,8 +72,8 @@ export class WebSocketService {
         try {
           this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
           this.lastHeartbeatTime = Date.now();
-        } catch (error) {
-          console.error('Failed to send ping:', error);
+        } catch {
+          // Silently fail ping - connection will be handled by reconnect logic
         }
       }
     }, 10000); // Send ping every 10 seconds
@@ -92,7 +92,6 @@ export class WebSocketService {
       if (this.ws?.readyState === WebSocket.OPEN && this.lastHeartbeatTime > 0) {
         // Check if we haven't received a heartbeat response in 25 seconds
         if (Date.now() - this.lastHeartbeatTime > 25000) {
-          console.log('Heartbeat timeout detected, forcing reconnection');
           this.forceReconnect();
         }
       }
@@ -118,7 +117,6 @@ export class WebSocketService {
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
           this.reconnectAttempts = 0;
           this.shouldReconnect = true;
           this.isManualDisconnect = false;
@@ -156,13 +154,12 @@ export class WebSocketService {
             if (output.target === this.sessionName) {
               this.onMessageCallback?.(output);
             }
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+          } catch {
+            // Silently fail message parsing
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log('WebSocket disconnected', event.code, event.reason);
           this.stopHeartbeat();
           this.stopConnectionCheck();
           this.onConnectionCallback?.(false);
@@ -174,7 +171,6 @@ export class WebSocketService {
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
           // Don't reject immediately on error, let onclose handle reconnection
           if (this.reconnectAttempts === 0) {
             reject(error);
@@ -206,14 +202,12 @@ export class WebSocketService {
   private scheduleReconnect(): void {
     this.reconnectAttempts++;
     const delay = this.calculateReconnectDelay();
-    
-    console.log(`Attempting to reconnect in ${Math.round(delay)}ms... (attempt ${this.reconnectAttempts})`);
+
     this.onReconnectingCallback?.(this.reconnectAttempts, this.maxReconnectAttempts > 0 ? this.maxReconnectAttempts : 999);
-    
+
     this.reconnectTimeoutId = window.setTimeout(() => {
       if (this.shouldReconnect && !this.isManualDisconnect) {
-        this.connect().catch((error) => {
-          console.error('Reconnection failed:', error);
+        this.connect().catch(() => {
           // Continue attempting reconnection indefinitely
           this.scheduleReconnect();
         });
@@ -259,8 +253,6 @@ export class WebSocketService {
 
   // Force reconnection (useful for mobile app resume)
   forceReconnect(): void {
-    console.log('Force reconnect called, current state:', this.ws?.readyState);
-    
     // Stop any ongoing operations
     this.stopHeartbeat();
     this.stopConnectionCheck();
@@ -282,9 +274,7 @@ export class WebSocketService {
     
     // Wait a bit then reconnect
     setTimeout(() => {
-      console.log('Starting forced reconnection...');
-      this.connect().catch(error => {
-        console.error('Forced reconnection failed:', error);
+      this.connect().catch(() => {
         // Continue attempting if it fails
         this.scheduleReconnect();
       });
@@ -293,8 +283,6 @@ export class WebSocketService {
 
   // Reset reconnection attempts and try again
   resetAndReconnect(): void {
-    console.log('Resetting reconnection attempts and reconnecting...');
-    
     // Stop any ongoing operations
     this.stopHeartbeat();
     this.stopConnectionCheck();
@@ -318,8 +306,7 @@ export class WebSocketService {
     
     // Direct reconnection attempt
     setTimeout(() => {
-      this.connect().catch(error => {
-        console.error('Reset reconnection failed:', error);
+      this.connect().catch(() => {
         this.scheduleReconnect();
       });
     }, 100);
@@ -340,8 +327,6 @@ export class WebSocketService {
 
   // Complete cleanup and destruction of the WebSocket service
   destroy(): void {
-    console.log('Destroying WebSocket service...');
-    
     // Disable auto-reconnection
     this.shouldReconnect = false;
     this.isManualDisconnect = true;
@@ -373,7 +358,5 @@ export class WebSocketService {
     // Reset all state
     this.reconnectAttempts = 0;
     this.lastHeartbeatTime = 0;
-    
-    console.log('WebSocket service destroyed successfully');
   }
 }

@@ -106,9 +106,8 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   // Handle network state changes
   useEffect(() => {
     const handleOnline = () => {
-      console.log('Network back online, attempting to reconnect...');
       setError(null);
-      
+
       // If we were trying to reconnect, force a fresh connection attempt
       if (isReconnecting || !isConnected) {
         setTimeout(() => {
@@ -120,7 +119,6 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     };
 
     const handleOffline = () => {
-      console.log('Network went offline');
       setError('Network offline');
     };
 
