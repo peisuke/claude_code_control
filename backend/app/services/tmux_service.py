@@ -29,9 +29,9 @@ class TmuxService:
                 stderr=asyncio.subprocess.PIPE
             )
             
-            stdout, stderr = await process.communicate()
+            await process.communicate()
             return process.returncode == 0
-            
+
         except Exception as e:
             logger.error(f"Error sending command: {e}")
             return False
@@ -50,9 +50,9 @@ class TmuxService:
                 stderr=asyncio.subprocess.PIPE
             )
             
-            stdout, stderr = await process.communicate()
+            await process.communicate()
             return process.returncode == 0
-            
+
         except Exception as e:
             logger.error(f"Error sending enter: {e}")
             return False

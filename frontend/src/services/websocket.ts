@@ -92,7 +92,7 @@ export class WebSocketService {
       if (this.ws?.readyState === WebSocket.OPEN && this.lastHeartbeatTime > 0) {
         // Check if we haven't received a heartbeat response in 25 seconds
         if (Date.now() - this.lastHeartbeatTime > 25000) {
-          this.forceReconnect();
+          this.resetAndReconnect();
         }
       }
     }, 5000); // Check every 5 seconds
@@ -243,37 +243,7 @@ export class WebSocketService {
     return this.maxReconnectAttempts;
   }
 
-  // Force reconnection (useful for mobile app resume)
-  forceReconnect(): void {
-    // Stop any ongoing operations
-    this.stopHeartbeat();
-    this.stopConnectionCheck();
-    if (this.reconnectTimeoutId) {
-      clearTimeout(this.reconnectTimeoutId);
-      this.reconnectTimeoutId = undefined;
-    }
-    
-    // Close existing connection if any
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-    
-    // Reset reconnection state
-    this.shouldReconnect = true;
-    this.isManualDisconnect = false;
-    this.reconnectAttempts = 0;
-    
-    // Wait a bit then reconnect
-    setTimeout(() => {
-      this.connect().catch(() => {
-        // Continue attempting if it fails
-        this.scheduleReconnect();
-      });
-    }, 100);
-  }
-
-  // Reset reconnection attempts and try again
+  // Reset reconnection attempts and reconnect
   resetAndReconnect(): void {
     // Stop any ongoing operations
     this.stopHeartbeat();

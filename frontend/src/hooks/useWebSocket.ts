@@ -105,7 +105,7 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
       if (isReconnecting || !isConnected) {
         setTimeout(() => {
           if (wsRef.current) {
-            wsRef.current.forceReconnect();
+            wsRef.current.resetAndReconnect();
           }
         }, 1000);
       }
