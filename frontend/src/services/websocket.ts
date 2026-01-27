@@ -34,18 +34,36 @@ export class WebSocketService {
   setTarget(target: string): void {
     if (this.sessionName !== target) {
       const wasConnected = this.isConnected();
-      
-      // Ensure clean disconnection
-      this.disconnect();
-      
-      // Wait for connection to fully close before reconnecting
-      setTimeout(() => {
-        this.sessionName = target;
-        
-        if (wasConnected) {
-          this.connect().catch(() => {});
-        }
-      }, 100);
+
+      // Stop heartbeat and connection check but don't trigger disconnect callback
+      this.stopHeartbeat();
+      this.stopConnectionCheck();
+
+      // Clear any pending reconnection
+      if (this.reconnectTimeoutId) {
+        clearTimeout(this.reconnectTimeoutId);
+        this.reconnectTimeoutId = undefined;
+      }
+
+      // Close existing WebSocket without triggering full disconnect flow
+      if (this.ws) {
+        this.ws.onclose = null; // Prevent onclose from triggering reconnect
+        this.ws.close(1000, 'Target change');
+        this.ws = null;
+      }
+
+      // Update target and reconnect
+      this.sessionName = target;
+      this.reconnectAttempts = 0;
+      this.shouldReconnect = true;
+      this.isManualDisconnect = false;
+
+      if (wasConnected) {
+        // Immediate reconnection with new target
+        this.connect().catch(() => {
+          this.scheduleReconnect();
+        });
+      }
     }
   }
 
