@@ -1,14 +1,3 @@
-export interface CommandRequest {
-  command: string;
-  target?: string; // Can be session, session:window, or session:window.pane
-}
-
-export interface TmuxSettings {
-  session_name: string;
-  auto_create_session: boolean;
-  capture_history: boolean;
-}
-
 export interface TmuxOutput {
   content: string;
   timestamp: string;
@@ -39,14 +28,27 @@ export interface TmuxHierarchy {
   sessions: Record<string, TmuxSession>;
 }
 
-export interface TmuxTarget {
-  session: string;
-  window?: string;
-  pane?: string;
-}
-
-export interface ApiResponse {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
-  data?: any;
+  data?: T;
+}
+
+export interface FileNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: FileNode[];
+}
+
+export interface FileTreeResponse {
+  tree: FileNode[];
+  current_path: string;
+}
+
+export interface FileContentResponse {
+  content: string;
+  path: string;
+  is_image?: boolean;
+  mime_type?: string;
 }

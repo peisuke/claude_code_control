@@ -10,7 +10,6 @@ interface UseScrollBasedOutputOptions {
 interface UseScrollBasedOutputReturn {
   output: string;
   isLoadingHistory: boolean;
-  isAtBottom: boolean;
   handleScroll: (e: React.UIEvent<HTMLElement>) => void;
   setOutput: (output: string) => void;
   outputRef: React.RefObject<HTMLDivElement>;
@@ -86,8 +85,8 @@ export const useScrollBasedOutput = ({
         }
       }, 0);
 
-    } catch (error) {
-      console.error('Error loading history:', error);
+    } catch {
+      // Silently fail history loading
     } finally {
       setIsLoadingHistory(false);
       isLoadingRef.current = false;
@@ -118,7 +117,6 @@ export const useScrollBasedOutput = ({
   return {
     output,
     isLoadingHistory,
-    isAtBottom,
     handleScroll,
     setOutput: updateOutput,
     outputRef

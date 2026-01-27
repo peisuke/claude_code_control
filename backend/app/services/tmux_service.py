@@ -1,24 +1,59 @@
 import asyncio
-import subprocess
-from typing import List, Optional, Dict, Any
-from datetime import datetime
+import logging
+import re
+from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
+
+# Regex pattern for valid tmux target names
+# Allows: alphanumeric, dash, underscore, dot, colon (for target separators)
+TMUX_TARGET_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+(?::[a-zA-Z0-9_\-\.]+)?(?:\.[a-zA-Z0-9_\-\.]+)?$')
+TMUX_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
+MAX_TARGET_LENGTH = 128
+MAX_COMMAND_LENGTH = 4096
+
+
+def validate_tmux_target(target: str) -> bool:
+    """Validate tmux target format (session, session:window, session:window.pane)"""
+    if not target or len(target) > MAX_TARGET_LENGTH:
+        return False
+    return bool(TMUX_TARGET_PATTERN.match(target))
+
+
+def validate_tmux_name(name: str) -> bool:
+    """Validate tmux session or window name"""
+    if not name or len(name) > MAX_TARGET_LENGTH:
+        return False
+    return bool(TMUX_NAME_PATTERN.match(name))
 
 
 class TmuxService:
     def __init__(self):
         self.default_session = "default"
-    
+
+    async def _ensure_session_exists(self, target: str) -> None:
+        """Ensure the session for the given target exists, creating it if needed."""
+        session_name = target.split(':')[0] if ':' in target else target
+        if not await self.session_exists(session_name):
+            await self.create_session(session_name)
+
     async def send_command(self, command: str, target: str = None) -> bool:
         """Send a command to tmux target (session, window, or pane)"""
         target = target or self.default_session
-        
+
+        # Validate target
+        if not validate_tmux_target(target):
+            logger.warning(f"Invalid tmux target format: {target}")
+            return False
+
+        # Validate command length
+        if len(command) > MAX_COMMAND_LENGTH:
+            logger.warning(f"Command too long: {len(command)} chars")
+            return False
+
         try:
-            # Parse target to check if session exists
-            session_name = target.split(':')[0] if ':' in target else target
-            if not await self.session_exists(session_name):
-                await self.create_session(session_name)
-            
-            # Send command to tmux target
+            await self._ensure_session_exists(target)
+
             cmd = ["tmux", "send-keys", "-t", target, command]
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -26,22 +61,25 @@ class TmuxService:
                 stderr=asyncio.subprocess.PIPE
             )
             
-            stdout, stderr = await process.communicate()
+            await process.communicate()
             return process.returncode == 0
-            
+
         except Exception as e:
-            print(f"Error sending command: {e}")
+            logger.error(f"Error sending command: {e}")
             return False
     
     async def send_enter(self, target: str = None) -> bool:
         """Send Enter key to tmux target"""
         target = target or self.default_session
-        
+
+        # Validate target
+        if not validate_tmux_target(target):
+            logger.warning(f"Invalid tmux target format: {target}")
+            return False
+
         try:
-            session_name = target.split(':')[0] if ':' in target else target
-            if not await self.session_exists(session_name):
-                await self.create_session(session_name)
-            
+            await self._ensure_session_exists(target)
+
             cmd = ["tmux", "send-keys", "-t", target, "Enter"]
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -49,17 +87,22 @@ class TmuxService:
                 stderr=asyncio.subprocess.PIPE
             )
             
-            stdout, stderr = await process.communicate()
+            await process.communicate()
             return process.returncode == 0
-            
+
         except Exception as e:
-            print(f"Error sending enter: {e}")
+            logger.error(f"Error sending enter: {e}")
             return False
     
     async def get_output(self, target: str = None, include_history: bool = False, lines: int = None) -> str:
         """Get current tmux target output, optionally including scrollback history"""
         target = target or self.default_session
-        
+
+        # Validate target
+        if not validate_tmux_target(target):
+            logger.warning(f"Invalid tmux target format: {target}")
+            return "Error: Invalid target format"
+
         try:
             session_name = target.split(':')[0] if ':' in target else target
             if not await self.session_exists(session_name):
@@ -111,11 +154,16 @@ class TmuxService:
                 return []
                 
         except Exception as e:
-            print(f"Error getting sessions: {e}")
+            logger.error(f"Error getting sessions: {e}")
             return []
     
     async def create_session(self, session: str) -> bool:
         """Create a new tmux session"""
+        # Validate session name
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid tmux session name: {session}")
+            return False
+
         try:
             cmd = ["tmux", "new-session", "-d", "-s", session]
             process = await asyncio.create_subprocess_exec(
@@ -127,16 +175,19 @@ class TmuxService:
             stdout, stderr = await process.communicate()
             
             if process.returncode != 0:
-                print(f"tmux new-session failed: {stderr.decode()}")
+                logger.warning(f"tmux new-session failed: {stderr.decode()}")
                 
             return process.returncode == 0
             
         except Exception as e:
-            print(f"Error creating session: {e}")
+            logger.error(f"Error creating session: {e}")
             return False
     
     async def session_exists(self, session: str) -> bool:
         """Check if tmux session exists"""
+        if not validate_tmux_name(session):
+            return False
+
         try:
             cmd = ["tmux", "has-session", "-t", session]
             process = await asyncio.create_subprocess_exec(
@@ -153,6 +204,10 @@ class TmuxService:
     
     async def get_windows(self, session: str) -> List[Dict[str, Any]]:
         """Get list of windows in a tmux session"""
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid session name: {session}")
+            return []
+
         try:
             # Use pipe separator to avoid conflicts with colons in window names
             cmd = ["tmux", "list-windows", "-t", session, "-F", "#{window_index}|#{window_name}|#{window_active}|#{window_panes}"]
@@ -178,15 +233,22 @@ class TmuxService:
                             })
                 return windows
             else:
-                print(f"Error listing windows: {stderr.decode()}")
+                logger.warning(f"Error listing windows: {stderr.decode()}")
                 return []
                 
         except Exception as e:
-            print(f"Error getting windows: {e}")
+            logger.error(f"Error getting windows: {e}")
             return []
     
     async def get_panes(self, session: str, window: str = None) -> List[Dict[str, Any]]:
         """Get list of panes in a tmux window"""
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid session name: {session}")
+            return []
+        if window and not validate_tmux_name(window):
+            logger.warning(f"Invalid window name: {window}")
+            return []
+
         try:
             target = f"{session}:{window}" if window else session
             # Use pipe separator to avoid conflicts with colons in commands
@@ -213,15 +275,19 @@ class TmuxService:
                             })
                 return panes
             else:
-                print(f"Error listing panes: {stderr.decode()}")
+                logger.warning(f"Error listing panes: {stderr.decode()}")
                 return []
                 
         except Exception as e:
-            print(f"Error getting panes: {e}")
+            logger.error(f"Error getting panes: {e}")
             return []
     
     async def kill_session(self, session: str) -> bool:
         """Kill a tmux session"""
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid session name: {session}")
+            return False
+
         try:
             cmd = ["tmux", "kill-session", "-t", session]
             process = await asyncio.create_subprocess_exec(
@@ -234,11 +300,18 @@ class TmuxService:
             return process.returncode == 0
             
         except Exception as e:
-            print(f"Error killing session: {e}")
+            logger.error(f"Error killing session: {e}")
             return False
     
     async def create_window(self, session: str, window_name: str = None) -> bool:
         """Create a new window in a tmux session"""
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid session name: {session}")
+            return False
+        if window_name and not validate_tmux_name(window_name):
+            logger.warning(f"Invalid window name: {window_name}")
+            return False
+
         try:
             # Add colon to session name to let tmux auto-assign window index
             cmd = ["tmux", "new-window", "-d", "-t", f"{session}:"]
@@ -254,16 +327,23 @@ class TmuxService:
             stdout, stderr = await process.communicate()
             
             if process.returncode != 0:
-                print(f"tmux new-window failed: {stderr.decode()}")
+                logger.warning(f"tmux new-window failed: {stderr.decode()}")
                 
             return process.returncode == 0
             
         except Exception as e:
-            print(f"Error creating window: {e}")
+            logger.error(f"Error creating window: {e}")
             return False
     
     async def kill_window(self, session: str, window_index: str) -> bool:
         """Kill a window in a tmux session"""
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid session name: {session}")
+            return False
+        if not validate_tmux_name(window_index):
+            logger.warning(f"Invalid window index: {window_index}")
+            return False
+
         try:
             target = f"{session}:{window_index}"
             cmd = ["tmux", "kill-window", "-t", target]
@@ -277,7 +357,7 @@ class TmuxService:
             return process.returncode == 0
             
         except Exception as e:
-            print(f"Error killing window: {e}")
+            logger.error(f"Error killing window: {e}")
             return False
 
     async def get_hierarchy(self) -> Dict[str, Any]:
@@ -285,25 +365,25 @@ class TmuxService:
         try:
             sessions = await self.get_sessions()
             hierarchy = {}
-            
-            print(f"Found {len(sessions)} sessions: {sessions}")
-            
+
+            logger.debug(f"Found {len(sessions)} sessions: {sessions}")
+
             for session in sessions:
-                print(f"Processing session: {session}")
-                
+                logger.debug(f"Processing session: {session}")
+
                 windows = await self.get_windows(session)
-                print(f"Found {len(windows)} windows in session {session}: {[w['name'] for w in windows]}")
-                
+                logger.debug(f"Found {len(windows)} windows in session {session}")
+
                 session_data = {
                     'name': session,
                     'windows': {}
                 }
-                
+
                 for window in windows:
-                    print(f"Processing window {window['index']}: {window['name']}")
-                    
+                    logger.debug(f"Processing window {window['index']}: {window['name']}")
+
                     panes = await self.get_panes(session, window['index'])
-                    print(f"Found {len(panes)} panes in window {window['index']}")
+                    logger.debug(f"Found {len(panes)} panes in window {window['index']}")
                     
                     # Store window data with proper structure
                     session_data['windows'][window['index']] = {
@@ -320,10 +400,10 @@ class TmuxService:
                     }
                 
                 hierarchy[session] = session_data
-            
-            print(f"Final hierarchy structure: {hierarchy}")
+
+            logger.debug(f"Final hierarchy structure: {list(hierarchy.keys())}")
             return hierarchy
-            
+
         except Exception as e:
-            print(f"Error getting hierarchy: {e}")
+            logger.error(f"Error getting hierarchy: {e}")
             return {}

@@ -5,7 +5,6 @@ interface UseTmuxReturn {
   sendCommand: (command: string, target?: string) => Promise<void>;
   sendEnter: (target?: string) => Promise<void>;
   getOutput: (target?: string) => Promise<string>;
-  getSessions: () => Promise<string[]>;
   isLoading: boolean;
   error: string | null;
 }
@@ -58,25 +57,10 @@ export const useTmux = (): UseTmuxReturn => {
     }
   }, []);
 
-  const getSessions = useCallback(async (): Promise<string[]> => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      return await tmuxAPI.getSessions();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get sessions');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   return {
     sendCommand,
     sendEnter,
     getOutput,
-    getSessions,
     isLoading,
     error,
   };

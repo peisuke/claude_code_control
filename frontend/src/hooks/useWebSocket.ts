@@ -11,7 +11,6 @@ interface UseWebSocketReturn {
   connect: () => void;
   disconnect: () => void;
   setTarget: (target: string) => void;
-  forceReconnect: () => void;
   resetAndReconnect: () => void;
   error: string | null;
 }
@@ -88,12 +87,6 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     setError(null);
   }, []);
 
-  const forceReconnect = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.forceReconnect();
-    }
-  }, []);
-
   const resetAndReconnect = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.resetAndReconnect();
@@ -106,21 +99,19 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   // Handle network state changes
   useEffect(() => {
     const handleOnline = () => {
-      console.log('Network back online, attempting to reconnect...');
       setError(null);
-      
+
       // If we were trying to reconnect, force a fresh connection attempt
       if (isReconnecting || !isConnected) {
         setTimeout(() => {
           if (wsRef.current) {
-            wsRef.current.forceReconnect();
+            wsRef.current.resetAndReconnect();
           }
         }, 1000);
       }
     };
 
     const handleOffline = () => {
-      console.log('Network went offline');
       setError('Network offline');
     };
 
@@ -162,7 +153,6 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     connect,
     disconnect,
     setTarget,
-    forceReconnect,
     resetAndReconnect,
     error,
   };

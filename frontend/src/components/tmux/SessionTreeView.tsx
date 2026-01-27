@@ -7,7 +7,6 @@ import {
   ListItemIcon,
   ListItemText,
   Collapse,
-  Typography,
   IconButton,
   Dialog,
   DialogTitle,
@@ -28,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { TmuxHierarchy } from '../../types';
 import { tmuxAPI } from '../../services/api';
+import { TmuxUtils } from '../../utils/tmux';
 
 interface SessionTreeViewProps {
   hierarchy: TmuxHierarchy | null;
@@ -63,29 +63,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
   const [loading, setLoading] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(initialDeleteDialog);
 
-  // Parse current target
-  const parseTarget = (target: string) => {
-    const parts = target.split(':');
-    const session = parts[0] || 'default';
-    const windowPart = parts[1] || '';
-    const windowPaneParts = windowPart.split('.');
-    const window = windowPaneParts[0];
-    const pane = windowPaneParts[1];
-    return { session, window: window || undefined, pane: pane || undefined };
-  };
-
-  const buildTarget = (session: string, window?: string, pane?: string): string => {
-    let target = session;
-    if (window) {
-      target += `:${window}`;
-      if (pane) {
-        target += `.${pane}`;
-      }
-    }
-    return target;
-  };
-
-  const currentTarget = parseTarget(selectedTarget);
+  const currentTarget = TmuxUtils.parseTarget(selectedTarget);
   const sessions = hierarchy?.sessions || {};
 
   // Auto-expand the currently selected session and window
@@ -120,7 +98,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
       const windowKeys = Object.keys(sessionData.windows).sort((a, b) => parseInt(a) - parseInt(b));
       if (windowKeys.length > 0) {
         const firstWindow = windowKeys[0];
-        onTargetChange(buildTarget(sessionName, firstWindow));
+        onTargetChange(TmuxUtils.buildTarget(sessionName, firstWindow));
       } else {
         onTargetChange(sessionName);
       }
@@ -134,14 +112,14 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
     if (windowData && windowData.panes && Object.keys(windowData.panes).length > 1) {
       const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
       const firstPane = paneKeys[0];
-      onTargetChange(buildTarget(sessionName, windowIndex, firstPane));
+      onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex, firstPane));
     } else {
-      onTargetChange(buildTarget(sessionName, windowIndex));
+      onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex));
     }
   };
 
   const handlePaneClick = (sessionName: string, windowIndex: string, paneIndex: string) => {
-    onTargetChange(buildTarget(sessionName, windowIndex, paneIndex));
+    onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex, paneIndex));
   };
 
   // Session/Window management handlers
@@ -176,7 +154,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
         await tmuxAPI.createSession(sessionName);
         onRefresh?.();
       } catch (err) {
-        console.error('Error creating session:', err);
         alert(err instanceof Error ? err.message : 'セッションの作成に失敗しました');
       } finally {
         setLoading(false);
@@ -208,7 +185,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
         await tmuxAPI.createWindow(sessionName, windowName.trim() || undefined);
         onRefresh?.();
       } catch (err) {
-        console.error('Error creating window:', err);
         alert(err instanceof Error ? err.message : 'ウィンドウの作成に失敗しました');
       } finally {
         setLoading(false);
@@ -243,7 +219,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
       }
       onRefresh?.();
     } catch (err) {
-      console.error('Error deleting:', err);
       alert(err instanceof Error ? err.message : '削除に失敗しました');
     } finally {
       setLoading(false);

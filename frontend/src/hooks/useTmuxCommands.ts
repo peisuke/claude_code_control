@@ -11,15 +11,13 @@ interface UseTmuxCommandsReturn {
 
 interface UseTmuxCommandsOptions {
   onRefresh?: () => Promise<void>;
-  onOutput?: (output: string) => void;
 }
 
 /**
  * Hook to handle tmux command operations with standardized delay and error handling
  */
 export const useTmuxCommands = ({
-  onRefresh,
-  onOutput
+  onRefresh
 }: UseTmuxCommandsOptions = {}): UseTmuxCommandsReturn => {
   const tmux = useTmux();
 

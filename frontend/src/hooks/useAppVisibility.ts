@@ -12,21 +12,16 @@ interface UseAppVisibilityOptions {
 export const useAppVisibility = ({ onAppResume, enabled = true }: UseAppVisibilityOptions) => {
   const handleVisibilityChange = useCallback(() => {
     if (!document.hidden) {
-      console.log('App resumed (visibilitychange), attempting reconnection...');
       onAppResume();
-    } else {
-      console.log('App went to background (visibilitychange)');
     }
   }, [onAppResume]);
 
   const handleFocus = useCallback(() => {
-    console.log('App focused, checking connection...');
     onAppResume();
   }, [onAppResume]);
 
   const handlePageShow = useCallback((event: PageTransitionEvent) => {
     if (event.persisted) {
-      console.log('App resumed from cache (pageshow), forcing reconnection...');
       onAppResume();
     }
   }, [onAppResume]);

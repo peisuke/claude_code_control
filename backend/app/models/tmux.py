@@ -1,6 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any, Dict, List
-from datetime import datetime
+from typing import Optional, Any
 
 
 class CommandRequest(BaseModel):
@@ -18,30 +17,6 @@ class TmuxOutput(BaseModel):
     content: str
     timestamp: str
     target: str
-
-
-class TmuxPane(BaseModel):
-    index: str
-    active: bool
-    command: str
-    size: Optional[str] = None
-
-
-class TmuxWindow(BaseModel):
-    index: str
-    name: str
-    active: bool
-    pane_count: Optional[int] = None
-    panes: Dict[str, TmuxPane]
-
-
-class TmuxSession(BaseModel):
-    name: str
-    windows: Dict[str, TmuxWindow]
-
-
-class TmuxHierarchy(BaseModel):
-    sessions: Dict[str, TmuxSession]
 
 
 class ApiResponse(BaseModel):

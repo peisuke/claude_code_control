@@ -7,7 +7,6 @@ const convert = new Convert();
 
 interface TerminalOutputProps {
   output: string;
-  isConnected: boolean;
   onScroll?: (e: React.UIEvent<HTMLElement>) => void;
   outputRef?: React.RefObject<HTMLDivElement>;
   isLoadingHistory?: boolean;
@@ -15,7 +14,6 @@ interface TerminalOutputProps {
 
 const TerminalOutput: React.FC<TerminalOutputProps> = ({
   output,
-  isConnected,
   onScroll,
   outputRef,
   isLoadingHistory = false

@@ -2,11 +2,12 @@ import { useCallback, useEffect } from 'react';
 import { useTerminalOutput } from './useTerminalOutput';
 import { useTmux } from './useTmux';
 import { TIMING } from '../constants/ui';
+import { TmuxOutput } from '../types';
 
 interface UseOutputStateProps {
   selectedTarget: string;
   isConnected: boolean;
-  lastMessage: any;
+  lastMessage: TmuxOutput | null;
   autoRefresh: boolean;
 }
 
@@ -19,7 +20,6 @@ interface OutputState {
 interface OutputHandlers {
   handleRefresh: () => Promise<void>;
   setOutput: (output: string) => void;
-  scrollToBottom: () => void;
 }
 
 interface UseOutputStateReturn {
@@ -46,9 +46,8 @@ export const useOutputState = ({
       const outputContent = await getOutput(selectedTarget);
       setOutput(outputContent);
       setTimeout(() => scrollToBottom(), TIMING.SCROLL_ANIMATION_DELAY);
-    } catch (error) {
-      // Error is handled by the hook
-      console.error('Error refreshing output:', error);
+    } catch {
+      // Silently fail output refresh
     }
   }, [getOutput, selectedTarget, setOutput, scrollToBottom]);
 
@@ -85,8 +84,7 @@ export const useOutputState = ({
 
   const handlers: OutputHandlers = {
     handleRefresh,
-    setOutput,
-    scrollToBottom
+    setOutput
   };
 
   return {

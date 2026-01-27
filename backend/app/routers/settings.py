@@ -1,8 +1,11 @@
 from fastapi import APIRouter, HTTPException
 import json
 import os
+import logging
 
 from ..models import TmuxSettings, ApiResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -19,7 +22,7 @@ def load_settings() -> TmuxSettings:
         else:
             return TmuxSettings()
     except Exception as e:
-        print(f"Error loading settings: {e}")
+        logger.error(f"Error loading settings: {e}")
         return TmuxSettings()
 
 
@@ -30,7 +33,7 @@ def save_settings(settings: TmuxSettings) -> bool:
             json.dump(settings.dict(), f, indent=2)
         return True
     except Exception as e:
-        print(f"Error saving settings: {e}")
+        logger.error(f"Error saving settings: {e}")
         return False
 
 

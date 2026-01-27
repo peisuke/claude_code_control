@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException
-from typing import List, Optional
+from typing import List
 import os
-import pathlib
 import base64
+import logging
 import mimetypes
 
 from ..models import ApiResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
@@ -13,27 +15,75 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.md', '.txt', '.yml', '.yaml', '.toml', '.css', '.html', '.sh', '.env', '.log', '.conf', '.cfg', '.ini', '.xml', '.sql', '.csv', '.php', '.rb', '.go', '.rs', '.cpp', '.c', '.h', '.java', '.kt', '.swift', '.dart', '.vue', '.svelte', '.scss', '.sass', '.less', '.R', '.m', '.pl', '.lua', '.vim', '.zsh', '.bash', '.fish', '.ps1', '.bat', '.dockerfile', '.gitignore', '.gitattributes', '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc', '.config', '.profile', '.bashrc', '.zshrc', '.vimrc', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico', ''}
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico'}
 MAX_FILE_SIZE = 1024 * 1024 * 5  # 5MB
-BASE_PATH = '/'  # Filesystem root as base
 INITIAL_PATH = os.getcwd()  # Current working directory as starting point
+
+# Allowed base paths - restrict file access to these directories only
+ALLOWED_BASE_PATHS = [
+    os.path.expanduser('~'),  # User's home directory
+    '/tmp',
+    '/home',
+    '/workspace',
+    os.getcwd(),  # Current working directory
+]
 
 # Hidden files/directories that should be shown
 ALLOWED_HIDDEN = {'.bashrc', '.profile', '.zshrc', '.vimrc', '.gitignore', '.gitattributes', '.env', '.config', '.ssh'}
 
 # System directories to skip for performance and security
 BLOCKED_DIRECTORIES = {
-    'proc', 'sys', 'dev', 'run', 'tmp', 'var/log', 'var/cache', 'var/tmp',
-    'node_modules', '__pycache__', '.git', 'dist', 'build', '.vscode-server', 
-    '.docker', 'snap', 'lost+found', 'boot', 'media', 'mnt'
+    'proc', 'sys', 'dev', 'run', 'var', 'etc', 'root', 'boot', 'sbin', 'bin',
+    'lib', 'lib64', 'usr', 'opt', 'srv', 'media', 'mnt', 'snap', 'lost+found',
+    'node_modules', '__pycache__', '.git', 'dist', 'build', '.vscode-server',
+    '.docker', '.cache', '.local/share/Trash'
+}
+
+# Sensitive file patterns that should never be accessible
+BLOCKED_FILES = {
+    'id_rsa', 'id_ed25519', 'id_ecdsa', 'id_dsa',  # SSH private keys
+    '.pem', '.key', '.p12', '.pfx',  # Certificate private keys
+    'shadow', 'passwd', 'sudoers',  # System files
+    '.aws/credentials', '.netrc', '.npmrc',  # Credential files
 }
 
 def is_safe_path(path: str) -> bool:
-    """Check if the path is safe (within filesystem bounds)"""
+    """Check if the path is safe (within allowed base paths)"""
     try:
         # Normalize the path to prevent directory traversal
-        requested_path = os.path.abspath(path)
-        # Allow any path within the filesystem root
-        return requested_path.startswith('/')
-    except:
+        requested_path = os.path.realpath(path)
+
+        # Check if path is within any allowed base path
+        for base_path in ALLOWED_BASE_PATHS:
+            normalized_base = os.path.realpath(base_path)
+            if requested_path.startswith(normalized_base + os.sep) or requested_path == normalized_base:
+                return True
+
+        return False
+    except Exception:
+        return False
+
+def is_blocked_file(path: str) -> bool:
+    """Check if a file should be blocked for security reasons"""
+    try:
+        filename = os.path.basename(path)
+        file_ext = os.path.splitext(filename)[1].lower()
+
+        # Check against blocked filenames
+        if filename in BLOCKED_FILES:
+            return True
+
+        # Check against blocked extensions
+        if file_ext in {'.pem', '.key', '.p12', '.pfx'}:
+            return True
+
+        # Check if path contains sensitive patterns
+        normalized_path = path.lower()
+        sensitive_patterns = ['/.ssh/id_', '/credentials', '/secrets', '/.aws/']
+        for pattern in sensitive_patterns:
+            if pattern in normalized_path:
+                return True
+
+        return False
+    except Exception:
         return False
 
 def get_file_tree(directory: str, max_depth: int = 1, current_depth: int = 0) -> List[dict]:
@@ -114,7 +164,7 @@ def get_file_tree(directory: str, max_depth: int = 1, current_depth: int = 0) ->
     except PermissionError:
         pass
     except Exception as e:
-        print(f"[ERROR] Error reading directory {directory}: {e}")
+        logger.error(f"Error reading directory {directory}: {e}")
         
     return items
 
@@ -131,19 +181,19 @@ async def get_tree(path: str = ""):
         else:
             target_path = os.path.abspath(path)
             
-        print(f"[DEBUG] get_tree called with path: {path}")
-        print(f"[DEBUG] target_path: {target_path}")
+        logger.debug(f"get_tree called with path: {path}")
+        logger.debug(f"target_path: {target_path}")
         
         if not is_safe_path(target_path):
-            print(f"[DEBUG] Access denied for path: {target_path}")
-            raise HTTPException(status_code=403, detail="Access denied")
+            logger.warning(f"Access denied for path outside allowed directories: {target_path}")
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directories")
         
         if not os.path.exists(target_path):
-            print(f"[DEBUG] Path not found: {target_path}")
+            logger.debug(f"Path not found: {target_path}")
             raise HTTPException(status_code=404, detail="Path not found")
             
         if not os.path.isdir(target_path):
-            print(f"[DEBUG] Path is not a directory: {target_path}")
+            logger.debug(f"Path is not a directory: {target_path}")
             raise HTTPException(status_code=400, detail="Path is not a directory")
         
         # Check if this is a potentially slow directory
@@ -154,9 +204,7 @@ async def get_tree(path: str = ""):
         tree = get_file_tree(target_path)
         end_time = time.time()
         
-        print(f"[DEBUG] Tree generated in {end_time - start_time:.2f}s, items count: {len(tree)}")
-        if tree:
-            print(f"[DEBUG] First few items: {[item['name'] for item in tree[:5]]}")
+        logger.debug(f"Tree generated in {end_time - start_time:.2f}s, items count: {len(tree)}")
         
         return ApiResponse(
             success=True,
@@ -177,10 +225,15 @@ async def get_file_content(path: str):
     """Get content of a specific file"""
     try:
         # Use absolute path directly
-        full_path = os.path.abspath(path)
+        full_path = os.path.realpath(path)
 
         if not is_safe_path(full_path):
-            raise HTTPException(status_code=403, detail="Access denied")
+            logger.warning(f"Access denied for path outside allowed directories: {path}")
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directories")
+
+        if is_blocked_file(full_path):
+            logger.warning(f"Access denied for sensitive file: {path}")
+            raise HTTPException(status_code=403, detail="Access denied: sensitive file")
 
         if not os.path.exists(full_path):
             raise HTTPException(status_code=404, detail="File not found")
@@ -252,50 +305,4 @@ async def get_file_content(path: str):
         raise HTTPException(
             status_code=500,
             detail=f"Error reading file: {str(e)}"
-        )
-
-@router.get("/search")
-async def search_files(query: str, path: str = "/"):
-    """Search for files by name"""
-    try:
-        if not is_safe_path(path):
-            raise HTTPException(status_code=403, detail="Access denied")
-            
-        if not query or len(query) < 2:
-            raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
-            
-        full_path = os.path.join(BASE_PATH, path.lstrip('/'))
-        results = []
-        
-        for root, dirs, files in os.walk(full_path):
-            # Skip hidden and common directories
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', '__pycache__', 'dist', 'build']]
-            
-            for file in files:
-                if query.lower() in file.lower():
-                    if any(file.endswith(ext) for ext in ALLOWED_EXTENSIONS):
-                        file_path = os.path.join(root, file)
-                        relative_path = os.path.relpath(file_path, BASE_PATH)
-                        results.append({
-                            'name': file,
-                            'path': '/' + relative_path.replace('\\', '/'),
-                            'type': 'file'
-                        })
-                        
-            # Limit results
-            if len(results) >= 50:
-                break
-                
-        return ApiResponse(
-            success=True,
-            message=f"Found {len(results)} results",
-            data={'results': results}
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error searching files: {str(e)}"
         )

@@ -6,9 +6,6 @@ interface UseTerminalOutputReturn {
   setOutput: (output: string) => void;
   outputRef: React.RefObject<HTMLDivElement>;
   scrollToBottom: () => void;
-  isAtBottom: () => boolean;
-  autoScrollIfAtBottom: () => void;
-  clearOutput: () => void;
 }
 
 /**
@@ -22,25 +19,10 @@ export const useTerminalOutput = (): UseTerminalOutputReturn => {
     ScrollUtils.scrollToBottom(outputRef.current);
   }, []);
 
-  const isAtBottom = useCallback((): boolean => {
-    return ScrollUtils.isAtBottom(outputRef.current);
-  }, []);
-
-  const autoScrollIfAtBottom = useCallback(() => {
-    ScrollUtils.autoScrollIfAtBottom(outputRef.current);
-  }, []);
-
-  const clearOutput = useCallback(() => {
-    setOutput('');
-  }, []);
-
   return {
     output,
     setOutput,
     outputRef,
     scrollToBottom,
-    isAtBottom,
-    autoScrollIfAtBottom,
-    clearOutput,
   };
 };

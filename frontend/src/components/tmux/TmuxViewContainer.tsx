@@ -17,7 +17,6 @@ interface TmuxViewContainerProps {
   onToggleExpanded: () => void;
   isLoading: boolean;
   selectedTarget: string;
-  onOutputUpdate: (output: string) => void;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -31,8 +30,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onSendKeyboardCommand,
   onToggleExpanded,
   isLoading,
-  selectedTarget,
-  onOutputUpdate
+  selectedTarget
 }) => {
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -69,7 +67,6 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       }}>
         <TerminalOutput
           output={scrollBasedOutput}
-          isConnected={isConnected}
           onScroll={handleScroll}
           outputRef={outputRef}
           isLoadingHistory={isLoadingHistory}

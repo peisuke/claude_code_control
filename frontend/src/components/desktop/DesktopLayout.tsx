@@ -38,7 +38,6 @@ interface DesktopLayoutProps {
 
   // Output state
   isLoading: boolean;
-  onOutputUpdate: (output: string) => void;
   error: string | null;
 
   // Settings
@@ -66,7 +65,6 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   commandExpanded,
   onToggleExpanded,
   isLoading,
-  onOutputUpdate,
   error,
   onSettingsOpen
 }) => {
@@ -163,7 +161,6 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               onToggleExpanded={onToggleExpanded}
               isLoading={isLoading}
               selectedTarget={selectedTarget}
-              onOutputUpdate={onOutputUpdate}
             />
           )}
 

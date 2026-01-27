@@ -4,7 +4,6 @@ import { useTmuxCommands } from './useTmuxCommands';
 interface UseCommandStateProps {
   selectedTarget: string;
   onRefresh: () => Promise<void>;
-  onOutput: (output: string) => void;
 }
 
 interface CommandState {
@@ -31,16 +30,14 @@ interface UseCommandStateReturn {
  */
 export const useCommandState = ({
   selectedTarget,
-  onRefresh,
-  onOutput
+  onRefresh
 }: UseCommandStateProps): UseCommandStateReturn => {
   const [command, setCommand] = useState('');
   const [commandExpanded, setCommandExpanded] = useState(false);
 
   // Initialize tmux commands hook
   const { sendCommand, sendEnter, sendKeyboardCommand } = useTmuxCommands({
-    onRefresh,
-    onOutput
+    onRefresh
   });
 
   // Handle command send
@@ -50,18 +47,16 @@ export const useCommandState = ({
     try {
       await sendCommand(command, selectedTarget);
       setCommand('');
-    } catch (error) {
-      // Error is handled by the hook
-      console.error('Error sending command:', error);
+    } catch {
+      // Silently fail command send
     }
   }, [command, sendCommand, selectedTarget]);
 
   const handleSendEnter = useCallback(async () => {
     try {
       await sendEnter(selectedTarget);
-    } catch (error) {
-      // Error is handled by the hook
-      console.error('Error sending enter:', error);
+    } catch {
+      // Silently fail enter send
     }
   }, [sendEnter, selectedTarget]);
 
@@ -69,8 +64,8 @@ export const useCommandState = ({
   const handleKeyboardCommand = useCallback(async (keyCommand: string) => {
     try {
       await sendKeyboardCommand(keyCommand, selectedTarget);
-    } catch (error) {
-      console.error('Error with keyboard command:', error);
+    } catch {
+      // Silently fail keyboard command
     }
   }, [sendKeyboardCommand, selectedTarget]);
 
