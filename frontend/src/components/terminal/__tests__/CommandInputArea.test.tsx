@@ -133,9 +133,8 @@ describe('CommandInputArea', () => {
 
       const buttons = screen.getAllByRole('button');
       const expandButton = buttons.find(btn => btn.querySelector('[data-testid="FullscreenIcon"]'));
-      if (expandButton) {
-        fireEvent.click(expandButton);
-      }
+      expect(expandButton).toBeDefined();
+      fireEvent.click(expandButton!);
 
       expect(defaultProps.onToggleExpanded).toHaveBeenCalledTimes(1);
     });
@@ -206,10 +205,9 @@ describe('CommandInputArea', () => {
 
       const buttons = screen.getAllByRole('button');
       const arrowUpButton = buttons.find(btn => btn.querySelector('[data-testid="KeyboardArrowUpIcon"]'));
-      if (arrowUpButton) {
-        fireEvent.click(arrowUpButton);
-        expect(defaultProps.onSendKeyboardCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.ARROW_UP);
-      }
+      expect(arrowUpButton).toBeDefined();
+      fireEvent.click(arrowUpButton!);
+      expect(defaultProps.onSendKeyboardCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.ARROW_UP);
     });
 
     it('should call onSendKeyboardCommand with arrow down', () => {
@@ -217,10 +215,9 @@ describe('CommandInputArea', () => {
 
       const buttons = screen.getAllByRole('button');
       const arrowDownButton = buttons.find(btn => btn.querySelector('[data-testid="KeyboardArrowDownIcon"]'));
-      if (arrowDownButton) {
-        fireEvent.click(arrowDownButton);
-        expect(defaultProps.onSendKeyboardCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.ARROW_DOWN);
-      }
+      expect(arrowDownButton).toBeDefined();
+      fireEvent.click(arrowDownButton!);
+      expect(defaultProps.onSendKeyboardCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.ARROW_DOWN);
     });
   });
 });

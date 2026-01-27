@@ -174,6 +174,27 @@ class TestFileSecurity:
     """Tests for file access security"""
 
     @pytest.mark.asyncio
+    async def test_path_traversal_blocked(self, temp_directory):
+        """Test that path traversal attempts are blocked"""
+        # Attempt to escape temp_directory using ../
+        traversal_path = os.path.join(temp_directory, "..", "..", "..", "etc", "passwd")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get(f"/api/files/content?path={traversal_path}")
+
+        # Should be blocked - either 403 (forbidden) or 404 (not found within allowed paths)
+        assert response.status_code in [403, 404]
+
+    @pytest.mark.asyncio
+    async def test_path_traversal_tree_blocked(self, temp_directory):
+        """Test that path traversal in tree endpoint is blocked"""
+        traversal_path = os.path.join(temp_directory, "..", "..", "..", "etc")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get(f"/api/files/tree?path={traversal_path}")
+
+        # Should be blocked
+        assert response.status_code in [403, 404]
+
+    @pytest.mark.asyncio
     async def test_blocked_sensitive_file(self, temp_directory):
         """Test that sensitive files are blocked"""
         # Create a fake sensitive file

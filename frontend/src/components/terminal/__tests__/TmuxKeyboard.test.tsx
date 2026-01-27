@@ -49,7 +49,7 @@ describe('TmuxKeyboard', () => {
   });
 
   describe('button interactions', () => {
-    it('should call onSendCommand with Ctrl+R command', async () => {
+    it('should call onSendCommand with Ctrl+R command', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
       fireEvent.click(screen.getByText('Ctrl+R'));
@@ -57,7 +57,7 @@ describe('TmuxKeyboard', () => {
       expect(defaultProps.onSendCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.CTRL_R);
     });
 
-    it('should call onSendCommand with Shift+Tab command', async () => {
+    it('should call onSendCommand with Shift+Tab command', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
       fireEvent.click(screen.getByText('⇧+Tab'));
@@ -65,7 +65,7 @@ describe('TmuxKeyboard', () => {
       expect(defaultProps.onSendCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.SHIFT_TAB);
     });
 
-    it('should call onSendCommand with ESC command', async () => {
+    it('should call onSendCommand with ESC command', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
       fireEvent.click(screen.getByText('ESC'));
@@ -73,7 +73,7 @@ describe('TmuxKeyboard', () => {
       expect(defaultProps.onSendCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.ESCAPE);
     });
 
-    it('should call onSendCommand with Ctrl+C command', async () => {
+    it('should call onSendCommand with Ctrl+C command', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
       fireEvent.click(screen.getByText('Ctrl+C'));
