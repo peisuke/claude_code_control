@@ -141,7 +141,6 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
   const coordinatedHandlers: CoordinatedHandlers = {
     ...commandHandlers,
     ...outputHandlers,
-    setOutput: outputHandlers.setOutput,
     handleViewModeToggle: viewHandlers.handleViewModeToggle,
     wsResetAndReconnect: connectionHandlers.wsResetAndReconnect
   };

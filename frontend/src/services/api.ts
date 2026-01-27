@@ -1,4 +1,4 @@
-import { TmuxSettings, TmuxOutput, ApiResponse, FileTreeResponse, FileContentResponse, TmuxSession } from '../types';
+import { TmuxOutput, ApiResponse, FileTreeResponse, FileContentResponse, TmuxSession } from '../types';
 
 class TmuxAPI {
   private baseURL = process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : '/api';
@@ -54,32 +54,6 @@ class TmuxAPI {
 
   async getHierarchy(): Promise<ApiResponse<Record<string, TmuxSession>>> {
     const response = await fetch(`${this.baseURL}/tmux/hierarchy`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  async getSettings(): Promise<TmuxSettings> {
-    const response = await fetch(`${this.baseURL}/settings/`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  async saveSettings(settings: TmuxSettings): Promise<ApiResponse> {
-    const response = await fetch(`${this.baseURL}/settings/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(settings),
-    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

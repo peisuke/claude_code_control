@@ -231,10 +231,6 @@ export class WebSocketService {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
-  isReconnecting(): boolean {
-    return this.reconnectAttempts > 0 && this.reconnectAttempts < this.maxReconnectAttempts;
-  }
-
   getReconnectAttempts(): number {
     return this.reconnectAttempts;
   }

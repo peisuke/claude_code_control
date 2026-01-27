@@ -20,7 +20,6 @@ interface OutputState {
 interface OutputHandlers {
   handleRefresh: () => Promise<void>;
   setOutput: (output: string) => void;
-  scrollToBottom: () => void;
 }
 
 interface UseOutputStateReturn {
@@ -85,8 +84,7 @@ export const useOutputState = ({
 
   const handlers: OutputHandlers = {
     handleRefresh,
-    setOutput,
-    scrollToBottom
+    setOutput
   };
 
   return {
