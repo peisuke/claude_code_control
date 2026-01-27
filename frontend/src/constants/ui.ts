@@ -26,13 +26,6 @@ export const TERMINAL = {
   },
 } as const;
 
-export const ANIMATION = {
-  SPIN_DURATION: '1s',
-  PULSE_DURATION: '2s',
-  HOVER_ROTATION: 'rotate(180deg)',
-  TRANSITION_DURATION: '0.3s',
-} as const;
-
 export const VIEW_MODES = {
   TMUX: 'tmux',
   FILE: 'file',

@@ -21,8 +21,7 @@ export function useLocalStorageState<T>(
         return defaultValue;
       }
       return serializer.deserialize(item);
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+    } catch {
       return defaultValue;
     }
   });
@@ -31,8 +30,8 @@ export function useLocalStorageState<T>(
     try {
       setState(value);
       localStorage.setItem(key, serializer.serialize(value));
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
+    } catch {
+      // Silently fail localStorage write
     }
   }, [key, serializer]);
 
@@ -40,8 +39,8 @@ export function useLocalStorageState<T>(
   useEffect(() => {
     try {
       localStorage.setItem(key, serializer.serialize(state));
-    } catch (error) {
-      console.error(`Error updating localStorage key "${key}":`, error);
+    } catch {
+      // Silently fail localStorage update
     }
   }, [key, state, serializer]);
 

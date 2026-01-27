@@ -1,8 +1,3 @@
-export interface CommandRequest {
-  command: string;
-  target?: string; // Can be session, session:window, or session:window.pane
-}
-
 export interface TmuxSettings {
   session_name: string;
   auto_create_session: boolean;
@@ -37,12 +32,6 @@ export interface TmuxSession {
 
 export interface TmuxHierarchy {
   sessions: Record<string, TmuxSession>;
-}
-
-export interface TmuxTarget {
-  session: string;
-  window?: string;
-  pane?: string;
 }
 
 export interface ApiResponse {

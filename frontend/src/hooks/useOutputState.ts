@@ -46,9 +46,8 @@ export const useOutputState = ({
       const outputContent = await getOutput(selectedTarget);
       setOutput(outputContent);
       setTimeout(() => scrollToBottom(), TIMING.SCROLL_ANIMATION_DELAY);
-    } catch (error) {
-      // Error is handled by the hook
-      console.error('Error refreshing output:', error);
+    } catch {
+      // Silently fail output refresh
     }
   }, [getOutput, selectedTarget, setOutput, scrollToBottom]);
 

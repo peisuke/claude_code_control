@@ -176,7 +176,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
         await tmuxAPI.createSession(sessionName);
         onRefresh?.();
       } catch (err) {
-        console.error('Error creating session:', err);
         alert(err instanceof Error ? err.message : 'セッションの作成に失敗しました');
       } finally {
         setLoading(false);
@@ -208,7 +207,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
         await tmuxAPI.createWindow(sessionName, windowName.trim() || undefined);
         onRefresh?.();
       } catch (err) {
-        console.error('Error creating window:', err);
         alert(err instanceof Error ? err.message : 'ウィンドウの作成に失敗しました');
       } finally {
         setLoading(false);
@@ -243,7 +241,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
       }
       onRefresh?.();
     } catch (err) {
-      console.error('Error deleting:', err);
       alert(err instanceof Error ? err.message : '削除に失敗しました');
     } finally {
       setLoading(false);

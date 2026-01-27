@@ -111,8 +111,7 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
     handlers: commandHandlers
   } = useCommandState({
     selectedTarget,
-    onRefresh: outputHandlers.handleRefresh,
-    onOutput: outputHandlers.setOutput
+    onRefresh: outputHandlers.handleRefresh
   });
 
   // Coordinate auto-refresh logic

@@ -58,7 +58,6 @@ export const useFileContent = (onFileOpened?: () => void): UseFileContentReturn 
       }
     } catch (err) {
       setFileError(err instanceof Error ? err.message : 'Failed to load file content');
-      console.error('Failed to open file:', err);
     } finally {
       setFileLoading(false);
     }

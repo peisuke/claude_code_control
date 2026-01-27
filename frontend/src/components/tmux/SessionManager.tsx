@@ -50,7 +50,6 @@ const SessionManager = forwardRef<SessionManagerRef, SessionManagerProps>(({
         throw new Error('Invalid hierarchy data format');
       }
     } catch (err) {
-      console.error('Error loading hierarchy:', err);
       setError(err instanceof Error ? err.message : '階層の読み込みに失敗しました');
     } finally {
       setLoading(false);

@@ -86,8 +86,8 @@ export const useScrollBasedOutput = ({
         }
       }, 0);
 
-    } catch (error) {
-      console.error('Error loading history:', error);
+    } catch {
+      // Silently fail history loading
     } finally {
       setIsLoadingHistory(false);
       isLoadingRef.current = false;

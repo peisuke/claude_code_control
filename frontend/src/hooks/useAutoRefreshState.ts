@@ -19,13 +19,6 @@ export const useAutoRefreshState = ({
   wsConnect,
   wsDisconnect
 }: UseAutoRefreshStateProps): void => {
-  // Handle auto-refresh setup
-  useEffect(() => {
-    if (isConnected && autoRefresh && !wsConnected) {
-      wsConnect();
-    }
-  }, [isConnected, autoRefresh, wsConnected, wsConnect]);
-
   // Handle autoRefresh state changes
   useEffect(() => {
     if (isConnected && autoRefresh && !wsConnected) {
