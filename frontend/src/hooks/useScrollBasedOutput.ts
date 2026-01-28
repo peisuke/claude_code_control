@@ -13,6 +13,8 @@ interface UseScrollBasedOutputReturn {
   handleScroll: (e: React.UIEvent<HTMLElement>) => void;
   setOutput: (output: string) => void;
   outputRef: React.RefObject<HTMLDivElement>;
+  scrollToBottom: () => void;
+  isAtBottom: boolean;
 }
 
 const SCROLL_THRESHOLD = 50; // pixels from top to trigger history load
@@ -32,12 +34,11 @@ export const useScrollBasedOutput = ({
 }: UseScrollBasedOutputOptions): UseScrollBasedOutputReturn => {
   const [output, setOutput] = useState(initialOutput);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   const [totalLoadedLines, setTotalLoadedLines] = useState(0);
   const outputRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
-  // Track user's scroll intent - true means user wants to stay at bottom
-  const shouldAutoScrollRef = useRef(true);
 
   // Check if user is at bottom of scroll
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
@@ -46,15 +47,14 @@ export const useScrollBasedOutput = ({
     return distanceFromBottom < BOTTOM_THRESHOLD;
   }, []);
 
-  // Auto-scroll to bottom only if user hasn't scrolled up
-  useEffect(() => {
+  // Manual scroll to bottom function
+  const scrollToBottom = useCallback(() => {
     const element = outputRef.current;
-    if (!element) return;
-
-    if (shouldAutoScrollRef.current) {
+    if (element) {
       element.scrollTop = element.scrollHeight;
+      setIsAtBottom(true);
     }
-  }, [output]);
+  }, []);
 
   // Load more history when scrolling to top
   const loadMoreHistory = useCallback(async () => {
@@ -101,11 +101,9 @@ export const useScrollBasedOutput = ({
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
 
-    // Update auto-scroll intent based on user's scroll position
-    // If user scrolls to bottom, enable auto-scroll
-    // If user scrolls up (away from bottom), disable auto-scroll
+    // Track if user is at bottom (for future "new updates" notification)
     const atBottom = checkIfAtBottom(element);
-    shouldAutoScrollRef.current = atBottom;
+    setIsAtBottom(atBottom);
 
     // Check if at top and should load more history
     if (element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {
@@ -125,6 +123,8 @@ export const useScrollBasedOutput = ({
     isLoadingHistory,
     handleScroll,
     setOutput: updateOutput,
-    outputRef
+    outputRef,
+    scrollToBottom,
+    isAtBottom
   };
 };

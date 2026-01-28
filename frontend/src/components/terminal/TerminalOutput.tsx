@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Stack, CircularProgress, Typography } from '@mui/material';
+import { Box, Stack, CircularProgress, Typography, Fab } from '@mui/material';
+import { Refresh } from '@mui/icons-material';
 import Convert from 'ansi-to-html';
 import { TERMINAL, LABELS } from '../../constants/ui';
 
@@ -10,13 +11,17 @@ interface TerminalOutputProps {
   onScroll?: (e: React.UIEvent<HTMLElement>) => void;
   outputRef?: React.RefObject<HTMLDivElement>;
   isLoadingHistory?: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 const TerminalOutput: React.FC<TerminalOutputProps> = ({
   output,
   onScroll,
   outputRef,
-  isLoadingHistory = false
+  isLoadingHistory = false,
+  onRefresh,
+  isRefreshing = false
 }) => {
   return (
     <Stack sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -42,6 +47,30 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
           <CircularProgress size={16} />
           <Typography variant="caption">履歴を読み込み中...</Typography>
         </Box>
+      )}
+
+      {/* Refresh button - positioned at bottom right of terminal area */}
+      {/* TODO: Later enhance to show "new updates available" when updates arrive while scrolled up */}
+      {onRefresh && (
+        <Fab
+          size="small"
+          color="primary"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          sx={{
+            position: 'absolute',
+            bottom: 24,
+            right: 24,
+            zIndex: 10
+          }}
+          title="最新に更新"
+        >
+          {isRefreshing ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            <Refresh />
+          )}
+        </Fab>
       )}
 
       {/* Terminal Output */}

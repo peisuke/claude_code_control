@@ -17,6 +17,7 @@ interface TmuxViewContainerProps {
   onToggleExpanded: () => void;
   isLoading: boolean;
   selectedTarget: string;
+  onRefresh?: () => Promise<void>;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -30,15 +31,19 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onSendKeyboardCommand,
   onToggleExpanded,
   isLoading,
-  selectedTarget
+  selectedTarget,
+  onRefresh
 }) => {
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
     output: scrollBasedOutput,
     isLoadingHistory,
     handleScroll,
     setOutput,
-    outputRef
+    outputRef,
+    scrollToBottom
   } = useScrollBasedOutput({
     selectedTarget,
     isConnected,
@@ -46,9 +51,22 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   });
 
   // Update scroll-based output when WebSocket updates arrive
+  // Note: Auto-scroll is disabled. User must click refresh button to update and scroll.
   React.useEffect(() => {
     setOutput(output);
   }, [output, setOutput]);
+
+  // Handle refresh button click - fetches new output and scrolls to bottom
+  const handleRefresh = React.useCallback(async () => {
+    if (!onRefresh) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+      scrollToBottom();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, scrollToBottom]);
 
   return (
     <Box sx={{
@@ -70,6 +88,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           onScroll={handleScroll}
           outputRef={outputRef}
           isLoadingHistory={isLoadingHistory}
+          onRefresh={onRefresh ? handleRefresh : undefined}
+          isRefreshing={isRefreshing}
         />
         <TmuxKeyboard
           isConnected={isConnected}
