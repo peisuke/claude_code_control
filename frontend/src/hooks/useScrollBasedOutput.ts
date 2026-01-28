@@ -16,6 +16,7 @@ interface UseScrollBasedOutputReturn {
   scrollToBottom: () => void;
   isAtBottom: boolean;
   checkIsAtBottom: () => boolean;
+  hasUserScrolledUp: () => boolean;
 }
 
 const SCROLL_THRESHOLD = 50; // pixels from top to trigger history load
@@ -40,11 +41,13 @@ export const useScrollBasedOutput = ({
   const outputRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
+  const userScrolledUpRef = useRef(false);
 
   // Reset state when target changes
   useEffect(() => {
     setIsAtBottom(true);
     setTotalLoadedLines(0);
+    userScrolledUpRef.current = false;
   }, [selectedTarget]);
 
   // Check if user is at bottom of scroll
@@ -60,6 +63,7 @@ export const useScrollBasedOutput = ({
     if (element) {
       element.scrollTop = element.scrollHeight;
       setIsAtBottom(true);
+      userScrolledUpRef.current = false;
     }
   }, []);
 
@@ -118,6 +122,7 @@ export const useScrollBasedOutput = ({
     // Track if user is at bottom
     const atBottom = checkIfAtBottom(element);
     setIsAtBottom(atBottom);
+    userScrolledUpRef.current = !atBottom;
 
     // Check if at top and should load more history
     if (element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {
@@ -140,6 +145,7 @@ export const useScrollBasedOutput = ({
     outputRef,
     scrollToBottom,
     isAtBottom,
-    checkIsAtBottom
+    checkIsAtBottom,
+    hasUserScrolledUp: () => userScrolledUpRef.current
   };
 };

@@ -48,7 +48,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     setOutput,
     outputRef,
     scrollToBottom,
-    checkIsAtBottom
+    checkIsAtBottom,
+    hasUserScrolledUp
   } = useScrollBasedOutput({
     selectedTarget,
     isConnected,
@@ -70,8 +71,10 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     // Check if output actually changed from what we've displayed
     const outputChanged = output !== prevOutputRef.current;
 
-    // Use real-time check instead of potentially stale state
-    const currentlyAtBottom = checkIsAtBottom();
+    // Use intent-based check: if user hasn't explicitly scrolled up, treat as "at bottom"
+    // This avoids race conditions where checkIsAtBottom() returns false because
+    // scrollToBottom() hasn't executed yet after the previous content update
+    const shouldAutoUpdate = !hasUserScrolledUp() || checkIsAtBottom();
 
     // Force update if refresh was requested, or auto-update if at bottom
     const shouldForceUpdate = forceUpdateRef.current;
@@ -79,7 +82,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       forceUpdateRef.current = false;
     }
 
-    if (currentlyAtBottom || shouldForceUpdate) {
+    if (shouldAutoUpdate || shouldForceUpdate) {
       // Only update prevOutputRef when we actually display the output
       prevOutputRef.current = output;
       setOutput(output);
@@ -98,7 +101,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [output, setOutput, checkIsAtBottom, scrollToBottom]);
+  }, [output, setOutput, checkIsAtBottom, scrollToBottom, hasUserScrolledUp]);
 
   // Handle refresh button click - fetches new output and scrolls to bottom
   const handleRefresh = React.useCallback(async () => {
