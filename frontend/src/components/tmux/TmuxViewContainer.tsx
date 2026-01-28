@@ -17,7 +17,7 @@ interface TmuxViewContainerProps {
   onToggleExpanded: () => void;
   isLoading: boolean;
   selectedTarget: string;
-  onRefresh?: () => Promise<void>;
+  onRefresh?: () => Promise<string | undefined>;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -67,12 +67,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       return;
     }
 
-    // Check if output actually changed
+    // Check if output actually changed from what we've displayed
     const outputChanged = output !== prevOutputRef.current;
-    if (!outputChanged) {
-      return;
-    }
-    prevOutputRef.current = output;
 
     // Use real-time check instead of potentially stale state
     const currentlyAtBottom = checkIsAtBottom();
@@ -84,12 +80,15 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     }
 
     if (currentlyAtBottom || shouldForceUpdate) {
+      // Only update prevOutputRef when we actually display the output
+      prevOutputRef.current = output;
       setOutput(output);
       setHasPendingUpdates(false);
       // Use setTimeout to scroll after render
       timeoutId = setTimeout(() => scrollToBottom(), 0);
-    } else {
-      // If scrolled up, mark as having pending updates
+    } else if (outputChanged) {
+      // If scrolled up and output changed, mark as having pending updates
+      // Don't update prevOutputRef - we haven't displayed this output yet
       setHasPendingUpdates(true);
     }
 
@@ -105,16 +104,35 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
-    // Mark that we want to force update regardless of scroll position
-    forceUpdateRef.current = true;
     try {
-      await onRefresh();
-      // Parent's onRefresh updates output state, which triggers useEffect
-      // The useEffect will see forceUpdateRef.current = true and update
+      // onRefresh now returns the fetched output directly
+      const newOutput = await onRefresh();
+      if (newOutput !== undefined) {
+        prevOutputRef.current = newOutput;
+        setOutput(newOutput);
+        setHasPendingUpdates(false);
+        setTimeout(() => scrollToBottom(), 0);
+      }
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh]);
+  }, [onRefresh, setOutput, scrollToBottom]);
+
+  // Wrap command functions to force update after sending
+  const handleSendCommand = React.useCallback(async () => {
+    forceUpdateRef.current = true;
+    await onSendCommand();
+  }, [onSendCommand]);
+
+  const handleSendEnter = React.useCallback(async () => {
+    forceUpdateRef.current = true;
+    await onSendEnter();
+  }, [onSendEnter]);
+
+  const handleSendKeyboardCommand = React.useCallback(async (cmd: string) => {
+    forceUpdateRef.current = true;
+    await onSendKeyboardCommand(cmd);
+  }, [onSendKeyboardCommand]);
 
   return (
     <Box sx={{
@@ -143,7 +161,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         <TmuxKeyboard
           isConnected={isConnected}
           isLoading={isLoading}
-          onSendCommand={onSendKeyboardCommand}
+          onSendCommand={handleSendKeyboardCommand}
         />
       </Paper>
 
@@ -159,9 +177,9 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         <CommandInputArea
           command={command}
           onCommandChange={onCommandChange}
-          onSendCommand={onSendCommand}
-          onSendEnter={onSendEnter}
-          onSendKeyboardCommand={onSendKeyboardCommand}
+          onSendCommand={handleSendCommand}
+          onSendEnter={handleSendEnter}
+          onSendKeyboardCommand={handleSendKeyboardCommand}
           isConnected={isConnected}
           isLoading={isLoading}
           isExpanded={commandExpanded}

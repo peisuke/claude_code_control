@@ -17,7 +17,7 @@ interface OutputState {
 }
 
 interface OutputHandlers {
-  handleRefresh: () => Promise<void>;
+  handleRefresh: () => Promise<string | undefined>;
   setOutput: (output: string) => void;
 }
 
@@ -39,14 +39,16 @@ export const useOutputState = ({
   const { output, setOutput } = useTerminalOutput();
   const { getOutput, isLoading, error } = useTmux();
 
-  // Refresh handler
+  // Refresh handler - returns output content for immediate use
   // Note: Scroll behavior is handled by useScrollBasedOutput in TmuxViewContainer
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = useCallback(async (): Promise<string | undefined> => {
     try {
       const outputContent = await getOutput(selectedTarget);
       setOutput(outputContent);
+      return outputContent;
     } catch {
       // Silently fail output refresh
+      return undefined;
     }
   }, [getOutput, selectedTarget, setOutput]);
 

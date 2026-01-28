@@ -39,7 +39,7 @@ interface DesktopLayoutProps {
   // Output state
   isLoading: boolean;
   error: string | null;
-  onRefresh?: () => Promise<void>;
+  onRefresh?: () => Promise<string | undefined>;
 
   // Settings
   onSettingsOpen: () => void;
