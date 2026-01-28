@@ -17,6 +17,7 @@ interface TmuxViewContainerProps {
   onToggleExpanded: () => void;
   isLoading: boolean;
   selectedTarget: string;
+  onRefresh?: () => Promise<void>;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -30,25 +31,80 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onSendKeyboardCommand,
   onToggleExpanded,
   isLoading,
-  selectedTarget
+  selectedTarget,
+  onRefresh
 }) => {
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [hasPendingUpdates, setHasPendingUpdates] = React.useState(false);
+  const isInitialMountRef = React.useRef(true);
+  const prevOutputRef = React.useRef(output);
+
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
     output: scrollBasedOutput,
     isLoadingHistory,
     handleScroll,
     setOutput,
-    outputRef
+    outputRef,
+    scrollToBottom,
+    isAtBottom
   } = useScrollBasedOutput({
     selectedTarget,
     isConnected,
     initialOutput: output
   });
 
-  // Update scroll-based output when WebSocket updates arrive
+  // Auto-update when at bottom, track pending updates when scrolled up
   React.useEffect(() => {
-    setOutput(output);
-  }, [output, setOutput]);
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    // Always update on initial mount
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      setOutput(output);
+      prevOutputRef.current = output;
+      return;
+    }
+
+    // Check if output actually changed
+    if (output === prevOutputRef.current) {
+      return;
+    }
+    prevOutputRef.current = output;
+
+    // If at bottom, auto-update and scroll
+    if (isAtBottom) {
+      setOutput(output);
+      setHasPendingUpdates(false);
+      // Use setTimeout to scroll after render
+      timeoutId = setTimeout(() => scrollToBottom(), 0);
+    } else {
+      // If scrolled up, mark as having pending updates
+      setHasPendingUpdates(true);
+    }
+
+    // Cleanup timeout on unmount or re-run
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [output, setOutput, isAtBottom, scrollToBottom]);
+
+  // Handle refresh button click - fetches new output and scrolls to bottom
+  const handleRefresh = React.useCallback(async () => {
+    if (!onRefresh) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+      // Parent's onRefresh updates output state, which triggers useEffect
+      setHasPendingUpdates(false);
+      // Use setTimeout to scroll after the next render when output updates
+      setTimeout(() => scrollToBottom(), 0);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, scrollToBottom]);
 
   return (
     <Box sx={{
@@ -70,6 +126,9 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           onScroll={handleScroll}
           outputRef={outputRef}
           isLoadingHistory={isLoadingHistory}
+          onRefresh={onRefresh ? handleRefresh : undefined}
+          isRefreshing={isRefreshing}
+          hasPendingUpdates={hasPendingUpdates}
         />
         <TmuxKeyboard
           isConnected={isConnected}

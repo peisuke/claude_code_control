@@ -88,6 +88,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               onToggleExpanded={() => handlers.setCommandExpanded(!state.commandExpanded)}
               isLoading={state.isLoading}
               error={state.error}
+              onRefresh={handlers.handleRefresh}
               onSettingsOpen={onSettingsOpen}
             />
           ) : (
@@ -168,6 +169,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                     onToggleExpanded={() => handlers.setCommandExpanded(!state.commandExpanded)}
                     isLoading={state.isLoading}
                     selectedTarget={selectedTarget}
+                    onRefresh={handlers.handleRefresh}
                   />
                 )}
 

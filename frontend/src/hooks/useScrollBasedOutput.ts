@@ -13,6 +13,8 @@ interface UseScrollBasedOutputReturn {
   handleScroll: (e: React.UIEvent<HTMLElement>) => void;
   setOutput: (output: string) => void;
   outputRef: React.RefObject<HTMLDivElement>;
+  scrollToBottom: () => void;
+  isAtBottom: boolean;
 }
 
 const SCROLL_THRESHOLD = 50; // pixels from top to trigger history load
@@ -38,6 +40,12 @@ export const useScrollBasedOutput = ({
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
 
+  // Reset state when target changes
+  useEffect(() => {
+    setIsAtBottom(true);
+    setTotalLoadedLines(0);
+  }, [selectedTarget]);
+
   // Check if user is at bottom of scroll
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
     const { scrollTop, scrollHeight, clientHeight } = element;
@@ -45,12 +53,14 @@ export const useScrollBasedOutput = ({
     return distanceFromBottom < BOTTOM_THRESHOLD;
   }, []);
 
-  // Auto-scroll to bottom if user was at bottom
-  useEffect(() => {
-    if (isAtBottom && outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+  // Manual scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    const element = outputRef.current;
+    if (element) {
+      element.scrollTop = element.scrollHeight;
+      setIsAtBottom(true);
     }
-  }, [output, isAtBottom]);
+  }, []);
 
   // Load more history when scrolling to top
   const loadMoreHistory = useCallback(async () => {
@@ -97,7 +107,7 @@ export const useScrollBasedOutput = ({
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
 
-    // Check if at bottom
+    // Track if user is at bottom (for future "new updates" notification)
     const atBottom = checkIfAtBottom(element);
     setIsAtBottom(atBottom);
 
@@ -119,6 +129,8 @@ export const useScrollBasedOutput = ({
     isLoadingHistory,
     handleScroll,
     setOutput: updateOutput,
-    outputRef
+    outputRef,
+    scrollToBottom,
+    isAtBottom
   };
 };

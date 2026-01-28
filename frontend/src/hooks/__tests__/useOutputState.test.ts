@@ -12,7 +12,6 @@ const mockUseTmux = useTmux as jest.MockedFunction<typeof useTmux>;
 
 describe('useOutputState', () => {
   const mockSetOutput = jest.fn();
-  const mockScrollToBottom = jest.fn();
   const mockGetOutput = jest.fn();
   const mockOutputRef = { current: null };
 
@@ -24,7 +23,7 @@ describe('useOutputState', () => {
       output: '',
       setOutput: mockSetOutput,
       outputRef: mockOutputRef,
-      scrollToBottom: mockScrollToBottom,
+      scrollToBottom: jest.fn(),  // Still in interface but not used by useOutputState
     });
 
     mockUseTmux.mockReturnValue({
@@ -46,7 +45,7 @@ describe('useOutputState', () => {
         output: 'test output',
         setOutput: mockSetOutput,
         outputRef: mockOutputRef,
-        scrollToBottom: mockScrollToBottom,
+        scrollToBottom: jest.fn(),
       });
 
       const { result } = renderHook(() =>
@@ -83,29 +82,6 @@ describe('useOutputState', () => {
 
       expect(mockGetOutput).toHaveBeenCalledWith('default');
       expect(mockSetOutput).toHaveBeenCalledWith('new output');
-    });
-
-    it('should scroll to bottom after refresh', async () => {
-      mockGetOutput.mockResolvedValueOnce('output');
-
-      const { result } = renderHook(() =>
-        useOutputState({
-          selectedTarget: 'default',
-          isConnected: true,
-          lastMessage: null,
-          autoRefresh: true,
-        })
-      );
-
-      await act(async () => {
-        await result.current.handlers.handleRefresh();
-      });
-
-      act(() => {
-        jest.advanceTimersByTime(50);
-      });
-
-      expect(mockScrollToBottom).toHaveBeenCalled();
     });
 
     it('should handle refresh error silently', async () => {

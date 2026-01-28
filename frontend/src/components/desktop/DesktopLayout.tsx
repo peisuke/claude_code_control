@@ -39,6 +39,7 @@ interface DesktopLayoutProps {
   // Output state
   isLoading: boolean;
   error: string | null;
+  onRefresh?: () => Promise<void>;
 
   // Settings
   onSettingsOpen: () => void;
@@ -66,6 +67,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   onToggleExpanded,
   isLoading,
   error,
+  onRefresh,
   onSettingsOpen
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -161,6 +163,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               onToggleExpanded={onToggleExpanded}
               isLoading={isLoading}
               selectedTarget={selectedTarget}
+              onRefresh={onRefresh}
             />
           )}
 
