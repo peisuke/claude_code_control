@@ -7,7 +7,7 @@ import TmuxKeyboard from '../TmuxKeyboard';
 const KEYBOARD_COMMANDS = {
   ESCAPE: '\x1b',
   CTRL_C: '\x03',
-  CTRL_R: '\x12',
+  CTRL_O: '\x0f',
   SHIFT_TAB: '\x1b[Z',
 };
 
@@ -23,10 +23,10 @@ describe('TmuxKeyboard', () => {
   });
 
   describe('rendering', () => {
-    it('should render Ctrl+R button', () => {
+    it('should render Ctrl+O button', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
-      expect(screen.getByText('Ctrl+R')).toBeInTheDocument();
+      expect(screen.getByText('Ctrl+O')).toBeInTheDocument();
     });
 
     it('should render Shift+Tab button', () => {
@@ -49,12 +49,12 @@ describe('TmuxKeyboard', () => {
   });
 
   describe('button interactions', () => {
-    it('should call onSendCommand with Ctrl+R command', () => {
+    it('should call onSendCommand with Ctrl+O command', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
-      fireEvent.click(screen.getByText('Ctrl+R'));
+      fireEvent.click(screen.getByText('Ctrl+O'));
 
-      expect(defaultProps.onSendCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.CTRL_R);
+      expect(defaultProps.onSendCommand).toHaveBeenCalledWith(KEYBOARD_COMMANDS.CTRL_O);
     });
 
     it('should call onSendCommand with Shift+Tab command', () => {
@@ -86,7 +86,7 @@ describe('TmuxKeyboard', () => {
     it('should disable all buttons when not connected', () => {
       render(<TmuxKeyboard {...defaultProps} isConnected={false} />);
 
-      expect(screen.getByText('Ctrl+R')).toBeDisabled();
+      expect(screen.getByText('Ctrl+O')).toBeDisabled();
       expect(screen.getByText('⇧+Tab')).toBeDisabled();
       expect(screen.getByText('ESC')).toBeDisabled();
       expect(screen.getByText('Ctrl+C')).toBeDisabled();
@@ -95,7 +95,7 @@ describe('TmuxKeyboard', () => {
     it('should disable all buttons when loading', () => {
       render(<TmuxKeyboard {...defaultProps} isLoading={true} />);
 
-      expect(screen.getByText('Ctrl+R')).toBeDisabled();
+      expect(screen.getByText('Ctrl+O')).toBeDisabled();
       expect(screen.getByText('⇧+Tab')).toBeDisabled();
       expect(screen.getByText('ESC')).toBeDisabled();
       expect(screen.getByText('Ctrl+C')).toBeDisabled();
@@ -104,7 +104,7 @@ describe('TmuxKeyboard', () => {
     it('should enable all buttons when connected and not loading', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
-      expect(screen.getByText('Ctrl+R')).not.toBeDisabled();
+      expect(screen.getByText('Ctrl+O')).not.toBeDisabled();
       expect(screen.getByText('⇧+Tab')).not.toBeDisabled();
       expect(screen.getByText('ESC')).not.toBeDisabled();
       expect(screen.getByText('Ctrl+C')).not.toBeDisabled();
@@ -115,7 +115,7 @@ describe('TmuxKeyboard', () => {
     it('should have descriptive titles for accessibility', () => {
       render(<TmuxKeyboard {...defaultProps} />);
 
-      expect(screen.getByTitle('履歴展開')).toBeInTheDocument(); // Ctrl+R
+      expect(screen.getByTitle('履歴展開')).toBeInTheDocument(); // Ctrl+O
       expect(screen.getByTitle('前方移動')).toBeInTheDocument(); // Shift+Tab
       expect(screen.getByTitle('ESCキーを送信')).toBeInTheDocument(); // ESC
       expect(screen.getByTitle('プロセス終了')).toBeInTheDocument(); // Ctrl+C

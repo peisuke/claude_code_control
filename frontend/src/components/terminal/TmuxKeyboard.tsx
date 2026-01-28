@@ -33,13 +33,13 @@ const TmuxKeyboard: React.FC<TmuxKeyboardProps> = ({
           <Button
             variant="outlined"
             size="small"
-            onClick={() => handleKeyCommand(KEYBOARD_COMMANDS.CTRL_R)}
+            onClick={() => handleKeyCommand(KEYBOARD_COMMANDS.CTRL_O)}
             disabled={disabled}
             sx={{ minWidth: 'auto', px: 1 }}
-            title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.CTRL_R]}
+            title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.CTRL_O]}
           >
             <Search fontSize="small" sx={{ mr: 0.5 }} />
-            {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CTRL_R]}
+            {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CTRL_O]}
           </Button>
           
           <Button
