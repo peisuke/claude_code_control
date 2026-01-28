@@ -61,10 +61,12 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
 
   // Auto-update when at bottom, track pending updates when scrolled up
   React.useEffect(() => {
+    console.log('[DEBUG] useEffect START, outputLength:', output.length);
     let timeoutId: NodeJS.Timeout | undefined;
 
     // Always update on initial mount
     if (isInitialMountRef.current) {
+      console.log('[DEBUG] Initial mount');
       isInitialMountRef.current = false;
       setOutput(output);
       prevOutputRef.current = output;
