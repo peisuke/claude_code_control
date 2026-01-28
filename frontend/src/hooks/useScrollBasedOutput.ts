@@ -15,6 +15,7 @@ interface UseScrollBasedOutputReturn {
   outputRef: React.RefObject<HTMLDivElement>;
   scrollToBottom: () => void;
   isAtBottom: boolean;
+  checkIsAtBottom: () => boolean;
 }
 
 const SCROLL_THRESHOLD = 50; // pixels from top to trigger history load
@@ -61,6 +62,13 @@ export const useScrollBasedOutput = ({
       setIsAtBottom(true);
     }
   }, []);
+
+  // Check if currently at bottom (real-time check, not state-based)
+  const checkIsAtBottom = useCallback(() => {
+    const element = outputRef.current;
+    if (!element) return true; // Default to true if no element
+    return checkIfAtBottom(element);
+  }, [checkIfAtBottom]);
 
   // Load more history when scrolling to top
   const loadMoreHistory = useCallback(async () => {
@@ -109,6 +117,7 @@ export const useScrollBasedOutput = ({
 
     // Track if user is at bottom (for future "new updates" notification)
     const atBottom = checkIfAtBottom(element);
+    console.log('[DEBUG] handleScroll:', { atBottom, scrollTop: element.scrollTop, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight });
     setIsAtBottom(atBottom);
 
     // Check if at top and should load more history
@@ -131,6 +140,7 @@ export const useScrollBasedOutput = ({
     setOutput: updateOutput,
     outputRef,
     scrollToBottom,
-    isAtBottom
+    isAtBottom,
+    checkIsAtBottom
   };
 };
