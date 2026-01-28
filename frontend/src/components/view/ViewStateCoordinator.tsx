@@ -47,7 +47,7 @@ interface CoordinatedHandlers {
   handleViewModeToggle: () => void;
 
   // Output handlers
-  handleRefresh: () => Promise<void>;
+  handleRefresh: () => Promise<string | undefined>;
   setOutput: (output: string) => void;
 
   // Connection handlers

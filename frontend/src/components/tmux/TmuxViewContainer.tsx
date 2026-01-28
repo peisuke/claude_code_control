@@ -39,10 +39,6 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const isInitialMountRef = React.useRef(true);
   const prevOutputRef = React.useRef(output);
   const forceUpdateRef = React.useRef(false);
-  const latestOutputRef = React.useRef(output);
-
-  // Keep latestOutputRef in sync with output prop
-  latestOutputRef.current = output;
 
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -61,12 +57,10 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
 
   // Auto-update when at bottom, track pending updates when scrolled up
   React.useEffect(() => {
-    console.log('[DEBUG] useEffect START, outputLength:', output.length);
     let timeoutId: NodeJS.Timeout | undefined;
 
     // Always update on initial mount
     if (isInitialMountRef.current) {
-      console.log('[DEBUG] Initial mount');
       isInitialMountRef.current = false;
       setOutput(output);
       prevOutputRef.current = output;
@@ -85,16 +79,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       forceUpdateRef.current = false;
     }
 
-    console.log('[DEBUG] useEffect:', {
-      outputChanged,
-      currentlyAtBottom,
-      shouldForceUpdate,
-      outputLength: output.length,
-      prevOutputLength: prevOutputRef.current.length
-    });
-
     if (currentlyAtBottom || shouldForceUpdate) {
-      console.log('[DEBUG] useEffect: updating output');
       // Only update prevOutputRef when we actually display the output
       prevOutputRef.current = output;
       setOutput(output);
@@ -104,7 +89,6 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     } else if (outputChanged) {
       // If scrolled up and output changed, mark as having pending updates
       // Don't update prevOutputRef - we haven't displayed this output yet
-      console.log('[DEBUG] useEffect: setting pending updates');
       setHasPendingUpdates(true);
     }
 
@@ -120,14 +104,9 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
-    console.log('[DEBUG] handleRefresh called');
     try {
       // onRefresh now returns the fetched output directly
       const newOutput = await onRefresh();
-      console.log('[DEBUG] handleRefresh received:', {
-        newOutputLength: newOutput?.length ?? 0,
-        prevOutputLength: prevOutputRef.current.length
-      });
       if (newOutput !== undefined) {
         prevOutputRef.current = newOutput;
         setOutput(newOutput);

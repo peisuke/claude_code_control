@@ -10,7 +10,7 @@ interface UseTmuxCommandsReturn {
 }
 
 interface UseTmuxCommandsOptions {
-  onRefresh?: () => Promise<void>;
+  onRefresh?: () => Promise<string | undefined>;
 }
 
 /**

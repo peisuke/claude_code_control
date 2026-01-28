@@ -3,7 +3,7 @@ import { useTmuxCommands } from './useTmuxCommands';
 
 interface UseCommandStateProps {
   selectedTarget: string;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => Promise<string | undefined>;
 }
 
 interface CommandState {

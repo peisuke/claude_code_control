@@ -8,7 +8,7 @@ interface UseConnectionStateProps {
   selectedTarget: string;
   isConnected: boolean;
   autoRefresh: boolean;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => Promise<string | undefined>;
 }
 
 interface ConnectionState {
