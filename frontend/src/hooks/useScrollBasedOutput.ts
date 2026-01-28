@@ -32,11 +32,12 @@ export const useScrollBasedOutput = ({
 }: UseScrollBasedOutputOptions): UseScrollBasedOutputReturn => {
   const [output, setOutput] = useState(initialOutput);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [isAtBottom, setIsAtBottom] = useState(true);
   const [totalLoadedLines, setTotalLoadedLines] = useState(0);
   const outputRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
+  // Track user's scroll intent - true means user wants to stay at bottom
+  const shouldAutoScrollRef = useRef(true);
 
   // Check if user is at bottom of scroll
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
@@ -45,12 +46,15 @@ export const useScrollBasedOutput = ({
     return distanceFromBottom < BOTTOM_THRESHOLD;
   }, []);
 
-  // Auto-scroll to bottom if user was at bottom
+  // Auto-scroll to bottom only if user hasn't scrolled up
   useEffect(() => {
-    if (isAtBottom && outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    const element = outputRef.current;
+    if (!element) return;
+
+    if (shouldAutoScrollRef.current) {
+      element.scrollTop = element.scrollHeight;
     }
-  }, [output, isAtBottom]);
+  }, [output]);
 
   // Load more history when scrolling to top
   const loadMoreHistory = useCallback(async () => {
@@ -97,9 +101,11 @@ export const useScrollBasedOutput = ({
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
 
-    // Check if at bottom
+    // Update auto-scroll intent based on user's scroll position
+    // If user scrolls to bottom, enable auto-scroll
+    // If user scrolls up (away from bottom), disable auto-scroll
     const atBottom = checkIfAtBottom(element);
-    setIsAtBottom(atBottom);
+    shouldAutoScrollRef.current = atBottom;
 
     // Check if at top and should load more history
     if (element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {

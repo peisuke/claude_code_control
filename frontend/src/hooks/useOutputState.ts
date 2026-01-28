@@ -1,7 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useTerminalOutput } from './useTerminalOutput';
 import { useTmux } from './useTmux';
-import { TIMING } from '../constants/ui';
 import { TmuxOutput } from '../types';
 
 interface UseOutputStateProps {
@@ -37,19 +36,19 @@ export const useOutputState = ({
   lastMessage,
   autoRefresh
 }: UseOutputStateProps): UseOutputStateReturn => {
-  const { output, setOutput, scrollToBottom } = useTerminalOutput();
+  const { output, setOutput } = useTerminalOutput();
   const { getOutput, isLoading, error } = useTmux();
 
   // Refresh handler
+  // Note: Scroll behavior is handled by useScrollBasedOutput in TmuxViewContainer
   const handleRefresh = useCallback(async () => {
     try {
       const outputContent = await getOutput(selectedTarget);
       setOutput(outputContent);
-      setTimeout(() => scrollToBottom(), TIMING.SCROLL_ANIMATION_DELAY);
     } catch {
       // Silently fail output refresh
     }
-  }, [getOutput, selectedTarget, setOutput, scrollToBottom]);
+  }, [getOutput, selectedTarget, setOutput]);
 
   // Handle target change
   useEffect(() => {
@@ -62,12 +61,12 @@ export const useOutputState = ({
   }, [selectedTarget, isConnected, handleRefresh, setOutput]);
 
   // Handle WebSocket messages
+  // Note: Scroll behavior is handled by useScrollBasedOutput in TmuxViewContainer
   useEffect(() => {
     if (lastMessage && lastMessage.target === selectedTarget && autoRefresh) {
       setOutput(lastMessage.content);
-      setTimeout(() => scrollToBottom(), TIMING.SCROLL_ANIMATION_DELAY);
     }
-  }, [lastMessage, selectedTarget, autoRefresh, scrollToBottom, setOutput]);
+  }, [lastMessage, selectedTarget, autoRefresh, setOutput]);
 
   // Initial load
   useEffect(() => {
