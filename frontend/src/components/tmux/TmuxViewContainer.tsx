@@ -38,6 +38,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const [hasPendingUpdates, setHasPendingUpdates] = React.useState(false);
   const isInitialMountRef = React.useRef(true);
   const prevOutputRef = React.useRef(output);
+  const forceUpdateRef = React.useRef(false);
 
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -83,9 +84,14 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     }
     prevOutputRef.current = output;
 
-    // If at bottom, auto-update and scroll
-    if (currentlyAtBottom) {
-      console.log('[DEBUG] At bottom - auto-updating');
+    // Force update if refresh was requested, or auto-update if at bottom
+    const shouldForceUpdate = forceUpdateRef.current;
+    if (shouldForceUpdate) {
+      forceUpdateRef.current = false;
+    }
+
+    if (currentlyAtBottom || shouldForceUpdate) {
+      console.log('[DEBUG] Updating output:', { currentlyAtBottom, shouldForceUpdate });
       setOutput(output);
       setHasPendingUpdates(false);
       // Use setTimeout to scroll after render
@@ -108,16 +114,16 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
+    // Mark that we want to force update regardless of scroll position
+    forceUpdateRef.current = true;
     try {
       await onRefresh();
       // Parent's onRefresh updates output state, which triggers useEffect
-      setHasPendingUpdates(false);
-      // Use setTimeout to scroll after the next render when output updates
-      setTimeout(() => scrollToBottom(), 0);
+      // The useEffect will see forceUpdateRef.current = true and update
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, scrollToBottom]);
+  }, [onRefresh]);
 
   return (
     <Box sx={{
