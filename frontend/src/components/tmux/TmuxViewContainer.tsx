@@ -39,6 +39,10 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const isInitialMountRef = React.useRef(true);
   const prevOutputRef = React.useRef(output);
   const forceUpdateRef = React.useRef(false);
+  const latestOutputRef = React.useRef(output);
+
+  // Keep latestOutputRef in sync with output prop
+  latestOutputRef.current = output;
 
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -67,12 +71,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       return;
     }
 
-    // Check if output actually changed
+    // Check if output actually changed from what we've displayed
     const outputChanged = output !== prevOutputRef.current;
-    if (!outputChanged) {
-      return;
-    }
-    prevOutputRef.current = output;
 
     // Use real-time check instead of potentially stale state
     const currentlyAtBottom = checkIsAtBottom();
@@ -84,12 +84,15 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     }
 
     if (currentlyAtBottom || shouldForceUpdate) {
+      // Only update prevOutputRef when we actually display the output
+      prevOutputRef.current = output;
       setOutput(output);
       setHasPendingUpdates(false);
       // Use setTimeout to scroll after render
       timeoutId = setTimeout(() => scrollToBottom(), 0);
-    } else {
-      // If scrolled up, mark as having pending updates
+    } else if (outputChanged) {
+      // If scrolled up and output changed, mark as having pending updates
+      // Don't update prevOutputRef - we haven't displayed this output yet
       setHasPendingUpdates(true);
     }
 
@@ -105,16 +108,18 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
-    // Mark that we want to force update regardless of scroll position
-    forceUpdateRef.current = true;
     try {
       await onRefresh();
-      // Parent's onRefresh updates output state, which triggers useEffect
-      // The useEffect will see forceUpdateRef.current = true and update
+      // Apply the latest output (use ref to avoid stale closure)
+      const currentOutput = latestOutputRef.current;
+      prevOutputRef.current = currentOutput;
+      setOutput(currentOutput);
+      setHasPendingUpdates(false);
+      setTimeout(() => scrollToBottom(), 0);
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh]);
+  }, [onRefresh, setOutput, scrollToBottom]);
 
   // Wrap command functions to force update after sending
   const handleSendCommand = React.useCallback(async () => {
