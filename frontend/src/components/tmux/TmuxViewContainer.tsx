@@ -35,6 +35,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onRefresh
 }) => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const refreshRequestedRef = React.useRef(false);
+  const isInitialMountRef = React.useRef(true);
 
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -50,16 +52,25 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     initialOutput: output
   });
 
-  // Update scroll-based output when WebSocket updates arrive
-  // Note: Auto-scroll is disabled. User must click refresh button to update and scroll.
+  // Only update output on initial mount or when refresh was requested
+  // This prevents auto-updates from WebSocket while allowing manual refresh
   React.useEffect(() => {
-    setOutput(output);
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      setOutput(output);
+      return;
+    }
+    if (refreshRequestedRef.current) {
+      refreshRequestedRef.current = false;
+      setOutput(output);
+    }
   }, [output, setOutput]);
 
   // Handle refresh button click - fetches new output and scrolls to bottom
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
+    refreshRequestedRef.current = true;
     try {
       await onRefresh();
       scrollToBottom();
