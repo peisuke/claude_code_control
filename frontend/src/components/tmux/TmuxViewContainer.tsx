@@ -116,6 +116,22 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     }
   }, [onRefresh]);
 
+  // Wrap command functions to force update after sending
+  const handleSendCommand = React.useCallback(async () => {
+    forceUpdateRef.current = true;
+    await onSendCommand();
+  }, [onSendCommand]);
+
+  const handleSendEnter = React.useCallback(async () => {
+    forceUpdateRef.current = true;
+    await onSendEnter();
+  }, [onSendEnter]);
+
+  const handleSendKeyboardCommand = React.useCallback(async (cmd: string) => {
+    forceUpdateRef.current = true;
+    await onSendKeyboardCommand(cmd);
+  }, [onSendKeyboardCommand]);
+
   return (
     <Box sx={{
       height: '100%',
@@ -143,7 +159,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         <TmuxKeyboard
           isConnected={isConnected}
           isLoading={isLoading}
-          onSendCommand={onSendKeyboardCommand}
+          onSendCommand={handleSendKeyboardCommand}
         />
       </Paper>
 
@@ -159,9 +175,9 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         <CommandInputArea
           command={command}
           onCommandChange={onCommandChange}
-          onSendCommand={onSendCommand}
-          onSendEnter={onSendEnter}
-          onSendKeyboardCommand={onSendKeyboardCommand}
+          onSendCommand={handleSendCommand}
+          onSendEnter={handleSendEnter}
+          onSendKeyboardCommand={handleSendKeyboardCommand}
           isConnected={isConnected}
           isLoading={isLoading}
           isExpanded={commandExpanded}
