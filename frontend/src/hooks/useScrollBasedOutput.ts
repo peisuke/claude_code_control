@@ -115,9 +115,8 @@ export const useScrollBasedOutput = ({
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
 
-    // Track if user is at bottom (for future "new updates" notification)
+    // Track if user is at bottom
     const atBottom = checkIfAtBottom(element);
-    console.log('[DEBUG] handleScroll:', { atBottom, scrollTop: element.scrollTop, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight });
     setIsAtBottom(atBottom);
 
     // Check if at top and should load more history

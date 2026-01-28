@@ -64,25 +64,18 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       isInitialMountRef.current = false;
       setOutput(output);
       prevOutputRef.current = output;
-      console.log('[DEBUG] Initial mount, setting output');
       return;
     }
 
     // Check if output actually changed
     const outputChanged = output !== prevOutputRef.current;
-    // Use real-time check instead of potentially stale state
-    const currentlyAtBottom = checkIsAtBottom();
-    console.log('[DEBUG] useEffect triggered:', {
-      outputChanged,
-      currentlyAtBottom,
-      outputLength: output.length,
-      prevOutputLength: prevOutputRef.current.length
-    });
-
     if (!outputChanged) {
       return;
     }
     prevOutputRef.current = output;
+
+    // Use real-time check instead of potentially stale state
+    const currentlyAtBottom = checkIsAtBottom();
 
     // Force update if refresh was requested, or auto-update if at bottom
     const shouldForceUpdate = forceUpdateRef.current;
@@ -91,14 +84,12 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     }
 
     if (currentlyAtBottom || shouldForceUpdate) {
-      console.log('[DEBUG] Updating output:', { currentlyAtBottom, shouldForceUpdate });
       setOutput(output);
       setHasPendingUpdates(false);
       // Use setTimeout to scroll after render
       timeoutId = setTimeout(() => scrollToBottom(), 0);
     } else {
       // If scrolled up, mark as having pending updates
-      console.log('[DEBUG] Not at bottom - setting pending updates');
       setHasPendingUpdates(true);
     }
 
