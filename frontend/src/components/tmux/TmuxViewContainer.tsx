@@ -17,7 +17,7 @@ interface TmuxViewContainerProps {
   onToggleExpanded: () => void;
   isLoading: boolean;
   selectedTarget: string;
-  onRefresh?: () => Promise<void>;
+  onRefresh?: () => Promise<string | undefined>;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -120,22 +120,18 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     setIsRefreshing(true);
     console.log('[DEBUG] handleRefresh called');
     try {
-      await onRefresh();
-      // Wait for React to process the state update from onRefresh
-      // Use setTimeout to ensure we read the updated latestOutputRef after re-render
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      // Apply the latest output (use ref to avoid stale closure)
-      const currentOutput = latestOutputRef.current;
-      console.log('[DEBUG] handleRefresh after onRefresh:', {
-        currentOutputLength: currentOutput.length,
-        prevOutputLength: prevOutputRef.current.length,
-        same: currentOutput === prevOutputRef.current
+      // onRefresh now returns the fetched output directly
+      const newOutput = await onRefresh();
+      console.log('[DEBUG] handleRefresh received:', {
+        newOutputLength: newOutput?.length ?? 0,
+        prevOutputLength: prevOutputRef.current.length
       });
-      prevOutputRef.current = currentOutput;
-      setOutput(currentOutput);
-      setHasPendingUpdates(false);
-      setTimeout(() => scrollToBottom(), 0);
+      if (newOutput !== undefined) {
+        prevOutputRef.current = newOutput;
+        setOutput(newOutput);
+        setHasPendingUpdates(false);
+        setTimeout(() => scrollToBottom(), 0);
+      }
     } finally {
       setIsRefreshing(false);
     }
