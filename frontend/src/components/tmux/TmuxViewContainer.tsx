@@ -83,7 +83,16 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       forceUpdateRef.current = false;
     }
 
+    console.log('[DEBUG] useEffect:', {
+      outputChanged,
+      currentlyAtBottom,
+      shouldForceUpdate,
+      outputLength: output.length,
+      prevOutputLength: prevOutputRef.current.length
+    });
+
     if (currentlyAtBottom || shouldForceUpdate) {
+      console.log('[DEBUG] useEffect: updating output');
       // Only update prevOutputRef when we actually display the output
       prevOutputRef.current = output;
       setOutput(output);
@@ -93,6 +102,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     } else if (outputChanged) {
       // If scrolled up and output changed, mark as having pending updates
       // Don't update prevOutputRef - we haven't displayed this output yet
+      console.log('[DEBUG] useEffect: setting pending updates');
       setHasPendingUpdates(true);
     }
 
@@ -108,10 +118,20 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
+    console.log('[DEBUG] handleRefresh called');
     try {
       await onRefresh();
+      // Wait for React to process the state update from onRefresh
+      // Use setTimeout to ensure we read the updated latestOutputRef after re-render
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       // Apply the latest output (use ref to avoid stale closure)
       const currentOutput = latestOutputRef.current;
+      console.log('[DEBUG] handleRefresh after onRefresh:', {
+        currentOutputLength: currentOutput.length,
+        prevOutputLength: prevOutputRef.current.length,
+        same: currentOutput === prevOutputRef.current
+      });
       prevOutputRef.current = currentOutput;
       setOutput(currentOutput);
       setHasPendingUpdates(false);
