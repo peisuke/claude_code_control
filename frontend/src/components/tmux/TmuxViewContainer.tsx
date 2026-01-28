@@ -56,6 +56,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
 
   // Auto-update when at bottom, track pending updates when scrolled up
   React.useEffect(() => {
+    let timeoutId: NodeJS.Timeout | undefined;
+
     // Always update on initial mount
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
@@ -75,11 +77,18 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       setOutput(output);
       setHasPendingUpdates(false);
       // Use setTimeout to scroll after render
-      setTimeout(() => scrollToBottom(), 0);
+      timeoutId = setTimeout(() => scrollToBottom(), 0);
     } else {
       // If scrolled up, mark as having pending updates
       setHasPendingUpdates(true);
     }
+
+    // Cleanup timeout on unmount or re-run
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [output, setOutput, isAtBottom, scrollToBottom]);
 
   // Handle refresh button click - fetches new output and scrolls to bottom
@@ -88,14 +97,14 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     setIsRefreshing(true);
     try {
       await onRefresh();
-      // After refresh, apply the latest output
-      setOutput(output);
+      // Parent's onRefresh updates output state, which triggers useEffect
       setHasPendingUpdates(false);
-      scrollToBottom();
+      // Use setTimeout to scroll after the next render when output updates
+      setTimeout(() => scrollToBottom(), 0);
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, scrollToBottom, setOutput, output]);
+  }, [onRefresh, scrollToBottom]);
 
   return (
     <Box sx={{

@@ -40,6 +40,12 @@ export const useScrollBasedOutput = ({
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
 
+  // Reset state when target changes
+  useEffect(() => {
+    setIsAtBottom(true);
+    setTotalLoadedLines(0);
+  }, [selectedTarget]);
+
   // Check if user is at bottom of scroll
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
     const { scrollTop, scrollHeight, clientHeight } = element;
