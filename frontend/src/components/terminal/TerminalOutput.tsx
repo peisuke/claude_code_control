@@ -3,7 +3,7 @@ import { Box, Stack, CircularProgress, Typography } from '@mui/material';
 import Convert from 'ansi-to-html';
 import { TERMINAL, LABELS } from '../../constants/ui';
 
-const convert = new Convert();
+const convert = new Convert({ escapeXML: true });
 
 interface TerminalOutputProps {
   output: string;
