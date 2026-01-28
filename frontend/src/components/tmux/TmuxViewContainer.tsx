@@ -35,8 +35,9 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onRefresh
 }) => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const refreshRequestedRef = React.useRef(false);
+  const [hasPendingUpdates, setHasPendingUpdates] = React.useState(false);
   const isInitialMountRef = React.useRef(true);
+  const prevOutputRef = React.useRef(output);
 
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -45,39 +46,56 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     handleScroll,
     setOutput,
     outputRef,
-    scrollToBottom
+    scrollToBottom,
+    isAtBottom
   } = useScrollBasedOutput({
     selectedTarget,
     isConnected,
     initialOutput: output
   });
 
-  // Only update output on initial mount or when refresh was requested
-  // This prevents auto-updates from WebSocket while allowing manual refresh
+  // Auto-update when at bottom, track pending updates when scrolled up
   React.useEffect(() => {
+    // Always update on initial mount
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
       setOutput(output);
+      prevOutputRef.current = output;
       return;
     }
-    if (refreshRequestedRef.current) {
-      refreshRequestedRef.current = false;
-      setOutput(output);
+
+    // Check if output actually changed
+    if (output === prevOutputRef.current) {
+      return;
     }
-  }, [output, setOutput]);
+    prevOutputRef.current = output;
+
+    // If at bottom, auto-update and scroll
+    if (isAtBottom) {
+      setOutput(output);
+      setHasPendingUpdates(false);
+      // Use setTimeout to scroll after render
+      setTimeout(() => scrollToBottom(), 0);
+    } else {
+      // If scrolled up, mark as having pending updates
+      setHasPendingUpdates(true);
+    }
+  }, [output, setOutput, isAtBottom, scrollToBottom]);
 
   // Handle refresh button click - fetches new output and scrolls to bottom
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
-    refreshRequestedRef.current = true;
     try {
       await onRefresh();
+      // After refresh, apply the latest output
+      setOutput(output);
+      setHasPendingUpdates(false);
       scrollToBottom();
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, scrollToBottom]);
+  }, [onRefresh, scrollToBottom, setOutput, output]);
 
   return (
     <Box sx={{
@@ -101,6 +119,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           isLoadingHistory={isLoadingHistory}
           onRefresh={onRefresh ? handleRefresh : undefined}
           isRefreshing={isRefreshing}
+          hasPendingUpdates={hasPendingUpdates}
         />
         <TmuxKeyboard
           isConnected={isConnected}

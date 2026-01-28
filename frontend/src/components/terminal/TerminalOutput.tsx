@@ -13,6 +13,7 @@ interface TerminalOutputProps {
   isLoadingHistory?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  hasPendingUpdates?: boolean;
 }
 
 const TerminalOutput: React.FC<TerminalOutputProps> = ({
@@ -21,7 +22,8 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
   outputRef,
   isLoadingHistory = false,
   onRefresh,
-  isRefreshing = false
+  isRefreshing = false,
+  hasPendingUpdates = false
 }) => {
   return (
     <Stack sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
@@ -49,9 +51,8 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
         </Box>
       )}
 
-      {/* Refresh button - positioned at bottom right of terminal area */}
-      {/* TODO: Later enhance to show "new updates available" when updates arrive while scrolled up */}
-      {onRefresh && (
+      {/* Refresh button - shown only when there are pending updates while scrolled up */}
+      {onRefresh && hasPendingUpdates && (
         <Fab
           size="small"
           color="primary"
@@ -63,7 +64,7 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
             right: 24,
             zIndex: 10
           }}
-          title="最新に更新"
+          title="新しい更新があります"
         >
           {isRefreshing ? (
             <CircularProgress size={20} color="inherit" />
