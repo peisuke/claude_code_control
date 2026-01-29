@@ -24,9 +24,14 @@ const ChoiceButtons: React.FC<ChoiceButtonsProps> = ({ choices, onSelect, disabl
             minHeight: totalHeight ? 0 : 44,
             justifyContent: 'flex-start',
             textTransform: 'none',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
           }}
         >
-          {choice.number}. {choice.text}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {choice.number}. {choice.text}
+          </span>
         </Button>
       ))}
     </Stack>
