@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { ScrollUtils } from '../utils/scroll';
+import { ScrollUtils } from '../../utils/scroll';
 
 interface UseTerminalOutputReturn {
   output: string;

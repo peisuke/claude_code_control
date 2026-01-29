@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { tmuxAPI } from '../services/api';
+import { tmuxAPI } from '../../services/api';
 
 interface UseScrollBasedOutputOptions {
   selectedTarget: string;
@@ -137,6 +137,8 @@ export const useScrollBasedOutput = ({
     setTotalLoadedLines(0);
   }, []);
 
+  const hasUserScrolledUp = useCallback(() => userScrolledUpRef.current, []);
+
   return {
     output,
     isLoadingHistory,
@@ -146,6 +148,6 @@ export const useScrollBasedOutput = ({
     scrollToBottom,
     isAtBottom,
     checkIsAtBottom,
-    hasUserScrolledUp: () => userScrolledUpRef.current
+    hasUserScrolledUp
   };
 };

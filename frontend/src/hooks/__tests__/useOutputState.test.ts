@@ -1,13 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useOutputState } from '../useOutputState';
-import { useTerminalOutput } from '../useTerminalOutput';
 import { useTmux } from '../useTmux';
 import { TmuxOutput } from '../../types';
 
-jest.mock('../useTerminalOutput');
 jest.mock('../useTmux');
 
-const mockUseTerminalOutput = useTerminalOutput as jest.MockedFunction<typeof useTerminalOutput>;
 const mockUseTmux = useTmux as jest.MockedFunction<typeof useTmux>;
 
 describe('useOutputState', () => {
@@ -19,19 +16,16 @@ describe('useOutputState', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
 
-    mockUseTerminalOutput.mockReturnValue({
-      output: '',
-      setOutput: mockSetOutput,
-      outputRef: mockOutputRef,
-      scrollToBottom: jest.fn(),  // Still in interface but not used by useOutputState
-    });
-
     mockUseTmux.mockReturnValue({
       sendCommand: jest.fn(),
       sendEnter: jest.fn(),
       getOutput: mockGetOutput,
       isLoading: false,
       error: null,
+      output: '',
+      setOutput: mockSetOutput,
+      outputRef: mockOutputRef,
+      scrollToBottom: jest.fn(),
     });
   });
 
@@ -41,7 +35,12 @@ describe('useOutputState', () => {
 
   describe('initial state', () => {
     it('should return initial state from hooks', () => {
-      mockUseTerminalOutput.mockReturnValue({
+      mockUseTmux.mockReturnValue({
+        sendCommand: jest.fn(),
+        sendEnter: jest.fn(),
+        getOutput: mockGetOutput,
+        isLoading: false,
+        error: null,
         output: 'test output',
         setOutput: mockSetOutput,
         outputRef: mockOutputRef,
@@ -267,7 +266,7 @@ describe('useOutputState', () => {
   });
 
   describe('setOutput handler', () => {
-    it('should expose setOutput from useTerminalOutput', () => {
+    it('should expose setOutput from useTmux', () => {
       const { result } = renderHook(() =>
         useOutputState({
           selectedTarget: 'default',

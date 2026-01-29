@@ -6,7 +6,7 @@ import TmuxViewContainer from '../tmux/TmuxViewContainer';
 import FileOperations from '../file/FileOperations';
 import ConnectionStatus from '../ConnectionStatus';
 import { VIEW_MODES } from '../../constants/ui';
-import { useFileContent } from '../../hooks/useFileContent';
+import { useFileContent } from '../../hooks/file';
 
 interface DesktopLayoutProps {
   // View state

@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { useAppVisibility } from './useAppVisibility';
-import { TIMING } from '../constants/ui';
-import { TmuxOutput } from '../types';
+import { TIMING } from '../../constants/ui';
+import { TmuxOutput } from '../../types';
 
 interface UseConnectionStateProps {
   selectedTarget: string;

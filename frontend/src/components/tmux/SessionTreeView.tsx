@@ -7,13 +7,7 @@ import {
   ListItemIcon,
   ListItemText,
   Collapse,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button
+  IconButton
 } from '@mui/material';
 import {
   ExpandMore,
@@ -26,8 +20,9 @@ import {
   AddBox
 } from '@mui/icons-material';
 import { TmuxHierarchy } from '../../types';
-import { tmuxAPI } from '../../services/api';
 import { TmuxUtils } from '../../utils/tmux';
+import DeleteConfirmationDialog from './DeleteConfirmationDialog';
+import { useSessionManagement } from '../../hooks/tmux';
 
 interface SessionTreeViewProps {
   hierarchy: TmuxHierarchy | null;
@@ -35,22 +30,6 @@ interface SessionTreeViewProps {
   onTargetChange: (target: string) => void;
   onRefresh?: () => void;
 }
-
-interface DeleteDialogState {
-  open: boolean;
-  type: 'session' | 'window';
-  name: string;
-  sessionName: string;
-  windowIndex?: string;
-}
-
-const initialDeleteDialog: DeleteDialogState = {
-  open: false,
-  type: 'session',
-  name: '',
-  sessionName: '',
-  windowIndex: undefined
-};
 
 const SessionTreeView: React.FC<SessionTreeViewProps> = ({
   hierarchy,
@@ -60,8 +39,17 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
 }) => {
   const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
   const [expandedWindows, setExpandedWindows] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState(initialDeleteDialog);
+
+  const {
+    loading,
+    deleteDialog,
+    handleCreateSession,
+    handleDeleteSession,
+    handleCreateWindow,
+    handleDeleteWindow,
+    handleConfirmDelete,
+    handleCloseDeleteDialog
+  } = useSessionManagement({ hierarchy, onRefresh });
 
   const currentTarget = TmuxUtils.parseTarget(selectedTarget);
   const sessions = hierarchy?.sessions || {};
@@ -97,8 +85,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
     if (sessionData && sessionData.windows) {
       const windowKeys = Object.keys(sessionData.windows).sort((a, b) => parseInt(a) - parseInt(b));
       if (windowKeys.length > 0) {
-        const firstWindow = windowKeys[0];
-        onTargetChange(TmuxUtils.buildTarget(sessionName, firstWindow));
+        onTargetChange(TmuxUtils.buildTarget(sessionName, windowKeys[0]));
       } else {
         onTargetChange(sessionName);
       }
@@ -111,8 +98,7 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
     const windowData = sessions[sessionName]?.windows[windowIndex];
     if (windowData && windowData.panes && Object.keys(windowData.panes).length > 1) {
       const paneKeys = Object.keys(windowData.panes).sort((a, b) => parseInt(a) - parseInt(b));
-      const firstPane = paneKeys[0];
-      onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex, firstPane));
+      onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex, paneKeys[0]));
     } else {
       onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex));
     }
@@ -120,114 +106,6 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
 
   const handlePaneClick = (sessionName: string, windowIndex: string, paneIndex: string) => {
     onTargetChange(TmuxUtils.buildTarget(sessionName, windowIndex, paneIndex));
-  };
-
-  // Session/Window management handlers
-  const handleCreateSession = async () => {
-    const newSessionName = prompt('新しいセッション名を入力してください（空の場合は自動命名）:', '');
-
-    if (newSessionName !== null) {
-      try {
-        setLoading(true);
-
-        let sessionName = newSessionName.trim();
-
-        // If empty, generate auto session name
-        if (!sessionName) {
-          const existingSessions = Object.keys(sessions);
-          const numericSessions = existingSessions
-            .filter(name => /^\d+$/.test(name))
-            .map(name => parseInt(name, 10))
-            .sort((a, b) => a - b);
-
-          let nextNumber = 0;
-          for (const num of numericSessions) {
-            if (num === nextNumber) {
-              nextNumber++;
-            } else {
-              break;
-            }
-          }
-          sessionName = nextNumber.toString();
-        }
-
-        await tmuxAPI.createSession(sessionName);
-        onRefresh?.();
-      } catch (err) {
-        alert(err instanceof Error ? err.message : 'セッションの作成に失敗しました');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleDeleteSession = (sessionName: string) => {
-    const sessionCount = Object.keys(sessions).length;
-    if (sessionCount <= 1) {
-      alert('最後のセッションは削除できません');
-      return;
-    }
-
-    setDeleteDialog({
-      open: true,
-      type: 'session',
-      name: sessionName,
-      sessionName: sessionName,
-      windowIndex: undefined
-    });
-  };
-
-  const handleCreateWindow = async (sessionName: string) => {
-    const windowName = prompt('新しいウィンドウ名を入力してください（空の場合は自動命名）:', '');
-    if (windowName !== null) {
-      try {
-        setLoading(true);
-        await tmuxAPI.createWindow(sessionName, windowName.trim() || undefined);
-        onRefresh?.();
-      } catch (err) {
-        alert(err instanceof Error ? err.message : 'ウィンドウの作成に失敗しました');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleDeleteWindow = (sessionName: string, windowIndex: string, windowName: string) => {
-    const session = sessions[sessionName];
-    const windowCount = Object.keys(session?.windows || {}).length;
-    if (windowCount <= 1) {
-      alert('最後のウィンドウは削除できません');
-      return;
-    }
-
-    setDeleteDialog({
-      open: true,
-      type: 'window',
-      name: `${windowIndex}: ${windowName}`,
-      sessionName: sessionName,
-      windowIndex: windowIndex
-    });
-  };
-
-  const handleConfirmDelete = async () => {
-    try {
-      setLoading(true);
-      if (deleteDialog.type === 'session') {
-        await tmuxAPI.deleteSession(deleteDialog.sessionName);
-      } else if (deleteDialog.windowIndex) {
-        await tmuxAPI.deleteWindow(deleteDialog.sessionName, deleteDialog.windowIndex);
-      }
-      onRefresh?.();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : '削除に失敗しました');
-    } finally {
-      setLoading(false);
-      setDeleteDialog(initialDeleteDialog);
-    }
-  };
-
-  const handleCloseDeleteDialog = () => {
-    setDeleteDialog(initialDeleteDialog);
   };
 
   const sessionEntries = Object.entries(sessions);
@@ -437,38 +315,12 @@ const SessionTreeView: React.FC<SessionTreeViewProps> = ({
       })}
       </List>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialog.open}
+      <DeleteConfirmationDialog
+        dialog={deleteDialog}
+        loading={loading}
+        onConfirm={handleConfirmDelete}
         onClose={handleCloseDeleteDialog}
-      >
-        <DialogTitle>
-          {deleteDialog.type === 'session' ? 'セッション削除の確認' : 'ウィンドウ削除の確認'}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {deleteDialog.type === 'session'
-              ? `セッション "${deleteDialog.name}" を削除しますか？`
-              : `ウィンドウ "${deleteDialog.name}" を削除しますか？`
-            }
-            <br />
-            この操作は取り消せません。
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteDialog}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-            disabled={loading}
-          >
-            削除
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
     </>
   );
 };

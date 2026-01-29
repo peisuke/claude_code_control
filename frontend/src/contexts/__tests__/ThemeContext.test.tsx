@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ThemeProvider, useThemeContext } from '../ThemeContext';
-import { useLocalStorageBoolean } from '../../hooks/useLocalStorageState';
+import { useLocalStorageBoolean } from '../../hooks/ui';
 
-jest.mock('../../hooks/useLocalStorageState');
+jest.mock('../../hooks/ui');
 
 const mockUseLocalStorageBoolean = useLocalStorageBoolean as jest.MockedFunction<typeof useLocalStorageBoolean>;
 

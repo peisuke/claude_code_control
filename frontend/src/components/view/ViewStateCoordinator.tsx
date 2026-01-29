@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
-import { useConnectionState } from '../../hooks/useConnectionState';
-import { useCommandState } from '../../hooks/useCommandState';
-import { useOutputState } from '../../hooks/useOutputState';
-import { useViewState } from '../../hooks/useViewState';
-import { useAutoRefreshState } from '../../hooks/useAutoRefreshState';
+import { useConnectionState, useAutoRefreshState } from '../../hooks/connection';
+import { useCommandState, useOutputState } from '../../hooks/tmux';
+import { useViewState } from '../../hooks/ui';
 
 interface ViewStateCoordinatorProps {
   selectedTarget: string;

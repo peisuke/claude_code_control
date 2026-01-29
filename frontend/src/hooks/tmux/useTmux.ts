@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { tmuxAPI } from '../services/api';
+import { tmuxAPI } from '../../services/api';
 
 interface UseTmuxReturn {
   sendCommand: (command: string, target?: string) => Promise<void>;
@@ -16,7 +16,7 @@ export const useTmux = (): UseTmuxReturn => {
   const sendCommand = useCallback(async (command: string, target?: string) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await tmuxAPI.sendCommand(command, target);
     } catch (err) {
@@ -30,7 +30,7 @@ export const useTmux = (): UseTmuxReturn => {
   const sendEnter = useCallback(async (target?: string) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await tmuxAPI.sendEnter(target);
     } catch (err) {
@@ -44,10 +44,10 @@ export const useTmux = (): UseTmuxReturn => {
   const getOutput = useCallback(async (target?: string, includeHistory: boolean = false, lines?: number): Promise<string> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const output = await tmuxAPI.getOutput(target, includeHistory, lines);
-      return output.content;
+      const result = await tmuxAPI.getOutput(target, includeHistory, lines);
+      return result.content;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get output';
       setError(errorMessage);

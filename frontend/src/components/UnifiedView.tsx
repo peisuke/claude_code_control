@@ -8,7 +8,7 @@ import DesktopLayout from './desktop/DesktopLayout';
 import Sidebar from './desktop/Sidebar';
 import ConnectionStatus from './ConnectionStatus';
 import { VIEW_MODES } from '../constants/ui';
-import { useFileContent } from '../hooks/useFileContent';
+import { useFileContent } from '../hooks/file';
 
 interface UnifiedViewProps {
   isConnected: boolean;

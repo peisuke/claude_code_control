@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
-import { useLocalStorageBoolean } from '../hooks/useLocalStorageState';
+import { useLocalStorageBoolean } from '../hooks/ui';
 
 interface ThemeContextType {
   darkMode: boolean;
