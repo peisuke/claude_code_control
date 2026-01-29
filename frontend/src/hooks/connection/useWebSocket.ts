@@ -12,6 +12,7 @@ interface UseWebSocketReturn {
   disconnect: () => void;
   setTarget: (target: string) => void;
   resetAndReconnect: () => void;
+  setRefreshRate: (interval: number) => void;
   error: string | null;
 }
 
@@ -96,6 +97,12 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     setReconnectAttempts(0);
   }, []);
 
+  const setRefreshRate = useCallback((interval: number) => {
+    if (wsRef.current) {
+      wsRef.current.setRefreshRate(interval);
+    }
+  }, []);
+
   // Handle network state changes
   useEffect(() => {
     const handleOnline = () => {
@@ -154,6 +161,7 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
     disconnect,
     setTarget,
     resetAndReconnect,
+    setRefreshRate,
     error,
   };
 };

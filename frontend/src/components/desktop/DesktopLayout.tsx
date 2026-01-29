@@ -40,6 +40,7 @@ interface DesktopLayoutProps {
   isLoading: boolean;
   error: string | null;
   onRefresh?: () => Promise<string | undefined>;
+  onSetRefreshRate?: (interval: number) => void;
 
   // Settings
   onSettingsOpen: () => void;
@@ -68,6 +69,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
   isLoading,
   error,
   onRefresh,
+  onSetRefreshRate,
   onSettingsOpen
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -164,6 +166,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               isLoading={isLoading}
               selectedTarget={selectedTarget}
               onRefresh={onRefresh}
+              onSetRefreshRate={onSetRefreshRate}
             />
           )}
 

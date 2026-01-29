@@ -4,6 +4,7 @@ import TerminalOutput from '../terminal/TerminalOutput';
 import CommandInputArea from '../terminal/CommandInputArea';
 import TmuxKeyboard from '../terminal/TmuxKeyboard';
 import { useScrollBasedOutput } from '../../hooks/tmux';
+import { TIMING } from '../../constants/ui';
 
 interface TmuxViewContainerProps {
   output: string;
@@ -18,6 +19,7 @@ interface TmuxViewContainerProps {
   isLoading: boolean;
   selectedTarget: string;
   onRefresh?: () => Promise<string | undefined>;
+  onSetRefreshRate?: (interval: number) => void;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -32,13 +34,21 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   onToggleExpanded,
   isLoading,
   selectedTarget,
-  onRefresh
+  onRefresh,
+  onSetRefreshRate
 }) => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [hasPendingUpdates, setHasPendingUpdates] = React.useState(false);
   const isInitialMountRef = React.useRef(true);
   const prevOutputRef = React.useRef(output);
   const forceUpdateRef = React.useRef(false);
+
+  const handleScrollPositionChange = React.useCallback((isAtBottom: boolean) => {
+    const interval = isAtBottom ? TIMING.REFRESH_INTERVAL_FAST : TIMING.REFRESH_INTERVAL_NORMAL;
+    if (onSetRefreshRate) {
+      onSetRefreshRate(interval);
+    }
+  }, [onSetRefreshRate]);
 
   // Use scroll-based output hook for infinite scrolling and auto-scroll behavior
   const {
@@ -53,7 +63,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   } = useScrollBasedOutput({
     selectedTarget,
     isConnected,
-    initialOutput: output
+    initialOutput: output,
+    onScrollPositionChange: handleScrollPositionChange
   });
 
   // Auto-update when at bottom, track pending updates when scrolled up

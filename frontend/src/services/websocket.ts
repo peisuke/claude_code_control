@@ -17,13 +17,16 @@ export class WebSocketService {
   private onMessageCallback?: (output: TmuxOutput) => void;
   private onConnectionCallback?: (connected: boolean) => void;
   private onReconnectingCallback?: (attempt: number, maxAttempts: number) => void;
+  private lastRefreshRate?: number;
 
   constructor(target: string = 'default') {
     this.sessionName = target;
     // Use the same host as the current page, with WebSocket protocol
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.hostname;
-    const port = process.env.NODE_ENV === 'development' ? '8000' : window.location.port;
+    const port = process.env.NODE_ENV === 'development'
+      ? (process.env.REACT_APP_BACKEND_PORT || '8000')
+      : window.location.port;
     this.baseUrl = `${protocol}//${host}:${port}/api/tmux/ws`;
   }
 
@@ -141,6 +144,10 @@ export class WebSocketService {
           this.lastHeartbeatTime = Date.now();
           this.startHeartbeat();
           this.startConnectionCheck();
+          // Resend last refresh rate on every (re)connection
+          if (this.lastRefreshRate !== undefined) {
+            this.ws!.send(JSON.stringify({ type: 'set_refresh_rate', interval: this.lastRefreshRate }));
+          }
           this.onConnectionCallback?.(true);
           resolve();
         };
@@ -243,6 +250,13 @@ export class WebSocketService {
 
   onReconnecting(callback: (attempt: number, maxAttempts: number) => void): void {
     this.onReconnectingCallback = callback;
+  }
+
+  setRefreshRate(interval: number): void {
+    this.lastRefreshRate = interval;
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'set_refresh_rate', interval }));
+    }
   }
 
   isConnected(): boolean {

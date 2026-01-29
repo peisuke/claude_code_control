@@ -24,6 +24,7 @@ interface ConnectionHandlers {
   wsDisconnect: () => void;
   wsSetTarget: (target: string) => void;
   wsResetAndReconnect: () => void;
+  wsSetRefreshRate: (interval: number) => void;
 }
 
 interface UseConnectionStateReturn {
@@ -48,11 +49,12 @@ export const useConnectionState = ({
     isReconnecting,
     reconnectAttempts,
     maxReconnectAttempts,
-    connect: wsConnect, 
+    connect: wsConnect,
     disconnect: wsDisconnect,
     setTarget: wsSetTarget,
     resetAndReconnect: wsResetAndReconnect,
-    error: wsError 
+    setRefreshRate: wsSetRefreshRate,
+    error: wsError
   } = useWebSocket(selectedTarget);
 
   // Handle app visibility changes for mobile resume
@@ -83,7 +85,8 @@ export const useConnectionState = ({
     wsConnect,
     wsDisconnect,
     wsSetTarget,
-    wsResetAndReconnect
+    wsResetAndReconnect,
+    wsSetRefreshRate
   };
 
   return {
