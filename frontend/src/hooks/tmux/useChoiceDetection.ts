@@ -9,10 +9,13 @@ const ANSI_ESCAPE = /\x1b\[[0-9;]*[a-zA-Z]/g;
 const CHOICE_PATTERN = /(\d+)\.\s+(.+)$/;
 const TAIL_LINES = 20;
 
-const YES_NO_WORDS = new Set(['Yes', 'No']);
+const YES_NO_PREFIXES = ['Yes', 'No'];
 
 function isYesNoChoice(choices: Choice[]): boolean {
-  return choices.every(c => YES_NO_WORDS.has(c.text.trim()));
+  return choices.every(c => {
+    const text = c.text.trim();
+    return YES_NO_PREFIXES.some(prefix => text.startsWith(prefix));
+  });
 }
 
 export function useChoiceDetection(output: string): Choice[] {
