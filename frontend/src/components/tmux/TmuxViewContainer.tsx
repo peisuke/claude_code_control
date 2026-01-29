@@ -201,6 +201,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           isLoading={isLoading}
           isExpanded={commandExpanded}
           onToggleExpanded={onToggleExpanded}
+          output={output}
         />
       </Paper>
     </Box>

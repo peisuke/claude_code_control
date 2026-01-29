@@ -4,6 +4,8 @@ import { Send, KeyboardReturn, Fullscreen, FullscreenExit, Delete, ClearAll, Key
 import { LAYOUT, LABELS } from '../../constants/ui';
 import { KEYBOARD_COMMANDS, KEYBOARD_DESCRIPTIONS, KEYBOARD_LABELS } from '../../constants/keyboard';
 import { TmuxUtils } from '../../utils/tmux';
+import { useChoiceDetection, Choice } from '../../hooks/tmux/useChoiceDetection';
+import ChoiceButtons from './ChoiceButtons';
 
 interface CommandInputAreaProps {
   command: string;
@@ -15,6 +17,7 @@ interface CommandInputAreaProps {
   isLoading: boolean;
   isExpanded: boolean;
   onToggleExpanded: () => void;
+  output?: string;
 }
 
 const CommandInputArea: React.FC<CommandInputAreaProps> = ({
@@ -26,8 +29,18 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   isConnected,
   isLoading,
   isExpanded,
-  onToggleExpanded
+  onToggleExpanded,
+  output = ''
 }) => {
+  const choices = useChoiceDetection(output);
+
+  const handleSelectChoice = React.useCallback((choice: Choice) => {
+    onCommandChange(String(choice.number));
+    // Use setTimeout to ensure state update before sending
+    setTimeout(() => {
+      onSendCommand();
+    }, 0);
+  }, [onCommandChange, onSendCommand]);
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
@@ -92,7 +105,14 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
         </Stack>
       </Stack>
 
-      {/* Command Input */}
+      {/* Choice Buttons or Command Input */}
+      {choices.length > 0 ? (
+        <ChoiceButtons
+          choices={choices}
+          onSelect={handleSelectChoice}
+          disabled={disabled}
+        />
+      ) : (
       <Stack direction="row" spacing={1} alignItems="stretch" sx={isExpanded ? { flex: 1, minHeight: 0, height: '100%' } : { alignItems: 'flex-start' }}>
         <TextField
           fullWidth
@@ -156,6 +176,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
           </Button>
         </Stack>
       </Stack>
+      )}
     </Stack>
   );
 };
