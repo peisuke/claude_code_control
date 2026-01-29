@@ -137,6 +137,8 @@ export const useScrollBasedOutput = ({
     setTotalLoadedLines(0);
   }, []);
 
+  const hasUserScrolledUp = useCallback(() => userScrolledUpRef.current, []);
+
   return {
     output,
     isLoadingHistory,
@@ -146,6 +148,6 @@ export const useScrollBasedOutput = ({
     scrollToBottom,
     isAtBottom,
     checkIsAtBottom,
-    hasUserScrolledUp: () => userScrolledUpRef.current
+    hasUserScrolledUp
   };
 };
