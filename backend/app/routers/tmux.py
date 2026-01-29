@@ -18,6 +18,11 @@ manager = ConnectionManager()
 # Background task to monitor tmux output
 background_tasks = {}
 last_outputs = {}
+target_intervals: dict[str, float] = {}
+
+DEFAULT_POLL_INTERVAL = 2.0
+MIN_POLL_INTERVAL = 0.1
+MAX_POLL_INTERVAL = 10.0
 
 T = TypeVar('T')
 
@@ -188,7 +193,8 @@ async def monitor_target_output(target: str):
                 )
                 await manager.broadcast_to_session(target, json.dumps(output_data.dict()))
 
-            await asyncio.sleep(2)  # Check every 2 seconds
+            interval = target_intervals.get(target, DEFAULT_POLL_INTERVAL)
+            await asyncio.sleep(interval)
 
         except Exception as e:
             logger.error(f"Error in monitor task for target {target}: {e}")
@@ -235,6 +241,11 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
                     parsed = json.loads(message)
                     if parsed.get("type") == "ping":
                         await websocket.send_text(json.dumps({"type": "pong", "timestamp": datetime.now().isoformat()}))
+                    elif parsed.get("type") == "set_refresh_rate":
+                        interval = parsed.get("interval", DEFAULT_POLL_INTERVAL)
+                        if isinstance(interval, (int, float)):
+                            clamped = max(MIN_POLL_INTERVAL, min(MAX_POLL_INTERVAL, float(interval)))
+                            target_intervals[target] = clamped
                 except json.JSONDecodeError:
                     pass  # Ignore invalid JSON
 
@@ -261,3 +272,5 @@ async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
                 del background_tasks[target]
                 if target in last_outputs:
                     del last_outputs[target]
+                if target in target_intervals:
+                    del target_intervals[target]

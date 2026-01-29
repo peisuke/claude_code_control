@@ -89,6 +89,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
               isLoading={state.isLoading}
               error={state.error}
               onRefresh={handlers.handleRefresh}
+              onSetRefreshRate={handlers.wsSetRefreshRate}
               onSettingsOpen={onSettingsOpen}
             />
           ) : (
@@ -170,6 +171,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                     isLoading={state.isLoading}
                     selectedTarget={selectedTarget}
                     onRefresh={handlers.handleRefresh}
+                    onSetRefreshRate={handlers.wsSetRefreshRate}
                   />
                 )}
 

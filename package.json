@@ -8,7 +8,7 @@
     "dev:frontend": "cd frontend && npm start",
     "dev:test": "concurrently \"npm run dev:backend:test\" \"npm run dev:frontend:test\"",
     "dev:backend:test": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8010",
-    "dev:frontend:test": "cd frontend && PORT=3010 BACKEND_PORT=8010 HOST=0.0.0.0 REACT_APP_TEST_MODE=true npm start",
+    "dev:frontend:test": "cd frontend && PORT=3010 BACKEND_PORT=8010 REACT_APP_BACKEND_PORT=8010 HOST=0.0.0.0 REACT_APP_TEST_MODE=true npm start",
     "install:all": "npm install && cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
     "build": "cd frontend && npm run build"
   },

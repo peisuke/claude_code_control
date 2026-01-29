@@ -50,6 +50,7 @@ interface CoordinatedHandlers {
 
   // Connection handlers
   wsResetAndReconnect: () => void;
+  wsSetRefreshRate: (interval: number) => void;
 }
 
 /**
@@ -140,7 +141,8 @@ const ViewStateCoordinator: React.FC<ViewStateCoordinatorProps> = ({
     ...commandHandlers,
     ...outputHandlers,
     handleViewModeToggle: viewHandlers.handleViewModeToggle,
-    wsResetAndReconnect: connectionHandlers.wsResetAndReconnect
+    wsResetAndReconnect: connectionHandlers.wsResetAndReconnect,
+    wsSetRefreshRate: connectionHandlers.wsSetRefreshRate
   };
 
   return <>{children(coordinatedState, coordinatedHandlers)}</>;

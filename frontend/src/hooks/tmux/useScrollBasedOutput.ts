@@ -5,6 +5,7 @@ interface UseScrollBasedOutputOptions {
   selectedTarget: string;
   isConnected: boolean;
   initialOutput?: string;
+  onScrollPositionChange?: (isAtBottom: boolean) => void;
 }
 
 interface UseScrollBasedOutputReturn {
@@ -32,7 +33,8 @@ const HISTORY_LINES_PER_LOAD = 500; // lines to load each time
 export const useScrollBasedOutput = ({
   selectedTarget,
   isConnected,
-  initialOutput = ''
+  initialOutput = '',
+  onScrollPositionChange
 }: UseScrollBasedOutputOptions): UseScrollBasedOutputReturn => {
   const [output, setOutput] = useState(initialOutput);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -42,12 +44,16 @@ export const useScrollBasedOutput = ({
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
   const userScrolledUpRef = useRef(false);
+  const onScrollPositionChangeRef = useRef(onScrollPositionChange);
+  onScrollPositionChangeRef.current = onScrollPositionChange;
 
   // Reset state when target changes
   useEffect(() => {
     setIsAtBottom(true);
     setTotalLoadedLines(0);
     userScrolledUpRef.current = false;
+    // Send fast refresh rate on initial connection (user starts at bottom)
+    onScrollPositionChangeRef.current?.(true);
   }, [selectedTarget]);
 
   // Check if user is at bottom of scroll
@@ -121,8 +127,14 @@ export const useScrollBasedOutput = ({
 
     // Track if user is at bottom
     const atBottom = checkIfAtBottom(element);
+    const wasAtBottom = !userScrolledUpRef.current;
     setIsAtBottom(atBottom);
     userScrolledUpRef.current = !atBottom;
+
+    // Notify when scroll position changes between at-bottom and scrolled-up
+    if (atBottom !== wasAtBottom) {
+      onScrollPositionChangeRef.current?.(atBottom);
+    }
 
     // Check if at top and should load more history
     if (element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {
