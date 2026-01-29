@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { tmuxAPI } from '../services/api';
+import { tmuxAPI } from '../../services/api';
 
 interface UseScrollBasedOutputOptions {
   selectedTarget: string;

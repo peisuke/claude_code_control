@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useTmux } from './useTmux';
-import { TmuxOutput } from '../types';
+import { TmuxOutput } from '../../types';
 
 interface UseOutputStateProps {
   selectedTarget: string;

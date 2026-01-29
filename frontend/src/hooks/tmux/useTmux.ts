@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import { tmuxAPI } from '../services/api';
-import { ScrollUtils } from '../utils/scroll';
+import { tmuxAPI } from '../../services/api';
+import { ScrollUtils } from '../../utils/scroll';
 
 interface UseTmuxReturn {
   sendCommand: (command: string, target?: string) => Promise<void>;

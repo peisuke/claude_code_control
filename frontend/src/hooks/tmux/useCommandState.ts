@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useTmux } from './useTmux';
-import { TIMING } from '../constants/ui';
-import { TmuxUtils } from '../utils/tmux';
+import { TIMING } from '../../constants/ui';
+import { TmuxUtils } from '../../utils/tmux';
 
 interface UseCommandStateProps {
   selectedTarget: string;

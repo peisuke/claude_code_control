@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { tmuxAPI } from '../services/api';
+import { tmuxAPI } from '../../services/api';
 
 interface FileContentState {
   selectedFile: string;

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useLocalStorageString } from './useLocalStorageState';
-import { VIEW_MODES } from '../constants/ui';
+import { VIEW_MODES } from '../../constants/ui';
 
 interface ViewState {
   autoRefresh: boolean;

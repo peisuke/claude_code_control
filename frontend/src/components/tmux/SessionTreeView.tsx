@@ -22,7 +22,7 @@ import {
 import { TmuxHierarchy } from '../../types';
 import { TmuxUtils } from '../../utils/tmux';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
-import { useSessionManagement } from '../../hooks/useSessionManagement';
+import { useSessionManagement } from '../../hooks/tmux';
 
 interface SessionTreeViewProps {
   hierarchy: TmuxHierarchy | null;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { TmuxHierarchy } from '../types';
-import { tmuxAPI } from '../services/api';
-import { DeleteDialogState, initialDeleteDialog } from '../components/tmux/DeleteConfirmationDialog';
+import { TmuxHierarchy } from '../../types';
+import { tmuxAPI } from '../../services/api';
+import { DeleteDialogState, initialDeleteDialog } from '../../components/tmux/DeleteConfirmationDialog';
 
 interface UseSessionManagementProps {
   hierarchy: TmuxHierarchy | null;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { WebSocketService } from '../services/websocket';
-import { TmuxOutput } from '../types';
+import { WebSocketService } from '../../services/websocket';
+import { TmuxOutput } from '../../types';
 
 interface UseWebSocketReturn {
   lastMessage: TmuxOutput | null;
