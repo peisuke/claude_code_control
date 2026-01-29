@@ -36,7 +36,7 @@ export const useCommandState = ({
 }: UseCommandStateProps): UseCommandStateReturn => {
   const [command, setCommand] = useState('');
   const [commandExpanded, setCommandExpanded] = useState(false);
-  const tmux = useTmux();
+  const { sendCommand: tmuxSendCommand, sendEnter: tmuxSendEnter } = useTmux();
 
   const handleSendCommand = useCallback(async () => {
     if (!command.trim()) return;
@@ -45,32 +45,32 @@ export const useCommandState = ({
       const sanitizedCommand = TmuxUtils.sanitizeCommand(command);
       if (!TmuxUtils.isValidCommand(sanitizedCommand)) return;
 
-      await tmux.sendCommand(sanitizedCommand, selectedTarget);
+      await tmuxSendCommand(sanitizedCommand, selectedTarget);
       setCommand('');
 
       setTimeout(onRefresh, TIMING.COMMAND_REFRESH_DELAY);
     } catch {
       // Silently fail command send
     }
-  }, [command, tmux, selectedTarget, onRefresh]);
+  }, [command, tmuxSendCommand, selectedTarget, onRefresh]);
 
   const handleSendEnter = useCallback(async () => {
     try {
-      await tmux.sendEnter(selectedTarget);
+      await tmuxSendEnter(selectedTarget);
       setTimeout(onRefresh, TIMING.COMMAND_REFRESH_DELAY);
     } catch {
       // Silently fail enter send
     }
-  }, [tmux, selectedTarget, onRefresh]);
+  }, [tmuxSendEnter, selectedTarget, onRefresh]);
 
   const handleKeyboardCommand = useCallback(async (keyCommand: string) => {
     try {
-      await tmux.sendCommand(keyCommand, selectedTarget);
+      await tmuxSendCommand(keyCommand, selectedTarget);
       setTimeout(onRefresh, 200);
     } catch {
       // Silently fail keyboard command
     }
-  }, [tmux, selectedTarget, onRefresh]);
+  }, [tmuxSendCommand, selectedTarget, onRefresh]);
 
   const state: CommandState = {
     command,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { useTerminalOutput } from './useTerminalOutput';
 import { useTmux } from './useTmux';
 import { TmuxOutput } from '../../types';
 
@@ -35,7 +36,8 @@ export const useOutputState = ({
   lastMessage,
   autoRefresh
 }: UseOutputStateProps): UseOutputStateReturn => {
-  const { output, setOutput, getOutput, isLoading, error } = useTmux();
+  const { output, setOutput } = useTerminalOutput();
+  const { getOutput, isLoading, error } = useTmux();
 
   // Refresh handler - returns output content for immediate use
   // Note: Scroll behavior is handled by useScrollBasedOutput in TmuxViewContainer

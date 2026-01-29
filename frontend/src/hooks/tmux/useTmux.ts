@@ -1,6 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { tmuxAPI } from '../../services/api';
-import { ScrollUtils } from '../../utils/scroll';
 
 interface UseTmuxReturn {
   sendCommand: (command: string, target?: string) => Promise<void>;
@@ -8,22 +7,11 @@ interface UseTmuxReturn {
   getOutput: (target?: string) => Promise<string>;
   isLoading: boolean;
   error: string | null;
-  // Terminal output state (absorbed from useTerminalOutput)
-  output: string;
-  setOutput: (output: string) => void;
-  outputRef: React.RefObject<HTMLDivElement>;
-  scrollToBottom: () => void;
 }
 
 export const useTmux = (): UseTmuxReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [output, setOutput] = useState('');
-  const outputRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = useCallback(() => {
-    ScrollUtils.scrollToBottom(outputRef.current);
-  }, []);
 
   const sendCommand = useCallback(async (command: string, target?: string) => {
     setIsLoading(true);
@@ -75,9 +63,5 @@ export const useTmux = (): UseTmuxReturn => {
     getOutput,
     isLoading,
     error,
-    output,
-    setOutput,
-    outputRef,
-    scrollToBottom,
   };
 };

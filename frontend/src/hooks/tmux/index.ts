@@ -1,4 +1,5 @@
 export { useTmux } from './useTmux';
+export { useTerminalOutput } from './useTerminalOutput';
 export { useOutputState } from './useOutputState';
 export { useCommandState } from './useCommandState';
 export { useSessionManagement } from './useSessionManagement';
