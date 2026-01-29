@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
-import { useTmuxCommands } from './useTmuxCommands';
+import { useTmux } from './useTmux';
+import { TIMING } from '../constants/ui';
+import { TmuxUtils } from '../utils/tmux';
 
 interface UseCommandStateProps {
   selectedTarget: string;
@@ -26,7 +28,7 @@ interface UseCommandStateReturn {
 
 /**
  * Manages command input state and execution
- * Single Responsibility: Command handling only
+ * Includes tmux command operations with standardized delay (absorbed from useTmuxCommands)
  */
 export const useCommandState = ({
   selectedTarget,
@@ -34,40 +36,41 @@ export const useCommandState = ({
 }: UseCommandStateProps): UseCommandStateReturn => {
   const [command, setCommand] = useState('');
   const [commandExpanded, setCommandExpanded] = useState(false);
+  const tmux = useTmux();
 
-  // Initialize tmux commands hook
-  const { sendCommand, sendEnter, sendKeyboardCommand } = useTmuxCommands({
-    onRefresh
-  });
-
-  // Handle command send
   const handleSendCommand = useCallback(async () => {
     if (!command.trim()) return;
-    
+
     try {
-      await sendCommand(command, selectedTarget);
+      const sanitizedCommand = TmuxUtils.sanitizeCommand(command);
+      if (!TmuxUtils.isValidCommand(sanitizedCommand)) return;
+
+      await tmux.sendCommand(sanitizedCommand, selectedTarget);
       setCommand('');
+
+      setTimeout(onRefresh, TIMING.COMMAND_REFRESH_DELAY);
     } catch {
       // Silently fail command send
     }
-  }, [command, sendCommand, selectedTarget]);
+  }, [command, tmux, selectedTarget, onRefresh]);
 
   const handleSendEnter = useCallback(async () => {
     try {
-      await sendEnter(selectedTarget);
+      await tmux.sendEnter(selectedTarget);
+      setTimeout(onRefresh, TIMING.COMMAND_REFRESH_DELAY);
     } catch {
       // Silently fail enter send
     }
-  }, [sendEnter, selectedTarget]);
+  }, [tmux, selectedTarget, onRefresh]);
 
-  // Handle keyboard commands
   const handleKeyboardCommand = useCallback(async (keyCommand: string) => {
     try {
-      await sendKeyboardCommand(keyCommand, selectedTarget);
+      await tmux.sendCommand(keyCommand, selectedTarget);
+      setTimeout(onRefresh, 200);
     } catch {
       // Silently fail keyboard command
     }
-  }, [sendKeyboardCommand, selectedTarget]);
+  }, [tmux, selectedTarget, onRefresh]);
 
   const state: CommandState = {
     command,

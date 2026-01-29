@@ -1,24 +1,34 @@
 import { renderHook, act } from '@testing-library/react';
 import { useCommandState } from '../useCommandState';
-import { useTmuxCommands } from '../useTmuxCommands';
+import { useTmux } from '../useTmux';
 
-jest.mock('../useTmuxCommands');
+jest.mock('../useTmux');
 
-const mockUseTmuxCommands = useTmuxCommands as jest.MockedFunction<typeof useTmuxCommands>;
+const mockUseTmux = useTmux as jest.MockedFunction<typeof useTmux>;
 
 describe('useCommandState', () => {
   const mockSendCommand = jest.fn();
   const mockSendEnter = jest.fn();
-  const mockSendKeyboardCommand = jest.fn();
   const mockOnRefresh = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTmuxCommands.mockReturnValue({
+    jest.useFakeTimers();
+    mockUseTmux.mockReturnValue({
       sendCommand: mockSendCommand,
       sendEnter: mockSendEnter,
-      sendKeyboardCommand: mockSendKeyboardCommand,
+      getOutput: jest.fn(),
+      isLoading: false,
+      error: null,
+      output: '',
+      setOutput: jest.fn(),
+      outputRef: { current: null },
+      scrollToBottom: jest.fn(),
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('initial state', () => {
@@ -120,7 +130,7 @@ describe('useCommandState', () => {
   });
 
   describe('handleSendCommand', () => {
-    it('should call sendCommand with command and target', async () => {
+    it('should call sendCommand with sanitized command and target', async () => {
       mockSendCommand.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() =>
@@ -217,6 +227,31 @@ describe('useCommandState', () => {
       // Command should not be cleared on error
       expect(result.current.state.command).toBe('error command');
     });
+
+    it('should schedule refresh after successful send', async () => {
+      mockSendCommand.mockResolvedValueOnce(undefined);
+
+      const { result } = renderHook(() =>
+        useCommandState({
+          selectedTarget: 'default',
+          onRefresh: mockOnRefresh,
+        })
+      );
+
+      act(() => {
+        result.current.handlers.setCommand('ls');
+      });
+
+      await act(async () => {
+        await result.current.handlers.handleSendCommand();
+      });
+
+      act(() => {
+        jest.runAllTimers();
+      });
+
+      expect(mockOnRefresh).toHaveBeenCalled();
+    });
   });
 
   describe('handleSendEnter', () => {
@@ -257,8 +292,8 @@ describe('useCommandState', () => {
   });
 
   describe('handleKeyboardCommand', () => {
-    it('should call sendKeyboardCommand with key command and target', async () => {
-      mockSendKeyboardCommand.mockResolvedValueOnce(undefined);
+    it('should call sendCommand with key command and target', async () => {
+      mockSendCommand.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() =>
         useCommandState({
@@ -271,11 +306,11 @@ describe('useCommandState', () => {
         await result.current.handlers.handleKeyboardCommand('C-c');
       });
 
-      expect(mockSendKeyboardCommand).toHaveBeenCalledWith('C-c', 'session:1');
+      expect(mockSendCommand).toHaveBeenCalledWith('C-c', 'session:1');
     });
 
     it('should handle various keyboard commands', async () => {
-      mockSendKeyboardCommand.mockResolvedValue(undefined);
+      mockSendCommand.mockResolvedValue(undefined);
 
       const { result } = renderHook(() =>
         useCommandState({
@@ -292,11 +327,11 @@ describe('useCommandState', () => {
         });
       }
 
-      expect(mockSendKeyboardCommand).toHaveBeenCalledTimes(commands.length);
+      expect(mockSendCommand).toHaveBeenCalledTimes(commands.length);
     });
 
     it('should handle error silently', async () => {
-      mockSendKeyboardCommand.mockRejectedValueOnce(new Error('Keyboard command failed'));
+      mockSendCommand.mockRejectedValueOnce(new Error('Keyboard command failed'));
 
       const { result } = renderHook(() =>
         useCommandState({
@@ -310,20 +345,7 @@ describe('useCommandState', () => {
         await result.current.handlers.handleKeyboardCommand('C-c');
       });
 
-      expect(mockSendKeyboardCommand).toHaveBeenCalled();
-    });
-  });
-
-  describe('useTmuxCommands integration', () => {
-    it('should initialize useTmuxCommands with onRefresh', () => {
-      renderHook(() =>
-        useCommandState({
-          selectedTarget: 'default',
-          onRefresh: mockOnRefresh,
-        })
-      );
-
-      expect(mockUseTmuxCommands).toHaveBeenCalledWith({ onRefresh: mockOnRefresh });
+      expect(mockSendCommand).toHaveBeenCalled();
     });
   });
 
