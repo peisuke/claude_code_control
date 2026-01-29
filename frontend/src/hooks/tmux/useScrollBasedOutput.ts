@@ -43,6 +43,7 @@ export const useScrollBasedOutput = ({
   const outputRef = useRef<HTMLDivElement>(null);
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
+  const lastScrollTopRef = useRef<number>(0);
   const userScrolledUpRef = useRef(false);
   const onScrollPositionChangeRef = useRef(onScrollPositionChange);
   onScrollPositionChangeRef.current = onScrollPositionChange;
@@ -110,12 +111,13 @@ export const useScrollBasedOutput = ({
           const newScrollHeight = element.scrollHeight;
           const scrollDiff = newScrollHeight - previousScrollHeight.current;
           element.scrollTop = scrollDiff;
+          lastScrollTopRef.current = scrollDiff;
         }
+        setIsLoadingHistory(false);
+        isLoadingRef.current = false;
       }, 0);
 
     } catch {
-      // Silently fail history loading
-    } finally {
       setIsLoadingHistory(false);
       isLoadingRef.current = false;
     }
@@ -136,8 +138,12 @@ export const useScrollBasedOutput = ({
       onScrollPositionChangeRef.current?.(atBottom);
     }
 
-    // Check if at top and should load more history
-    if (element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {
+    // Check if at top and should load more history (only when scrolling upward)
+    const previousScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = element.scrollTop;
+    const isScrollingUp = element.scrollTop < previousScrollTop;
+
+    if (isScrollingUp && element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {
       loadMoreHistory();
     }
   }, [checkIfAtBottom, loadMoreHistory]);
