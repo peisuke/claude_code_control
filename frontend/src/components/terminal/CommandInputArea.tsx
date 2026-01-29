@@ -33,6 +33,14 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   output = ''
 }) => {
   const choices = useChoiceDetection(output);
+  const inputAreaRef = React.useRef<HTMLDivElement>(null);
+  const [inputAreaHeight, setInputAreaHeight] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    if (choices.length === 0 && inputAreaRef.current) {
+      setInputAreaHeight(inputAreaRef.current.offsetHeight);
+    }
+  }, [choices.length]);
 
   const handleSelectChoice = React.useCallback(async (choice: Choice) => {
     await onSendKeyboardCommand(String(choice.number));
@@ -55,9 +63,10 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
           choices={choices}
           onSelect={handleSelectChoice}
           disabled={disabled}
+          totalHeight={inputAreaHeight || undefined}
         />
       ) : (
-      <>
+      <Stack ref={inputAreaRef} spacing={2}>
         {/* Command Buttons */}
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Stack direction="row" spacing={1}>
@@ -174,7 +183,7 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
             </Button>
           </Stack>
         </Stack>
-      </>
+      </Stack>
       )}
     </Stack>
   );

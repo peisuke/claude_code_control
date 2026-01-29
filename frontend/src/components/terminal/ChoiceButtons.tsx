@@ -6,20 +6,25 @@ interface ChoiceButtonsProps {
   choices: Choice[];
   onSelect: (choice: Choice) => void;
   disabled?: boolean;
+  totalHeight?: number;
 }
 
-const ChoiceButtons: React.FC<ChoiceButtonsProps> = ({ choices, onSelect, disabled = false }) => {
+const ChoiceButtons: React.FC<ChoiceButtonsProps> = ({ choices, onSelect, disabled = false, totalHeight }) => {
   return (
-    <Stack spacing={0.5}>
+    <Stack spacing={1} sx={totalHeight ? { height: totalHeight } : {}}>
       {choices.map((choice) => (
         <Button
           key={choice.number}
           variant="outlined"
-          size="small"
           fullWidth
           onClick={() => onSelect(choice)}
           disabled={disabled}
-          sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+          sx={{
+            flex: totalHeight ? 1 : undefined,
+            minHeight: totalHeight ? 0 : 44,
+            justifyContent: 'flex-start',
+            textTransform: 'none',
+          }}
         >
           {choice.number}. {choice.text}
         </Button>
