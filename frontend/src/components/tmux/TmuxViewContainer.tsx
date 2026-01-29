@@ -42,6 +42,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   const isInitialMountRef = React.useRef(true);
   const prevOutputRef = React.useRef(output);
   const forceUpdateRef = React.useRef(false);
+  const prevTargetRef = React.useRef(selectedTarget);
 
   const handleScrollPositionChange = React.useCallback((isAtBottom: boolean) => {
     const interval = isAtBottom ? TIMING.REFRESH_INTERVAL_FAST : TIMING.REFRESH_INTERVAL_NORMAL;
@@ -70,6 +71,19 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   // Auto-update when at bottom, track pending updates when scrolled up
   React.useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined;
+
+    // Force scroll to bottom on target change
+    const targetChanged = prevTargetRef.current !== selectedTarget;
+    if (targetChanged) {
+      prevTargetRef.current = selectedTarget;
+      prevOutputRef.current = output;
+      setOutput(output);
+      setHasPendingUpdates(false);
+      if (output) {
+        timeoutId = setTimeout(() => scrollToBottom(), 0);
+      }
+      return;
+    }
 
     // Always update on initial mount
     if (isInitialMountRef.current) {
@@ -112,7 +126,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [output, setOutput, checkIsAtBottom, scrollToBottom, hasUserScrolledUp]);
+  }, [output, setOutput, checkIsAtBottom, scrollToBottom, hasUserScrolledUp, selectedTarget]);
 
   // Handle refresh button click - fetches new output and scrolls to bottom
   const handleRefresh = React.useCallback(async () => {

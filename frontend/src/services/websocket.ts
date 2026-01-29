@@ -17,7 +17,7 @@ export class WebSocketService {
   private onMessageCallback?: (output: TmuxOutput) => void;
   private onConnectionCallback?: (connected: boolean) => void;
   private onReconnectingCallback?: (attempt: number, maxAttempts: number) => void;
-  private lastRefreshRate?: number;
+  private lastRefreshRate: number = 0.1;
 
   constructor(target: string = 'default') {
     this.sessionName = target;
@@ -145,7 +145,7 @@ export class WebSocketService {
           this.startHeartbeat();
           this.startConnectionCheck();
           // Resend last refresh rate on every (re)connection
-          if (this.lastRefreshRate !== undefined && this.ws?.readyState === WebSocket.OPEN) {
+          if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type: 'set_refresh_rate', interval: this.lastRefreshRate }));
           }
           this.onConnectionCallback?.(true);

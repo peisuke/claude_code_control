@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { tmuxAPI } from '../../services/api';
 
 interface UseScrollBasedOutputOptions {
@@ -50,25 +50,32 @@ export const useScrollBasedOutput = ({
   onScrollPositionChangeRef.current = onScrollPositionChange;
 
   // Reset state when target changes
+  const needsScrollToBottomRef = useRef(false);
   useEffect(() => {
     setIsAtBottom(true);
     setTotalLoadedLines(0);
     userScrolledUpRef.current = false;
     isTargetSwitchingRef.current = true;
-    // Scroll to bottom so the user sees latest output and auto-refresh is active
-    const element = outputRef.current;
-    if (element) {
-      element.scrollTop = element.scrollHeight;
-      lastScrollTopRef.current = element.scrollTop;
-    } else {
-      lastScrollTopRef.current = 0;
-    }
+    needsScrollToBottomRef.current = true;
+    lastScrollTopRef.current = 0;
     onScrollPositionChangeRef.current?.(true);
     // Allow history loading after DOM settles
     requestAnimationFrame(() => {
       isTargetSwitchingRef.current = false;
     });
   }, [selectedTarget]);
+
+  // Scroll to bottom after target switch, once DOM has updated with new content
+  useLayoutEffect(() => {
+    if (needsScrollToBottomRef.current && output) {
+      needsScrollToBottomRef.current = false;
+      const element = outputRef.current;
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+        lastScrollTopRef.current = element.scrollTop;
+      }
+    }
+  }, [output]);
 
   // Check if user is at bottom of scroll
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
