@@ -9,6 +9,12 @@ const ANSI_ESCAPE = /\x1b\[[0-9;]*[a-zA-Z]/g;
 const CHOICE_PATTERN = /(\d+)\.\s+(.+)$/;
 const TAIL_LINES = 20;
 
+const YES_NO_WORDS = new Set(['Yes', 'No']);
+
+function isYesNoChoice(choices: Choice[]): boolean {
+  return choices.every(c => YES_NO_WORDS.has(c.text.trim()));
+}
+
 export function useChoiceDetection(output: string): Choice[] {
   return useMemo(() => {
     if (!output) return [];
@@ -16,11 +22,6 @@ export function useChoiceDetection(output: string): Choice[] {
     const lines = output.trimEnd().split('\n');
     const tail = lines.slice(-TAIL_LINES);
 
-    const choices: Choice[] = [];
-    let expectedNumber = 1;
-
-    // Scan from the end to find the contiguous block of choices
-    // First, find all matching lines in the tail
     const matchedLines: { index: number; number: number; text: string }[] = [];
     for (let i = 0; i < tail.length; i++) {
       const trimmed = tail[i].replace(ANSI_ESCAPE, '').trim();
@@ -36,8 +37,6 @@ export function useChoiceDetection(output: string): Choice[] {
 
     if (matchedLines.length < 2) return [];
 
-    // Find the longest contiguous sequential group ending at the last match
-    // Work backwards from the last matched line
     const result: Choice[] = [matchedLines[matchedLines.length - 1]];
     for (let i = matchedLines.length - 2; i >= 0; i--) {
       const current = matchedLines[i];
@@ -47,9 +46,13 @@ export function useChoiceDetection(output: string): Choice[] {
       }
     }
 
-    // Must start at 1 and have at least 2 choices
     if (result.length < 2 || result[0].number !== 1) return [];
 
-    return result.map(({ number, text }) => ({ number, text }));
+    const choices = result.map(({ number, text }) => ({ number, text }));
+
+    // Only show buttons for yes/no style choices
+    if (!isYesNoChoice(choices)) return [];
+
+    return choices;
   }, [output]);
 }

@@ -7,7 +7,7 @@ describe('useChoiceDetection', () => {
     expect(result.current).toEqual([]);
   });
 
-  it('detects numbered choices', () => {
+  it('detects yes/no choices as buttons', () => {
     const output = 'Some prompt text\n1. Yes\n2. No';
     const { result } = renderHook(() => useChoiceDetection(output));
     expect(result.current).toEqual([
@@ -16,11 +16,10 @@ describe('useChoiceDetection', () => {
     ]);
   });
 
-  it('detects three choices', () => {
+  it('returns empty for non-yes/no choices (general text)', () => {
     const output = 'Pick one:\n1. Option A\n2. Option B\n3. Option C';
     const { result } = renderHook(() => useChoiceDetection(output));
-    expect(result.current).toHaveLength(3);
-    expect(result.current[2]).toEqual({ number: 3, text: 'Option C' });
+    expect(result.current).toEqual([]);
   });
 
   it('returns empty for single choice (needs 2+)', () => {
@@ -68,5 +67,11 @@ describe('useChoiceDetection', () => {
       { number: 1, text: 'Yes' },
       { number: 2, text: 'No' }
     ]);
+  });
+
+  it('returns empty for non-yes/no words like ok/cancel', () => {
+    const output = '1. OK\n2. Cancel';
+    const { result } = renderHook(() => useChoiceDetection(output));
+    expect(result.current).toEqual([]);
   });
 });

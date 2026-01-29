@@ -51,20 +51,24 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
         </Box>
       )} */}
 
-      {/* Refresh button - shown only when there are pending updates while scrolled up */}
-      {onRefresh && hasPendingUpdates && (
+      {/* Refresh button - always shown, highlighted when pending updates */}
+      {onRefresh && (
         <Fab
           size="small"
-          color="primary"
           onClick={onRefresh}
           disabled={isRefreshing}
           sx={{
             position: 'absolute',
             bottom: 24,
             right: 24,
-            zIndex: 10
+            zIndex: 10,
+            backgroundColor: hasPendingUpdates ? 'primary.main' : 'background.paper',
+            color: hasPendingUpdates ? 'primary.contrastText' : 'primary.main',
+            '&:hover': {
+              backgroundColor: hasPendingUpdates ? 'primary.dark' : 'grey.200',
+            }
           }}
-          title="新しい更新があります"
+          title={hasPendingUpdates ? '新しい更新があります' : '手動更新'}
         >
           {isRefreshing ? (
             <CircularProgress size={20} color="inherit" />
