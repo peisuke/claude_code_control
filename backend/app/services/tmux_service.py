@@ -118,7 +118,7 @@ class TmuxService:
             stdout, stderr, returncode = await self._execute_tmux_command(cmd)
 
             if returncode == 0:
-                return stdout or ""
+                return (stdout or "").rstrip('\n')
             else:
                 return f"Error: {stderr or 'unknown error'}"
 
