@@ -10,15 +10,16 @@ interface ChoiceButtonsProps {
 
 const ChoiceButtons: React.FC<ChoiceButtonsProps> = ({ choices, onSelect, disabled = false }) => {
   return (
-    <Stack spacing={1}>
+    <Stack spacing={0.5}>
       {choices.map((choice) => (
         <Button
           key={choice.number}
           variant="outlined"
+          size="small"
           fullWidth
           onClick={() => onSelect(choice)}
           disabled={disabled}
-          sx={{ minHeight: 44, justifyContent: 'flex-start', textTransform: 'none' }}
+          sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
         >
           {choice.number}. {choice.text}
         </Button>

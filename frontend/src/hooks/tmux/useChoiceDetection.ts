@@ -5,7 +5,8 @@ export interface Choice {
   text: string;
 }
 
-const CHOICE_PATTERN = /^(\d+)\.\s+(.+)$/;
+const ANSI_ESCAPE = /\x1b\[[0-9;]*[a-zA-Z]/g;
+const CHOICE_PATTERN = /(\d+)\.\s+(.+)$/;
 const TAIL_LINES = 20;
 
 export function useChoiceDetection(output: string): Choice[] {
@@ -22,7 +23,7 @@ export function useChoiceDetection(output: string): Choice[] {
     // First, find all matching lines in the tail
     const matchedLines: { index: number; number: number; text: string }[] = [];
     for (let i = 0; i < tail.length; i++) {
-      const trimmed = tail[i].trim();
+      const trimmed = tail[i].replace(ANSI_ESCAPE, '').trim();
       const match = trimmed.match(CHOICE_PATTERN);
       if (match) {
         matchedLines.push({

@@ -52,6 +52,15 @@ describe('useChoiceDetection', () => {
     ]);
   });
 
+  it('strips ANSI escape sequences from choice text', () => {
+    const output = 'Pick:\n\x1b[32m1. Yes\x1b[0m\n\x1b[32m2. No\x1b[0m';
+    const { result } = renderHook(() => useChoiceDetection(output));
+    expect(result.current).toEqual([
+      { number: 1, text: 'Yes' },
+      { number: 2, text: 'No' }
+    ]);
+  });
+
   it('handles choices with extra whitespace', () => {
     const output = '  1. Yes  \n  2. No  ';
     const { result } = renderHook(() => useChoiceDetection(output));

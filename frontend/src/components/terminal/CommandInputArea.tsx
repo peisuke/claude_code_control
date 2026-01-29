@@ -34,13 +34,10 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
 }) => {
   const choices = useChoiceDetection(output);
 
-  const handleSelectChoice = React.useCallback((choice: Choice) => {
-    onCommandChange(String(choice.number));
-    // Use setTimeout to ensure state update before sending
-    setTimeout(() => {
-      onSendCommand();
-    }, 0);
-  }, [onCommandChange, onSendCommand]);
+  const handleSelectChoice = React.useCallback(async (choice: Choice) => {
+    await onSendKeyboardCommand(String(choice.number));
+    await onSendEnter();
+  }, [onSendKeyboardCommand, onSendEnter]);
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
@@ -53,59 +50,6 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
 
   return (
     <Stack spacing={2} sx={isExpanded ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}}>
-      {/* Command Buttons */}
-      <Stack direction="row" spacing={2} justifyContent="space-between">
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="contained"
-            startIcon={isLoading ? <CircularProgress size={16} /> : <Send />}
-            onClick={onSendCommand}
-            disabled={!canSendCommand}
-            size="small"
-          >
-            {LABELS.BUTTONS.SEND}
-          </Button>
-          
-          <Button
-            variant="outlined"
-            startIcon={<KeyboardReturn />}
-            onClick={onSendEnter}
-            disabled={disabled}
-            size="small"
-          >
-            {LABELS.BUTTONS.ENTER}
-          </Button>
-        </Stack>
-        
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="outlined"
-            startIcon={<Delete />}
-            onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.BACKSPACE)}
-            disabled={disabled}
-            size="small"
-            title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.BACKSPACE]}
-            sx={{ minWidth: 'auto', px: 1 }}
-          >
-            {KEYBOARD_LABELS[KEYBOARD_COMMANDS.BACKSPACE]}
-          </Button>
-          
-          <Button
-            variant="outlined"
-            color="warning"
-            startIcon={<ClearAll />}
-            onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.CLEAR_SCREEN)}
-            disabled={disabled}
-            size="small"
-            title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
-            sx={{ minWidth: 'auto', px: 1 }}
-          >
-            {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
-          </Button>
-        </Stack>
-      </Stack>
-
-      {/* Choice Buttons or Command Input */}
       {choices.length > 0 ? (
         <ChoiceButtons
           choices={choices}
@@ -113,69 +57,124 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
           disabled={disabled}
         />
       ) : (
-      <Stack direction="row" spacing={1} alignItems="stretch" sx={isExpanded ? { flex: 1, minHeight: 0, height: '100%' } : { alignItems: 'flex-start' }}>
-        <TextField
-          fullWidth
-          label="コマンド (Shift+Enter: 送信, Enter: 改行)"
-          placeholder={LABELS.PLACEHOLDERS.COMMAND_INPUT}
-          value={command}
-          onChange={(e) => onCommandChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          size="small"
-          autoComplete="off"
-          multiline
-          {...(!isExpanded && { rows: LAYOUT.COMMAND_INPUT_MIN_ROWS })}
-          sx={isExpanded ? {
-            flex: 1,
-            minHeight: 0,
-            height: '100%',
-            '& .MuiInputBase-root': {
-              height: '100%',
-              alignItems: 'flex-start'
-            },
-            // !important is needed to override MUI's internal textarea styles
-            '& textarea': {
-              height: '100% !important',
-              overflow: 'auto !important',
-              resize: 'none'
-            }
-          } : {}}
-        />
-        
-        <Stack spacing={0.5}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={onToggleExpanded}
-            disabled={disabled}
-            sx={{ minWidth: 'auto', px: 1 }}
-            title={isExpanded ? LABELS.BUTTONS.COLLAPSE_COMMAND : LABELS.BUTTONS.EXPAND_COMMAND}
-          >
-            {isExpanded ? <FullscreenExit /> : <Fullscreen />}
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.ARROW_UP)}
-            disabled={disabled}
-            sx={{ minWidth: 'auto', px: 1 }}
-            title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.ARROW_UP]}
-          >
-            <KeyboardArrowUp />
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.ARROW_DOWN)}
-            disabled={disabled}
-            sx={{ minWidth: 'auto', px: 1 }}
-            title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.ARROW_DOWN]}
-          >
-            <KeyboardArrowDown />
-          </Button>
+      <>
+        {/* Command Buttons */}
+        <Stack direction="row" spacing={2} justifyContent="space-between">
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              startIcon={isLoading ? <CircularProgress size={16} /> : <Send />}
+              onClick={onSendCommand}
+              disabled={!canSendCommand}
+              size="small"
+            >
+              {LABELS.BUTTONS.SEND}
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<KeyboardReturn />}
+              onClick={onSendEnter}
+              disabled={disabled}
+              size="small"
+            >
+              {LABELS.BUTTONS.ENTER}
+            </Button>
+          </Stack>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<Delete />}
+              onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.BACKSPACE)}
+              disabled={disabled}
+              size="small"
+              title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.BACKSPACE]}
+              sx={{ minWidth: 'auto', px: 1 }}
+            >
+              {KEYBOARD_LABELS[KEYBOARD_COMMANDS.BACKSPACE]}
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<ClearAll />}
+              onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.CLEAR_SCREEN)}
+              disabled={disabled}
+              size="small"
+              title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
+              sx={{ minWidth: 'auto', px: 1 }}
+            >
+              {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
+
+        {/* Command Input */}
+        <Stack direction="row" spacing={1} alignItems="stretch" sx={isExpanded ? { flex: 1, minHeight: 0, height: '100%' } : { alignItems: 'flex-start' }}>
+          <TextField
+            fullWidth
+            label="コマンド (Shift+Enter: 送信, Enter: 改行)"
+            placeholder={LABELS.PLACEHOLDERS.COMMAND_INPUT}
+            value={command}
+            onChange={(e) => onCommandChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            size="small"
+            autoComplete="off"
+            multiline
+            {...(!isExpanded && { rows: LAYOUT.COMMAND_INPUT_MIN_ROWS })}
+            sx={isExpanded ? {
+              flex: 1,
+              minHeight: 0,
+              height: '100%',
+              '& .MuiInputBase-root': {
+                height: '100%',
+                alignItems: 'flex-start'
+              },
+              // !important is needed to override MUI's internal textarea styles
+              '& textarea': {
+                height: '100% !important',
+                overflow: 'auto !important',
+                resize: 'none'
+              }
+            } : {}}
+          />
+
+          <Stack spacing={0.5}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={onToggleExpanded}
+              disabled={disabled}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title={isExpanded ? LABELS.BUTTONS.COLLAPSE_COMMAND : LABELS.BUTTONS.EXPAND_COMMAND}
+            >
+              {isExpanded ? <FullscreenExit /> : <Fullscreen />}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.ARROW_UP)}
+              disabled={disabled}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.ARROW_UP]}
+            >
+              <KeyboardArrowUp />
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.ARROW_DOWN)}
+              disabled={disabled}
+              sx={{ minWidth: 'auto', px: 1 }}
+              title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.ARROW_DOWN]}
+            >
+              <KeyboardArrowDown />
+            </Button>
+          </Stack>
+        </Stack>
+      </>
       )}
     </Stack>
   );
