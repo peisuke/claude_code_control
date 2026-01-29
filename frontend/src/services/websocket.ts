@@ -145,8 +145,8 @@ export class WebSocketService {
           this.startHeartbeat();
           this.startConnectionCheck();
           // Resend last refresh rate on every (re)connection
-          if (this.lastRefreshRate !== undefined) {
-            this.ws!.send(JSON.stringify({ type: 'set_refresh_rate', interval: this.lastRefreshRate }));
+          if (this.lastRefreshRate !== undefined && this.ws?.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'set_refresh_rate', interval: this.lastRefreshRate }));
           }
           this.onConnectionCallback?.(true);
           resolve();
