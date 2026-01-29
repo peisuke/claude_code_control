@@ -27,8 +27,8 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
 }) => {
   return (
     <Stack sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
-      {/* Loading indicator for history */}
-      {isLoadingHistory && (
+      {/* Loading indicator for history - temporarily disabled for debugging */}
+      {/* {isLoadingHistory && (
         <Box
           sx={{
             position: 'absolute',
@@ -49,7 +49,7 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
           <CircularProgress size={16} />
           <Typography variant="caption">履歴を読み込み中...</Typography>
         </Box>
-      )}
+      )} */}
 
       {/* Refresh button - shown only when there are pending updates while scrolled up */}
       {onRefresh && hasPendingUpdates && (

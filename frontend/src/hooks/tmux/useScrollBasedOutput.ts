@@ -45,6 +45,7 @@ export const useScrollBasedOutput = ({
   const isLoadingRef = useRef(false);
   const lastScrollTopRef = useRef<number>(0);
   const userScrolledUpRef = useRef(false);
+  const isTargetSwitchingRef = useRef(false);
   const onScrollPositionChangeRef = useRef(onScrollPositionChange);
   onScrollPositionChangeRef.current = onScrollPositionChange;
 
@@ -53,8 +54,20 @@ export const useScrollBasedOutput = ({
     setIsAtBottom(true);
     setTotalLoadedLines(0);
     userScrolledUpRef.current = false;
-    // Send fast refresh rate on initial connection (user starts at bottom)
+    isTargetSwitchingRef.current = true;
+    // Scroll to bottom so the user sees latest output and auto-refresh is active
+    const element = outputRef.current;
+    if (element) {
+      element.scrollTop = element.scrollHeight;
+      lastScrollTopRef.current = element.scrollTop;
+    } else {
+      lastScrollTopRef.current = 0;
+    }
     onScrollPositionChangeRef.current?.(true);
+    // Allow history loading after DOM settles
+    requestAnimationFrame(() => {
+      isTargetSwitchingRef.current = false;
+    });
   }, [selectedTarget]);
 
   // Check if user is at bottom of scroll
@@ -143,7 +156,7 @@ export const useScrollBasedOutput = ({
     lastScrollTopRef.current = element.scrollTop;
     const isScrollingUp = element.scrollTop < previousScrollTop;
 
-    if (isScrollingUp && element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current) {
+    if (isScrollingUp && element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current && !isTargetSwitchingRef.current) {
       loadMoreHistory();
     }
   }, [checkIfAtBottom, loadMoreHistory]);
