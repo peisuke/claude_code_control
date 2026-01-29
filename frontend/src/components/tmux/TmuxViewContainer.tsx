@@ -125,12 +125,15 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         prevOutputRef.current = newOutput;
         setOutput(newOutput);
         setHasPendingUpdates(false);
-        setTimeout(() => scrollToBottom(), 0);
+        setTimeout(() => {
+          scrollToBottom();
+          handleScrollPositionChange(true);
+        }, 0);
       }
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, setOutput, scrollToBottom]);
+  }, [onRefresh, setOutput, scrollToBottom, handleScrollPositionChange]);
 
   // Wrap command functions to force update after sending
   const handleSendCommand = React.useCallback(async () => {
