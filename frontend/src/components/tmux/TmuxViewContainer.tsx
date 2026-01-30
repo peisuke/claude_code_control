@@ -20,6 +20,7 @@ interface TmuxViewContainerProps {
   selectedTarget: string;
   onRefresh?: () => Promise<string | undefined>;
   onSetRefreshRate?: (interval: number) => void;
+  onReconnect?: () => void;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -35,7 +36,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   isLoading,
   selectedTarget,
   onRefresh,
-  onSetRefreshRate
+  onSetRefreshRate,
+  onReconnect
 }) => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [hasPendingUpdates, setHasPendingUpdates] = React.useState(false);
@@ -129,11 +131,15 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   }, [output, setOutput, checkIsAtBottom, scrollToBottom, hasUserScrolledUp, selectedTarget]);
 
   // Handle refresh button click - fetches new output and scrolls to bottom
+  // Also triggers WebSocket reconnection if disconnected
   const handleRefresh = React.useCallback(async () => {
     if (!onRefresh) return;
+    // Trigger reconnect if WebSocket is disconnected
+    if (!isConnected && onReconnect) {
+      onReconnect();
+    }
     setIsRefreshing(true);
     try {
-      // onRefresh now returns the fetched output directly
       const newOutput = await onRefresh();
       if (newOutput !== undefined) {
         prevOutputRef.current = newOutput;
@@ -147,7 +153,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, setOutput, scrollToBottom, handleScrollPositionChange]);
+  }, [onRefresh, onReconnect, isConnected, setOutput, scrollToBottom, handleScrollPositionChange]);
 
   // Wrap command functions to force update after sending
   const handleSendCommand = React.useCallback(async () => {

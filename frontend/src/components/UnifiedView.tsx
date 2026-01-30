@@ -172,6 +172,7 @@ const UnifiedView: React.FC<UnifiedViewProps> = ({
                     selectedTarget={selectedTarget}
                     onRefresh={handlers.handleRefresh}
                     onSetRefreshRate={handlers.wsSetRefreshRate}
+                    onReconnect={handlers.wsResetAndReconnect}
                   />
                 )}
 
