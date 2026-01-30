@@ -143,6 +143,12 @@ The application uses async subprocess calls to interact with tmux:
 - **Debug mode**: Configurable via environment
 - **Default session**: "default" tmux session auto-creation
 
+## Git Workflow
+
+- **MUST use `git worktree`** for all feature/fix work. Never commit directly to `main`.
+- Worktrees are located at `/home/ubuntu/workspace/src/claude_code_control-issue<N>` with branch `feature/issue-<N>-*` or `fix/issue-<N>-*`.
+- Check existing worktrees with `git worktree list` before starting work.
+
 ## Important Notes
 
 - **Security**: No authentication implemented - intended for trusted environments
