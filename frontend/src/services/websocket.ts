@@ -71,17 +71,16 @@ export class WebSocketService {
   }
 
   private calculateReconnectDelay(): number {
-    // Faster initial reconnections for mobile app resume scenarios
     if (this.reconnectAttempts === 0) return 100;
-    if (this.reconnectAttempts === 1) return 1000;
-    if (this.reconnectAttempts === 2) return 3000;
-    if (this.reconnectAttempts === 3) return 5000;
-    
+    if (this.reconnectAttempts === 1) return 500;
+    if (this.reconnectAttempts === 2) return 1000;
+    if (this.reconnectAttempts === 3) return 2000;
+
+    const maxDelay = 5000;
     const exponentialDelay = Math.min(
-      this.baseReconnectInterval * Math.pow(2, Math.min(this.reconnectAttempts, 6)),
-      this.maxReconnectInterval
+      this.baseReconnectInterval * Math.pow(2, Math.min(this.reconnectAttempts, 5)),
+      maxDelay
     );
-    // Add jitter to prevent thundering herd
     const jitter = Math.random() * 0.3 * exponentialDelay;
     return exponentialDelay + jitter;
   }
@@ -232,9 +231,12 @@ export class WebSocketService {
 
     this.reconnectTimeoutId = window.setTimeout(() => {
       if (this.shouldReconnect && !this.isManualDisconnect) {
+        // onclose handler will call scheduleReconnect if connection fails
         this.connect().catch(() => {
-          // Continue attempting reconnection indefinitely
-          this.scheduleReconnect();
+          // Only schedule if onclose didn't already (e.g. WebSocket constructor fails)
+          if (!this.reconnectTimeoutId) {
+            this.scheduleReconnect();
+          }
         });
       }
     }, delay);
@@ -276,30 +278,32 @@ export class WebSocketService {
     // Stop any ongoing operations
     this.stopHeartbeat();
     this.stopConnectionCheck();
-    
+
     // Reset state
     this.reconnectAttempts = 0;
     this.shouldReconnect = true;
     this.isManualDisconnect = false;
-    
+
     // Clear any pending reconnection
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
       this.reconnectTimeoutId = undefined;
     }
-    
-    // Close existing connection if any
+
+    // Close existing connection without triggering onclose handler
     if (this.ws) {
+      this.ws.onclose = null;
       this.ws.close();
       this.ws = null;
     }
-    
-    // Direct reconnection attempt
-    setTimeout(() => {
-      this.connect().catch(() => {
+
+    // Immediate reconnection attempt
+    // onclose handler will call scheduleReconnect if connection fails
+    this.connect().catch(() => {
+      if (!this.reconnectTimeoutId) {
         this.scheduleReconnect();
-      });
-    }, 100);
+      }
+    });
   }
 
   // Get current connection state for debugging
