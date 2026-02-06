@@ -18,6 +18,7 @@ interface CommandInputAreaProps {
   isExpanded: boolean;
   onToggleExpanded: () => void;
   output?: string;
+  hideKeyboardButtons?: boolean;
 }
 
 const CommandInputArea: React.FC<CommandInputAreaProps> = ({
@@ -30,7 +31,8 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
   isLoading,
   isExpanded,
   onToggleExpanded,
-  output = ''
+  output = '',
+  hideKeyboardButtons = false
 }) => {
   const choices = useChoiceDetection(output);
   const inputAreaRef = React.useRef<HTMLDivElement>(null);
@@ -104,18 +106,20 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
               {KEYBOARD_LABELS[KEYBOARD_COMMANDS.BACKSPACE]}
             </Button>
 
-            <Button
-              variant="outlined"
-              color="warning"
-              startIcon={<ClearAll />}
-              onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.CLEAR_SCREEN)}
-              disabled={disabled}
-              size="small"
-              title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
-              sx={{ minWidth: 'auto', px: 1 }}
-            >
-              {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
-            </Button>
+            {!hideKeyboardButtons && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<ClearAll />}
+                onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.CLEAR_SCREEN)}
+                disabled={disabled}
+                size="small"
+                title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
+                sx={{ minWidth: 'auto', px: 1 }}
+              >
+                {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
+              </Button>
+            )}
           </Stack>
         </Stack>
 
