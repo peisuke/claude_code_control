@@ -44,6 +44,7 @@ export const useScrollBasedOutput = ({
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
   const lastScrollTopRef = useRef<number>(0);
+  const lastScrollHeightRef = useRef<number>(0);  // Track scrollHeight to detect content changes
   const userScrolledUpRef = useRef(false);
   const isTargetSwitchingRef = useRef(false);
   const onScrollPositionChangeRef = useRef(onScrollPositionChange);
@@ -159,6 +160,18 @@ export const useScrollBasedOutput = ({
   // Handle scroll events
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
+
+    // Detect if this scroll is due to content change (scrollHeight changed significantly)
+    const scrollHeightDiff = Math.abs(element.scrollHeight - lastScrollHeightRef.current);
+    const isContentChange = scrollHeightDiff > 100;
+    lastScrollHeightRef.current = element.scrollHeight;
+
+    // If content just changed, don't treat scroll position adjustment as user action
+    if (isContentChange) {
+      // Just update the ref and return - don't trigger any logic
+      lastScrollTopRef.current = element.scrollTop;
+      return;
+    }
 
     // Track if user is at bottom
     const atBottom = checkIfAtBottom(element);
