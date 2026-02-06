@@ -1,10 +1,18 @@
-import React from 'react';
-import { Box, Stack, CircularProgress, Typography, Fab } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Box, Stack, CircularProgress, Fab } from '@mui/material';
 import { Refresh } from '@mui/icons-material';
 import Convert from 'ansi-to-html';
 import { TERMINAL, LABELS } from '../../constants/ui';
 
 const convert = new Convert({ escapeXML: true });
+
+// Memoize HTML conversion to prevent unnecessary DOM updates
+const useConvertedHtml = (output: string): string => {
+  return useMemo(() => {
+    if (!output) return '';
+    return convert.toHtml(output);
+  }, [output]);
+};
 
 interface TerminalOutputProps {
   output: string;
@@ -16,7 +24,7 @@ interface TerminalOutputProps {
   hasPendingUpdates?: boolean;
 }
 
-const TerminalOutput: React.FC<TerminalOutputProps> = ({
+const TerminalOutput: React.FC<TerminalOutputProps> = React.memo(({
   output,
   onScroll,
   outputRef,
@@ -25,6 +33,8 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
   isRefreshing = false,
   hasPendingUpdates = false
 }) => {
+  const convertedHtml = useConvertedHtml(output);
+
   return (
     <Stack sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
       {/* Loading indicator for history - temporarily disabled for debugging */}
@@ -85,7 +95,8 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
         sx={{
           flex: 1,
           minHeight: 0,
-          overflow: 'auto',
+          overflowY: 'scroll',
+          overflowX: 'auto',
           fontFamily: TERMINAL.FONT_FAMILY,
           fontSize: {
             xs: TERMINAL.FONT_SIZES.xs,
@@ -106,10 +117,10 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
           }
         }}
       >
-        {output ? (
+        {convertedHtml ? (
           <div
             dangerouslySetInnerHTML={{
-              __html: convert.toHtml(output)
+              __html: convertedHtml
             }}
           />
         ) : (
@@ -118,6 +129,8 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({
       </Box>
     </Stack>
   );
-};
+});
+
+TerminalOutput.displayName = 'TerminalOutput';
 
 export default TerminalOutput;

@@ -82,7 +82,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
       setOutput(output);
       setHasPendingUpdates(false);
       if (output) {
-        timeoutId = setTimeout(() => scrollToBottom(), 0);
+        timeoutId = setTimeout(() => scrollToBottom(true), 0);
       }
       return;
     }
@@ -110,12 +110,14 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     }
 
     if (shouldAutoUpdate || shouldForceUpdate) {
-      // Only update prevOutputRef when we actually display the output
+      // Update output and scroll to bottom
       prevOutputRef.current = output;
       setOutput(output);
       setHasPendingUpdates(false);
-      // Use setTimeout to scroll after render
-      timeoutId = setTimeout(() => scrollToBottom(), 0);
+      // Only scroll if content actually changed to reduce flickering
+      if (outputChanged || shouldForceUpdate) {
+        timeoutId = setTimeout(() => scrollToBottom(), 0);
+      }
     } else if (outputChanged) {
       // If scrolled up and output changed, mark as having pending updates
       // Don't update prevOutputRef - we haven't displayed this output yet
@@ -146,7 +148,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
         setOutput(newOutput);
         setHasPendingUpdates(false);
         setTimeout(() => {
-          scrollToBottom();
+          scrollToBottom(true);
           handleScrollPositionChange(true);
         }, 0);
       }
