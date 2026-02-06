@@ -14,7 +14,7 @@ interface UseScrollBasedOutputReturn {
   handleScroll: (e: React.UIEvent<HTMLElement>) => void;
   setOutput: (output: string) => void;
   outputRef: React.RefObject<HTMLDivElement>;
-  scrollToBottom: () => void;
+  scrollToBottom: (force?: boolean) => void;
   isAtBottom: boolean;
   checkIsAtBottom: () => boolean;
   hasUserScrolledUp: () => boolean;
@@ -44,6 +44,7 @@ export const useScrollBasedOutput = ({
   const previousScrollHeight = useRef<number>(0);
   const isLoadingRef = useRef(false);
   const lastScrollTopRef = useRef<number>(0);
+  const lastScrollHeightRef = useRef<number>(0);  // Track scrollHeight to detect content changes
   const userScrolledUpRef = useRef(false);
   const isTargetSwitchingRef = useRef(false);
   const onScrollPositionChangeRef = useRef(onScrollPositionChange);
@@ -85,11 +86,24 @@ export const useScrollBasedOutput = ({
   }, []);
 
   // Manual scroll to bottom function
-  const scrollToBottom = useCallback(() => {
+  // force=true: Always scroll and reset user intent (for target change, manual refresh)
+  // force=false: Only scroll if user hasn't scrolled up (for auto-updates)
+  const scrollToBottom = useCallback((force = false) => {
     const element = outputRef.current;
-    if (element) {
-      element.scrollTop = element.scrollHeight;
+    if (!element) return;
+
+    // If not forced, respect user's scroll intent
+    if (!force && userScrolledUpRef.current) {
+      return;
+    }
+
+    element.scrollTop = element.scrollHeight;
+    // Use ref to track state and only update if changed
+    if (userScrolledUpRef.current) {
       setIsAtBottom(true);
+    }
+    // Only reset user intent when forced (explicit user action)
+    if (force) {
       userScrolledUpRef.current = false;
     }
   }, []);
@@ -147,14 +161,26 @@ export const useScrollBasedOutput = ({
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
 
+    // Detect if this scroll is due to content change (scrollHeight changed significantly)
+    const scrollHeightDiff = Math.abs(element.scrollHeight - lastScrollHeightRef.current);
+    const isContentChange = scrollHeightDiff > 100;
+    lastScrollHeightRef.current = element.scrollHeight;
+
+    // If content just changed, don't treat scroll position adjustment as user action
+    if (isContentChange) {
+      // Just update the ref and return - don't trigger any logic
+      lastScrollTopRef.current = element.scrollTop;
+      return;
+    }
+
     // Track if user is at bottom
     const atBottom = checkIfAtBottom(element);
     const wasAtBottom = !userScrolledUpRef.current;
-    setIsAtBottom(atBottom);
-    userScrolledUpRef.current = !atBottom;
 
-    // Notify when scroll position changes between at-bottom and scrolled-up
+    // Only update state if value actually changed to avoid unnecessary re-renders
     if (atBottom !== wasAtBottom) {
+      setIsAtBottom(atBottom);
+      userScrolledUpRef.current = !atBottom;
       onScrollPositionChangeRef.current?.(atBottom);
     }
 
