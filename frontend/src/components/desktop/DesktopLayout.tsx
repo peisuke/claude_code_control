@@ -177,6 +177,7 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
               onRefresh={onRefresh}
               onSetRefreshRate={onSetRefreshRate}
               onReconnect={onReconnect}
+              isDesktop={true}
             />
           )}
 

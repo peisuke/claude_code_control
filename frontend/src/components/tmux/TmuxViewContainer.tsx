@@ -21,6 +21,7 @@ interface TmuxViewContainerProps {
   onRefresh?: () => Promise<string | undefined>;
   onSetRefreshRate?: (interval: number) => void;
   onReconnect?: () => void;
+  isDesktop?: boolean;
 }
 
 const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
@@ -37,7 +38,8 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
   selectedTarget,
   onRefresh,
   onSetRefreshRate,
-  onReconnect
+  onReconnect,
+  isDesktop = false
 }) => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [hasPendingUpdates, setHasPendingUpdates] = React.useState(false);
@@ -197,11 +199,13 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           isRefreshing={isRefreshing}
           hasPendingUpdates={hasPendingUpdates}
         />
-        <TmuxKeyboard
-          isConnected={isConnected}
-          isLoading={isLoading}
-          onSendCommand={handleSendKeyboardCommand}
-        />
+        {!isDesktop && (
+          <TmuxKeyboard
+            isConnected={isConnected}
+            isLoading={isLoading}
+            onSendCommand={handleSendKeyboardCommand}
+          />
+        )}
       </Paper>
 
       {/* Command Input - Full height when expanded */}
@@ -224,6 +228,7 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
           isExpanded={commandExpanded}
           onToggleExpanded={onToggleExpanded}
           output={output}
+          hideKeyboardButtons={isDesktop}
         />
       </Paper>
     </Box>
