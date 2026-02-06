@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -143,14 +144,15 @@ class TmuxService:
             return []
 
     async def create_session(self, session: str) -> bool:
-        """Create a new tmux session"""
+        """Create a new tmux session starting in the user's home directory"""
         if not validate_tmux_name(session):
             logger.warning(f"Invalid tmux session name: {session}")
             return False
 
         try:
+            home_dir = os.path.expanduser('~')
             _, stderr, returncode = await self._execute_tmux_command(
-                ["tmux", "new-session", "-d", "-s", session]
+                ["tmux", "new-session", "-d", "-s", session, "-c", home_dir]
             )
 
             if returncode != 0:

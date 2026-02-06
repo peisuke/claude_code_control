@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 ALLOWED_EXTENSIONS = {'.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.md', '.txt', '.yml', '.yaml', '.toml', '.css', '.html', '.sh', '.env', '.log', '.conf', '.cfg', '.ini', '.xml', '.sql', '.csv', '.php', '.rb', '.go', '.rs', '.cpp', '.c', '.h', '.java', '.kt', '.swift', '.dart', '.vue', '.svelte', '.scss', '.sass', '.less', '.R', '.m', '.pl', '.lua', '.vim', '.zsh', '.bash', '.fish', '.ps1', '.bat', '.dockerfile', '.gitignore', '.gitattributes', '.editorconfig', '.prettierrc', '.eslintrc', '.babelrc', '.config', '.profile', '.bashrc', '.zshrc', '.vimrc', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico', ''}
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico'}
 MAX_FILE_SIZE = 1024 * 1024 * 5  # 5MB
-INITIAL_PATH = os.getcwd()  # Current working directory as starting point
+INITIAL_PATH = os.path.expanduser('~')  # User's home directory as starting point
 
 # Allowed base paths - restrict file access to these directories only
 ALLOWED_BASE_PATHS = [
