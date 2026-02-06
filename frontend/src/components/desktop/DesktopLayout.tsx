@@ -7,6 +7,7 @@ import FileOperations from '../file/FileOperations';
 import ConnectionStatus from '../ConnectionStatus';
 import { VIEW_MODES } from '../../constants/ui';
 import { useFileContent } from '../../hooks/file';
+import { useKeyboardShortcuts } from '../../hooks/tmux';
 
 interface DesktopLayoutProps {
   // View state
@@ -91,6 +92,14 @@ const DesktopLayout: React.FC<DesktopLayoutProps> = ({
     handleFileDeselect,
     handleFileOpen,
   } = useFileContent();
+
+  // Enable keyboard shortcuts in tmux view mode
+  useKeyboardShortcuts({
+    enabled: viewMode === VIEW_MODES.TMUX,
+    onSendKeyboardCommand,
+    isConnected,
+    isLoading
+  });
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>

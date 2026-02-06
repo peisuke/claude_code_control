@@ -5,4 +5,5 @@ export { useCommandState } from './useCommandState';
 export { useSessionManagement } from './useSessionManagement';
 export { useScrollBasedOutput } from './useScrollBasedOutput';
 export { useChoiceDetection } from './useChoiceDetection';
+export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export type { Choice } from './useChoiceDetection';
