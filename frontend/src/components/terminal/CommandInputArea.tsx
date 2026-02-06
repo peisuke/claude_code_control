@@ -93,20 +93,20 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
             </Button>
           </Stack>
 
-          {!hideKeyboardButtons && (
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                startIcon={<Delete />}
-                onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.BACKSPACE)}
-                disabled={disabled}
-                size="small"
-                title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.BACKSPACE]}
-                sx={{ minWidth: 'auto', px: 1 }}
-              >
-                {KEYBOARD_LABELS[KEYBOARD_COMMANDS.BACKSPACE]}
-              </Button>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<Delete />}
+              onClick={() => onSendKeyboardCommand(KEYBOARD_COMMANDS.BACKSPACE)}
+              disabled={disabled}
+              size="small"
+              title={KEYBOARD_DESCRIPTIONS[KEYBOARD_COMMANDS.BACKSPACE]}
+              sx={{ minWidth: 'auto', px: 1 }}
+            >
+              {KEYBOARD_LABELS[KEYBOARD_COMMANDS.BACKSPACE]}
+            </Button>
 
+            {!hideKeyboardButtons && (
               <Button
                 variant="outlined"
                 color="warning"
@@ -119,8 +119,8 @@ const CommandInputArea: React.FC<CommandInputAreaProps> = ({
               >
                 {KEYBOARD_LABELS[KEYBOARD_COMMANDS.CLEAR_SCREEN]}
               </Button>
-            </Stack>
-          )}
+            )}
+          </Stack>
         </Stack>
 
         {/* Command Input */}
