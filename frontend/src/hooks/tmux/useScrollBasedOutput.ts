@@ -201,6 +201,10 @@ export const useScrollBasedOutput = ({
 
     const handleWheel = (e: WheelEvent) => {
       if (e.deltaY < 0 && element.scrollHeight <= element.clientHeight + 5 && !isLoadingRef.current) {
+        // Mark as scrolled up so live updates don't overwrite loaded history
+        userScrolledUpRef.current = true;
+        setIsAtBottom(false);
+        onScrollPositionChangeRef.current?.(false);
         loadMoreHistory();
       }
     };

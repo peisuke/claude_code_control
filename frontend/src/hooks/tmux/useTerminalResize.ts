@@ -90,6 +90,9 @@ export const useTerminalResize = ({
       }
 
       resizeTimeoutRef.current = setTimeout(() => {
+        // Skip when container is hidden (display: none gives 0 dimensions)
+        if (element.clientWidth === 0 || element.clientHeight === 0) return;
+
         const fontSize = getCurrentFontSize();
         const { cols, rows } = calculateTerminalSize(
           element.clientWidth,
