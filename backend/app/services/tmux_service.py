@@ -31,12 +31,21 @@ def validate_tmux_name(name: str) -> bool:
 class TmuxService:
     def __init__(self):
         self.default_session = "default"
+        socket_path = os.environ.get("TMUX_SOCKET_PATH")
+        if socket_path and not os.path.isabs(socket_path):
+            logger.warning(f"TMUX_SOCKET_PATH must be absolute, ignoring: {socket_path}")
+            socket_path = None
+        self._socket_path = socket_path
 
     async def _execute_tmux_command(self, cmd: List[str]) -> Tuple[Optional[str], Optional[str], int]:
         """Execute a tmux command and return (stdout, stderr, returncode).
 
         Returns decoded stdout/stderr strings and the process return code.
+        If TMUX_SOCKET_PATH is set, injects -S <path> into the command.
         """
+        if self._socket_path and cmd and cmd[0] == "tmux":
+            cmd = [cmd[0], "-S", self._socket_path, *cmd[1:]]
+
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
