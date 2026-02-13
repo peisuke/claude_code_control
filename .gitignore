@@ -51,7 +51,7 @@ build/
 tmux_settings.json
 
 # Docker
-.dockerignore
+# .dockerignore is tracked (needed for builds)
 
 # Database
 *.db

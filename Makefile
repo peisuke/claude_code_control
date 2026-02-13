@@ -1,0 +1,46 @@
+export HOST_UID ?= $(shell id -u)
+export HOST_GID ?= $(shell id -g)
+export APP_PORT ?= 8080
+
+COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) docker compose
+
+.PHONY: build up down restart logs health ps clean dev install
+
+## Docker -------------------------------------------------------
+
+build:  ## Build Docker image
+	$(COMPOSE) build
+
+up:  ## Start container (build if needed)
+	$(COMPOSE) up -d --build
+
+down:  ## Stop and remove container
+	$(COMPOSE) down
+
+restart:  ## Restart container
+	$(COMPOSE) restart
+
+logs:  ## Follow container logs
+	$(COMPOSE) logs -f
+
+health:  ## Check health endpoint
+	@curl -sf http://localhost:$(APP_PORT)/health | python3 -m json.tool
+
+ps:  ## Show container status
+	$(COMPOSE) ps
+
+clean:  ## Stop container and remove image
+	$(COMPOSE) down --rmi local
+
+## Local dev ----------------------------------------------------
+
+install:  ## Install dependencies for local development
+	npm run install:all
+
+dev:  ## Start local dev servers (frontend:3000 + backend:8000)
+	npm run dev
+
+help:  ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+.DEFAULT_GOAL := help
