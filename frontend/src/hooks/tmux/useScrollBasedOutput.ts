@@ -157,32 +157,6 @@ export const useScrollBasedOutput = ({
     }
   }, [isConnected, selectedTarget, totalLoadedLines]);
 
-  // Detect user scroll-up intent via wheel events
-  // This works even when content doesn't overflow the container
-  useEffect(() => {
-    const element = outputRef.current;
-    if (!element) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY < 0 && !isTargetSwitchingRef.current && !isLoadingRef.current) {
-        // User is scrolling up
-        if (!userScrolledUpRef.current) {
-          userScrolledUpRef.current = true;
-          setIsAtBottom(false);
-          onScrollPositionChangeRef.current?.(false);
-        }
-
-        // Trigger history loading if near top or content doesn't overflow
-        if (element.scrollTop < SCROLL_THRESHOLD) {
-          loadMoreHistory();
-        }
-      }
-    };
-
-    element.addEventListener('wheel', handleWheel, { passive: true });
-    return () => element.removeEventListener('wheel', handleWheel);
-  }, [loadMoreHistory]);
-
   // Handle scroll events
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
