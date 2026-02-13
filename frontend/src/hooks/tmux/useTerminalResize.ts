@@ -67,12 +67,14 @@ export const useTerminalResize = ({
       return;
     }
 
+    const previousSize = lastSizeRef.current;
     lastSizeRef.current = { cols, rows };
 
     try {
       await tmuxAPI.resizePane(selectedTarget, cols, rows);
     } catch {
-      // Silently ignore resize errors - non-critical
+      // Reset on failure so the next attempt can retry
+      lastSizeRef.current = previousSize;
     }
   }, [isConnected, selectedTarget]);
 

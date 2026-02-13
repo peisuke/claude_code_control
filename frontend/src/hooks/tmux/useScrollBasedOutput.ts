@@ -193,6 +193,22 @@ export const useScrollBasedOutput = ({
     }
   }, [checkIfAtBottom, loadMoreHistory]);
 
+  // Handle wheel events when content doesn't overflow (no scroll events possible)
+  // This allows history loading even when tmux pane is sized to match the viewport
+  useEffect(() => {
+    const element = outputRef.current;
+    if (!element) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY < 0 && element.scrollHeight <= element.clientHeight + 5 && !isLoadingRef.current) {
+        loadMoreHistory();
+      }
+    };
+
+    element.addEventListener('wheel', handleWheel, { passive: true });
+    return () => element.removeEventListener('wheel', handleWheel);
+  }, [loadMoreHistory]);
+
   // Update output (called from WebSocket or manual refresh)
   const updateOutput = useCallback((newOutput: string) => {
     setOutput(newOutput);
