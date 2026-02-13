@@ -6,4 +6,5 @@ export { useSessionManagement } from './useSessionManagement';
 export { useScrollBasedOutput } from './useScrollBasedOutput';
 export { useChoiceDetection } from './useChoiceDetection';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
+export { useTerminalResize } from './useTerminalResize';
 export type { Choice } from './useChoiceDetection';

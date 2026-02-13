@@ -116,6 +116,23 @@ class TmuxAPI {
     return response.json();
   }
 
+  async resizePane(target: string, cols: number, rows: number): Promise<ApiResponse> {
+    const params = new URLSearchParams({
+      target,
+      cols: cols.toString(),
+      rows: rows.toString(),
+    });
+    const response = await fetch(`${this.baseURL}/tmux/resize?${params}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   async deleteWindow(sessionName: string, windowIndex: string): Promise<ApiResponse> {
     const response = await fetch(`${this.baseURL}/tmux/window/${encodeURIComponent(sessionName)}/${encodeURIComponent(windowIndex)}`, {
       method: 'DELETE',

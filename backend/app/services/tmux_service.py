@@ -95,6 +95,31 @@ class TmuxService:
             logger.error(f"Error sending enter: {e}")
             return False
 
+    async def resize_pane(self, target: str, cols: int, rows: int) -> bool:
+        """Resize tmux pane to match frontend terminal dimensions"""
+        if not validate_tmux_target(target):
+            logger.warning(f"Invalid tmux target format: {target}")
+            return False
+
+        # Clamp to reasonable bounds
+        cols = max(20, min(cols, 500))
+        rows = max(5, min(rows, 200))
+
+        try:
+            await self._ensure_session_exists(target)
+            _, stderr, returncode = await self._execute_tmux_command(
+                ["tmux", "resize-window", "-t", target, "-x", str(cols), "-y", str(rows)]
+            )
+
+            if returncode != 0:
+                logger.error(f"Failed to resize pane: {stderr}")
+                return False
+
+            return True
+        except Exception as e:
+            logger.error(f"Error resizing pane: {e}")
+            return False
+
     async def get_output(self, target: str = None, include_history: bool = False, lines: int = None) -> str:
         """Get current tmux target output, optionally including scrollback history"""
         target = target or self.default_session
