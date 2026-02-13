@@ -14,10 +14,24 @@ FROM python:3.11-slim
 
 ARG HOST_UID=1000
 ARG HOST_GID=1000
+ARG TMUX_VERSION=
 
-# Install tmux and curl (curl for healthcheck)
+# Install tmux: build from source if TMUX_VERSION is specified, otherwise use apt
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends tmux && \
+    if [ -n "$TMUX_VERSION" ]; then \
+        apt-get install -y --no-install-recommends \
+            build-essential libevent-dev libncurses5-dev bison pkg-config curl ca-certificates && \
+        curl -fsSL "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" \
+            -o /tmp/tmux.tar.gz && \
+        tar -xzf /tmp/tmux.tar.gz -C /tmp && \
+        cd /tmp/tmux-${TMUX_VERSION} && \
+        ./configure && make && make install && \
+        cd / && rm -rf /tmp/tmux* && \
+        apt-get purge -y build-essential bison pkg-config curl ca-certificates && \
+        apt-get autoremove -y; \
+    else \
+        apt-get install -y --no-install-recommends tmux; \
+    fi && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user matching host UID/GID

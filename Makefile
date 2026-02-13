@@ -1,8 +1,9 @@
 export HOST_UID ?= $(shell id -u)
 export HOST_GID ?= $(shell id -g)
 export APP_PORT ?= 8080
+export TMUX_VERSION ?= $(shell tmux -V 2>/dev/null | grep -oP '[\d.]+[a-z]?')
 
-COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) docker compose
+COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VERSION=$(TMUX_VERSION) docker compose
 
 .PHONY: build up down restart logs health ps clean dev install
 
