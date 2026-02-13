@@ -157,6 +157,32 @@ export const useScrollBasedOutput = ({
     }
   }, [isConnected, selectedTarget, totalLoadedLines]);
 
+  // Detect user scroll-up intent via wheel events
+  // This works even when content doesn't overflow the container
+  useEffect(() => {
+    const element = outputRef.current;
+    if (!element) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY < 0 && !isTargetSwitchingRef.current && !isLoadingRef.current) {
+        // User is scrolling up
+        if (!userScrolledUpRef.current) {
+          userScrolledUpRef.current = true;
+          setIsAtBottom(false);
+          onScrollPositionChangeRef.current?.(false);
+        }
+
+        // Trigger history loading if near top or content doesn't overflow
+        if (element.scrollTop < SCROLL_THRESHOLD) {
+          loadMoreHistory();
+        }
+      }
+    };
+
+    element.addEventListener('wheel', handleWheel, { passive: true });
+    return () => element.removeEventListener('wheel', handleWheel);
+  }, [loadMoreHistory]);
+
   // Handle scroll events
   const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
     const element = e.currentTarget;
@@ -166,27 +192,26 @@ export const useScrollBasedOutput = ({
     const isContentChange = scrollHeightDiff > 100;
     lastScrollHeightRef.current = element.scrollHeight;
 
-    // If content just changed, don't treat scroll position adjustment as user action
-    if (isContentChange) {
-      // Just update the ref and return - don't trigger any logic
-      lastScrollTopRef.current = element.scrollTop;
-      return;
-    }
-
-    // Track if user is at bottom
+    // Always track scroll position intent, even during content changes
     const atBottom = checkIfAtBottom(element);
     const wasAtBottom = !userScrolledUpRef.current;
 
-    // Only update state if value actually changed to avoid unnecessary re-renders
     if (atBottom !== wasAtBottom) {
       setIsAtBottom(atBottom);
       userScrolledUpRef.current = !atBottom;
       onScrollPositionChangeRef.current?.(atBottom);
     }
 
-    // Check if at top and should load more history (only when scrolling upward)
     const previousScrollTop = lastScrollTopRef.current;
     lastScrollTopRef.current = element.scrollTop;
+
+    // If content just changed, don't trigger history loading
+    // (scroll position tracking above still runs to preserve user intent)
+    if (isContentChange) {
+      return;
+    }
+
+    // Check if at top and should load more history (only when scrolling upward)
     const isScrollingUp = element.scrollTop < previousScrollTop;
 
     if (isScrollingUp && element.scrollTop < SCROLL_THRESHOLD && !isLoadingRef.current && !isTargetSwitchingRef.current) {
