@@ -37,30 +37,6 @@ const TerminalOutput: React.FC<TerminalOutputProps> = React.memo(({
 
   return (
     <Stack sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
-      {/* Loading indicator for history - temporarily disabled for debugging */}
-      {/* {isLoadingHistory && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 8,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 10,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-            px: 2,
-            py: 1,
-            boxShadow: 2,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}
-        >
-          <CircularProgress size={16} />
-          <Typography variant="caption">履歴を読み込み中...</Typography>
-        </Box>
-      )} */}
-
       {/* Refresh button - always shown, highlighted when pending updates */}
       {onRefresh && (
         <Fab
@@ -95,7 +71,7 @@ const TerminalOutput: React.FC<TerminalOutputProps> = React.memo(({
         sx={{
           flex: 1,
           minHeight: 0,
-          overflowY: 'scroll',
+          overflowY: 'auto',
           overflowX: 'auto',
           fontFamily: TERMINAL.FONT_FAMILY,
           fontSize: {

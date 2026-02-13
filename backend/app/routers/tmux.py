@@ -74,6 +74,17 @@ async def send_enter(target: str = "default"):
     return await _handle_tmux_operation(_op, "sending enter")
 
 
+@router.post("/resize")
+async def resize_pane(target: str = "default", cols: int = 80, rows: int = 24):
+    """Resize tmux pane to match frontend terminal dimensions"""
+    async def _op():
+        success = await tmux_service.resize_pane(target, cols, rows)
+        _require_success(success, "Failed to resize pane")
+        return ApiResponse(success=True, message=f"Pane resized to {cols}x{rows}")
+
+    return await _handle_tmux_operation(_op, "resizing pane")
+
+
 @router.get("/output")
 async def get_output(target: str = "default", include_history: bool = False, lines: Optional[int] = None):
     """Get current tmux target output, optionally including scrollback history"""

@@ -3,7 +3,7 @@ import { Paper, Box } from '@mui/material';
 import TerminalOutput from '../terminal/TerminalOutput';
 import CommandInputArea from '../terminal/CommandInputArea';
 import TmuxKeyboard from '../terminal/TmuxKeyboard';
-import { useScrollBasedOutput } from '../../hooks/tmux';
+import { useScrollBasedOutput, useTerminalResize } from '../../hooks/tmux';
 import { TIMING } from '../../constants/ui';
 
 interface TmuxViewContainerProps {
@@ -70,6 +70,13 @@ const TmuxViewContainer: React.FC<TmuxViewContainerProps> = ({
     isConnected,
     initialOutput: output,
     onScrollPositionChange: handleScrollPositionChange
+  });
+
+  // Sync tmux pane size with frontend terminal display area
+  useTerminalResize({
+    outputRef,
+    selectedTarget,
+    isConnected,
   });
 
   // Auto-update when at bottom, track pending updates when scrolled up
