@@ -1,0 +1,264 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import '../config/app_config.dart';
+import '../models/tmux_output.dart';
+
+enum WsConnectionState { disconnected, connecting, connected }
+
+class WebSocketService {
+  WebSocketChannel? _channel;
+  String _wsBaseUrl;
+  String _target;
+  int _reconnectAttempts = 0;
+  bool _shouldReconnect = true;
+  bool _isManualDisconnect = false;
+  Timer? _heartbeatTimer;
+  Timer? _connectionCheckTimer;
+  Timer? _reconnectTimer;
+  DateTime _lastHeartbeatTime = DateTime.now();
+  double _lastRefreshRate = AppConfig.refreshIntervalFast;
+
+  final _messageController = StreamController<TmuxOutput>.broadcast();
+  final _connectionController =
+      StreamController<WsConnectionState>.broadcast();
+
+  Stream<TmuxOutput> get messages => _messageController.stream;
+  Stream<WsConnectionState> get connectionState =>
+      _connectionController.stream;
+
+  WsConnectionState _currentState = WsConnectionState.disconnected;
+  WsConnectionState get currentState => _currentState;
+
+  WebSocketService({String? wsBaseUrl, String target = 'default'})
+      : _wsBaseUrl = wsBaseUrl ?? AppConfig.wsBaseUrl,
+        _target = target;
+
+  String get _url => '$_wsBaseUrl/${Uri.encodeComponent(_target)}';
+
+  void updateBaseUrl(String newBaseUrl) {
+    _wsBaseUrl = newBaseUrl;
+  }
+
+  void setTarget(String target) {
+    if (_target == target) return;
+    final wasConnected = _currentState == WsConnectionState.connected;
+
+    _stopHeartbeat();
+    _stopConnectionCheck();
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
+    _closeChannel();
+
+    _target = target;
+    _reconnectAttempts = 0;
+    _shouldReconnect = true;
+    _isManualDisconnect = false;
+
+    if (wasConnected) {
+      connect();
+    }
+  }
+
+  int _calculateReconnectDelay() {
+    if (_reconnectAttempts == 0) return 100;
+    if (_reconnectAttempts == 1) return 500;
+    if (_reconnectAttempts == 2) return 1000;
+    if (_reconnectAttempts == 3) return 2000;
+
+    const maxDelay = 5000;
+    final exponentialDelay = min(
+      100 * pow(2, min(_reconnectAttempts, 5)).toInt(),
+      maxDelay,
+    );
+    final jitter = (Random().nextDouble() * 0.3 * exponentialDelay).toInt();
+    return exponentialDelay + jitter;
+  }
+
+  void _startHeartbeat() {
+    _stopHeartbeat();
+    _heartbeatTimer =
+        Timer.periodic(const Duration(milliseconds: AppConfig.heartbeatIntervalMs), (_) {
+      if (_channel != null) {
+        try {
+          _channel!.sink.add(jsonEncode({
+            'type': 'ping',
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          }));
+          _lastHeartbeatTime = DateTime.now();
+        } catch (_) {
+          // Silently fail - connection check will handle
+        }
+      }
+    });
+  }
+
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  void _startConnectionCheck() {
+    _stopConnectionCheck();
+    _connectionCheckTimer =
+        Timer.periodic(const Duration(milliseconds: AppConfig.connectionCheckIntervalMs), (_) {
+      if (_channel != null && _lastHeartbeatTime.millisecondsSinceEpoch > 0) {
+        final elapsed =
+            DateTime.now().difference(_lastHeartbeatTime).inMilliseconds;
+        if (elapsed > AppConfig.heartbeatTimeoutMs) {
+          resetAndReconnect();
+        }
+      }
+    });
+  }
+
+  void _stopConnectionCheck() {
+    _connectionCheckTimer?.cancel();
+    _connectionCheckTimer = null;
+  }
+
+  void _closeChannel() {
+    if (_channel != null) {
+      _channel!.sink.close(1000, 'Client close');
+      _channel = null;
+    }
+  }
+
+  Future<void> connect() async {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
+    _setState(WsConnectionState.connecting);
+
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(_url));
+      await _channel!.ready;
+
+      _reconnectAttempts = 0;
+      _shouldReconnect = true;
+      _isManualDisconnect = false;
+      _lastHeartbeatTime = DateTime.now();
+      _startHeartbeat();
+      _startConnectionCheck();
+
+      // Send initial refresh rate
+      _channel!.sink.add(jsonEncode({
+        'type': 'set_refresh_rate',
+        'interval': _lastRefreshRate,
+      }));
+
+      _setState(WsConnectionState.connected);
+
+      _channel!.stream.listen(
+        (data) {
+          try {
+            final json = jsonDecode(data as String) as Map<String, dynamic>;
+
+            if (json['type'] == 'heartbeat') {
+              _lastHeartbeatTime = DateTime.now();
+              _channel?.sink.add(jsonEncode({
+                'type': 'ping',
+                'timestamp': DateTime.now().millisecondsSinceEpoch,
+              }));
+              return;
+            }
+
+            if (json['type'] == 'pong') {
+              _lastHeartbeatTime = DateTime.now();
+              return;
+            }
+
+            final output = TmuxOutput.fromJson(json);
+            if (output.target == _target) {
+              _messageController.add(output);
+            }
+          } catch (_) {
+            // Silently fail message parsing
+          }
+        },
+        onDone: () {
+          _stopHeartbeat();
+          _stopConnectionCheck();
+          _setState(WsConnectionState.disconnected);
+          if (_shouldReconnect && !_isManualDisconnect) {
+            _scheduleReconnect();
+          }
+        },
+        onError: (_) {
+          _stopHeartbeat();
+          _stopConnectionCheck();
+          _setState(WsConnectionState.disconnected);
+          if (_shouldReconnect && !_isManualDisconnect) {
+            _scheduleReconnect();
+          }
+        },
+      );
+    } catch (_) {
+      _setState(WsConnectionState.disconnected);
+      if (_shouldReconnect && !_isManualDisconnect) {
+        _scheduleReconnect();
+      }
+    }
+  }
+
+  void disconnect() {
+    _shouldReconnect = false;
+    _isManualDisconnect = true;
+    _stopHeartbeat();
+    _stopConnectionCheck();
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _closeChannel();
+    _reconnectAttempts = 0;
+    _setState(WsConnectionState.disconnected);
+  }
+
+  void _scheduleReconnect() {
+    _reconnectAttempts++;
+    final delay = _calculateReconnectDelay();
+
+    _reconnectTimer = Timer(Duration(milliseconds: delay), () {
+      if (_shouldReconnect && !_isManualDisconnect) {
+        connect();
+      }
+    });
+  }
+
+  void setRefreshRate(double interval) {
+    _lastRefreshRate = interval;
+    if (_channel != null && _currentState == WsConnectionState.connected) {
+      _channel!.sink.add(
+          jsonEncode({'type': 'set_refresh_rate', 'interval': interval}));
+    }
+  }
+
+  void resetAndReconnect() {
+    _stopHeartbeat();
+    _stopConnectionCheck();
+    _reconnectAttempts = 0;
+    _shouldReconnect = true;
+    _isManualDisconnect = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _closeChannel();
+    connect();
+  }
+
+  void _setState(WsConnectionState state) {
+    _currentState = state;
+    _connectionController.add(state);
+  }
+
+  void dispose() {
+    _shouldReconnect = false;
+    _isManualDisconnect = true;
+    _stopHeartbeat();
+    _stopConnectionCheck();
+    _reconnectTimer?.cancel();
+    _closeChannel();
+    _messageController.close();
+    _connectionController.close();
+  }
+}
