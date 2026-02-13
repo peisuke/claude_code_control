@@ -48,8 +48,11 @@ if STATIC_DIR and os.path.isdir(STATIC_DIR):
 
     @app.get("/{path:path}")
     async def serve_spa(path: str):
-        # API routes (/api/*, /health) are registered before this catch-all
-        # and take priority in FastAPI's route resolution order.
+        # Preserve proper 404s for API routes that don't match any endpoint.
+        # Without this, mistyped /api/... URLs would return index.html as 200.
+        if path.startswith("api/"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         if path:
             file_path = os.path.realpath(os.path.join(STATIC_DIR, path))
             if file_path.startswith(_static_dir_prefix) and os.path.isfile(file_path):
