@@ -37,7 +37,7 @@ function calculateTerminalSize(
   const cols = Math.floor(availableWidth / charWidth);
   const rows = Math.floor(availableHeight / lineHeight);
 
-  return { cols: Math.max(20, cols), rows: Math.max(5, rows) };
+  return { cols: Math.max(20, cols), rows: Math.max(24, rows) };
 }
 
 interface UseTerminalResizeOptions {

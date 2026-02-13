@@ -103,7 +103,7 @@ class TmuxService:
 
         # Clamp to reasonable bounds
         cols = max(20, min(cols, 500))
-        rows = max(5, min(rows, 200))
+        rows = max(24, min(rows, 200))
 
         try:
             await self._ensure_session_exists(target)
