@@ -27,8 +27,10 @@ class ConnectionNotifier extends StateNotifier<bool> {
   Future<void> _check() async {
     try {
       final result = await _api.testConnection();
+      if (!mounted) return;
       state = result.success;
     } catch (_) {
+      if (!mounted) return;
       state = false;
     }
   }

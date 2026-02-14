@@ -4,10 +4,13 @@ import 'package:tmux_control/app.dart';
 
 void main() {
   testWidgets('App renders without crashing', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: TmuxControlApp()),
-    );
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        const ProviderScope(child: TmuxControlApp()),
+      );
+      await tester.pump();
+    });
     // Verify the app title appears
-    expect(find.text('tmux: default'), findsOneWidget);
+    expect(find.text('Tmux Controller'), findsOneWidget);
   });
 }

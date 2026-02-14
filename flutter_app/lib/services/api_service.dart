@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../config/app_config.dart';
 import '../models/api_response.dart';
 import '../models/tmux_output.dart';
@@ -9,14 +10,19 @@ class ApiService {
   late final Dio _dio;
   String _baseUrl;
 
-  ApiService({String? baseUrl})
+  ApiService({String? baseUrl, Dio? dio})
       : _baseUrl = baseUrl ?? AppConfig.apiBaseUrl {
-    _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ));
+    _dio = dio ??
+        Dio(BaseOptions(
+          baseUrl: _baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ));
   }
+
+  /// Exposed for testing — allows interceptor inspection.
+  @visibleForTesting
+  Dio get dio => _dio;
 
   void updateBaseUrl(String newBaseUrl) {
     _baseUrl = newBaseUrl;

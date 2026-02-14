@@ -1,17 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/app_config.dart';
 import '../models/tmux_output.dart';
 
 enum WsConnectionState { disconnected, connecting, connected }
 
+/// Factory type for creating WebSocket channels (injectable for testing).
+typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
+
 class WebSocketService {
   WebSocketChannel? _channel;
   String _wsBaseUrl;
   String _target;
   int _reconnectAttempts = 0;
+  final WebSocketChannelFactory? _channelFactory;
   bool _shouldReconnect = true;
   bool _isManualDisconnect = false;
   Timer? _heartbeatTimer;
@@ -31,9 +36,13 @@ class WebSocketService {
   WsConnectionState _currentState = WsConnectionState.disconnected;
   WsConnectionState get currentState => _currentState;
 
-  WebSocketService({String? wsBaseUrl, String target = 'default'})
-      : _wsBaseUrl = wsBaseUrl ?? AppConfig.wsBaseUrl,
-        _target = target;
+  WebSocketService({
+    String? wsBaseUrl,
+    String target = 'default',
+    WebSocketChannelFactory? channelFactory,
+  })  : _wsBaseUrl = wsBaseUrl ?? AppConfig.wsBaseUrl,
+        _target = target,
+        _channelFactory = channelFactory;
 
   String get _url => '$_wsBaseUrl/${Uri.encodeComponent(_target)}';
 
@@ -62,15 +71,20 @@ class WebSocketService {
     }
   }
 
-  int _calculateReconnectDelay() {
+  /// Port of websocket.ts calculateReconnectDelay().
+  /// Fixed delays for attempts 0-3, then exponential backoff with jitter.
+  @visibleForTesting
+  int calculateReconnectDelay() {
+    // Web: attempts 0→100ms, 1→1000ms, 2→3000ms, 3→5000ms
     if (_reconnectAttempts == 0) return 100;
-    if (_reconnectAttempts == 1) return 500;
-    if (_reconnectAttempts == 2) return 1000;
-    if (_reconnectAttempts == 3) return 2000;
+    if (_reconnectAttempts == 1) return 1000;
+    if (_reconnectAttempts == 2) return 3000;
+    if (_reconnectAttempts == 3) return 5000;
 
-    const maxDelay = 5000;
+    // Web: maxReconnectInterval = 10000
+    const maxDelay = 10000;
     final exponentialDelay = min(
-      100 * pow(2, min(_reconnectAttempts, 5)).toInt(),
+      100 * pow(2, min(_reconnectAttempts, 10)).toInt(),
       maxDelay,
     );
     final jitter = (Random().nextDouble() * 0.3 * exponentialDelay).toInt();
@@ -133,7 +147,9 @@ class WebSocketService {
     _setState(WsConnectionState.connecting);
 
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(_url));
+      _channel = _channelFactory != null
+          ? _channelFactory!(Uri.parse(_url))
+          : WebSocketChannel.connect(Uri.parse(_url));
       await _channel!.ready;
 
       _reconnectAttempts = 0;
@@ -217,7 +233,7 @@ class WebSocketService {
 
   void _scheduleReconnect() {
     _reconnectAttempts++;
-    final delay = _calculateReconnectDelay();
+    final delay = calculateReconnectDelay();
 
     _reconnectTimer = Timer(Duration(milliseconds: delay), () {
       if (_shouldReconnect && !_isManualDisconnect) {
@@ -258,7 +274,50 @@ class WebSocketService {
     _stopConnectionCheck();
     _reconnectTimer?.cancel();
     _closeChannel();
+    _reconnectAttempts = 0;
+    // Set state before closing controllers so listeners can still receive it.
+    _currentState = WsConnectionState.disconnected;
     _messageController.close();
     _connectionController.close();
   }
+
+  // ─── Test helpers ──────────────────────────────────────────
+  // Port of web's getReconnectAttempts(), getMaxReconnectAttempts(),
+  // isConnected(), getConnectionState() — used by tests to verify
+  // internal state.
+
+  @visibleForTesting
+  int get reconnectAttempts => _reconnectAttempts;
+
+  @visibleForTesting
+  set reconnectAttempts(int value) => _reconnectAttempts = value;
+
+  @visibleForTesting
+  bool get shouldReconnect => _shouldReconnect;
+
+  @visibleForTesting
+  bool get isManualDisconnect => _isManualDisconnect;
+
+  @visibleForTesting
+  bool get hasHeartbeatTimer => _heartbeatTimer != null;
+
+  @visibleForTesting
+  bool get hasConnectionCheckTimer => _connectionCheckTimer != null;
+
+  @visibleForTesting
+  bool get hasReconnectTimer => _reconnectTimer != null;
+
+  @visibleForTesting
+  bool get hasChannel => _channel != null;
+
+  @visibleForTesting
+  DateTime get lastHeartbeatTime => _lastHeartbeatTime;
+
+  @visibleForTesting
+  set lastHeartbeatTime(DateTime value) => _lastHeartbeatTime = value;
+
+  @visibleForTesting
+  String get target => _target;
+
+  bool get isConnected => _currentState == WsConnectionState.connected;
 }

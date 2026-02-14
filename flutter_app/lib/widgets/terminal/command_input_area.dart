@@ -26,7 +26,6 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   void _sendCommand() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-
     ref.read(commandProvider.notifier).sendCommand(text);
     _controller.clear();
   }
@@ -39,27 +38,73 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   Widget build(BuildContext context) {
     final cmdState = ref.watch(commandProvider);
     final isConnected = ref.watch(wsIsConnectedProvider);
+    final enabled = isConnected && !cmdState.isLoading;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-      ),
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Row 1: Action buttons (matches web: Send+Enter left, Del+Clear right)
           Row(
+            children: [
+              // Left group
+              FilledButton.icon(
+                onPressed: enabled ? _sendCommand : null,
+                icon: cmdState.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.send, size: 16),
+                label: const Text('送信'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: enabled ? _sendEnter : null,
+                child: const Text('Enter'),
+              ),
+              const Spacer(),
+              // Right group
+              OutlinedButton(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey('\x7f')
+                    : null,
+                style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                child: const Text('Del'),
+              ),
+              const SizedBox(width: 4),
+              OutlinedButton(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey('\x0c')
+                    : null,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  foregroundColor: Colors.orange,
+                ),
+                child: const Text('Clear'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Row 2: TextField + expand/arrow buttons (matches web layout)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,
-                  enabled: isConnected && !cmdState.isLoading,
-                  maxLines: _expanded ? 8 : AppConfig.commandInputMinLines,
-                  minLines: _expanded ? 8 : AppConfig.commandInputMinLines,
+                  enabled: enabled,
+                  maxLines: _expanded ? 10 : AppConfig.commandInputMinLines,
+                  minLines: _expanded ? 10 : AppConfig.commandInputMinLines,
                   decoration: const InputDecoration(
                     hintText: 'ls -la',
                     border: OutlineInputBorder(),
@@ -74,49 +119,63 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                 ),
               ),
               const SizedBox(width: 4),
+              // Vertical button stack (expand, up, down)
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more),
+                  _SmallIconButton(
+                    icon: _expanded ? Icons.expand_less : Icons.expand_more,
                     onPressed: () => setState(() => _expanded = !_expanded),
                     tooltip: _expanded ? 'コマンド欄を縮小' : 'コマンド欄を拡大',
-                    iconSize: 20,
+                  ),
+                  _SmallIconButton(
+                    icon: Icons.arrow_upward,
+                    onPressed: enabled
+                        ? () => ref
+                            .read(commandProvider.notifier)
+                            .sendSpecialKey('\x1b[A')
+                        : null,
+                    tooltip: '↑',
+                  ),
+                  _SmallIconButton(
+                    icon: Icons.arrow_downward,
+                    onPressed: enabled
+                        ? () => ref
+                            .read(commandProvider.notifier)
+                            .sendSpecialKey('\x1b[B')
+                        : null,
+                    tooltip: '↓',
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed:
-                      isConnected && !cmdState.isLoading ? _sendCommand : null,
-                  icon: cmdState.isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.send, size: 16),
-                  label: const Text('送信'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: isConnected && !cmdState.isLoading
-                    ? _sendEnter
-                    : null,
-                child: const Text('Enter'),
-              ),
-            ],
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _SmallIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+
+  const _SmallIconButton({
+    required this.icon,
+    this.onPressed,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      padding: EdgeInsets.zero,
+      iconSize: 20,
     );
   }
 }

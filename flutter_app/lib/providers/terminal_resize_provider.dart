@@ -46,9 +46,11 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
 
     final charWidth = fontSize * AppConfig.charWidthRatio;
     final lineHeight = fontSize * AppConfig.lineHeightRatio;
+    // Container margin (8 each side) + ListView padding (16 each side)
+    const margin = 8.0 * 2;
     final padding = AppConfig.terminalPadding * 2;
-    final availableWidth = width - padding;
-    final availableHeight = height - padding;
+    final availableWidth = width - margin - padding;
+    final availableHeight = height - margin - padding;
 
     final cols = (availableWidth / charWidth).floor();
     final rows = (availableHeight / lineHeight).floor();

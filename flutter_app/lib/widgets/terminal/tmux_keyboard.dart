@@ -1,27 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../config/keyboard_constants.dart';
 import '../../providers/command_provider.dart';
 import '../../providers/websocket_provider.dart';
 
-class _KeyDef {
-  final String command;
-  final String label;
-  final String description;
-
-  const _KeyDef(this.command, this.label, this.description);
-}
-
-const _keys = [
-  _KeyDef('\x0c', 'Clear', '画面をクリア'),
-  _KeyDef('\x1b', 'ESC', 'ESCキーを送信'),
-  _KeyDef('\x03', 'Ctrl+C', 'プロセス終了'),
-  _KeyDef('\x0f', 'Ctrl+O', '履歴展開'),
-  _KeyDef('\x7f', 'Del', 'Backspaceキーを送信'),
-  _KeyDef('\x1b[A', '↑', '上矢印キー'),
-  _KeyDef('\x1b[B', '↓', '下矢印キー'),
-  _KeyDef('\x1b[Z', '⇧+Tab', '前方移動'),
-];
-
+/// Mobile-only tmux keyboard shortcuts (matches web: 4 buttons only).
+/// Ctrl+O, ⇧+Tab on left | ESC, Ctrl+C on right.
 class TmuxKeyboard extends ConsumerWidget {
   const TmuxKeyboard({super.key});
 
@@ -29,32 +13,76 @@ class TmuxKeyboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isConnected = ref.watch(wsIsConnectedProvider);
     final cmdState = ref.watch(commandProvider);
+    final enabled = isConnected && !cmdState.isLoading;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: _keys.map((key) {
-          return Tooltip(
-            message: key.description,
-            child: OutlinedButton(
-              onPressed: isConnected && !cmdState.isLoading
-                  ? () => ref
-                      .read(commandProvider.notifier)
-                      .sendSpecialKey(key.command)
-                  : null,
-              style: OutlinedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                minimumSize: const Size(0, 32),
-                textStyle: const TextStyle(fontSize: 12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left group
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey(KeyboardCommands.ctrlO)
+                    : null,
+                icon: const Icon(Icons.search, size: 16),
+                label: Text(keyboardLabels[KeyboardCommands.ctrlO]!),
+                style: _buttonStyle,
               ),
-              child: Text(key.label),
-            ),
-          );
-        }).toList(),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey(KeyboardCommands.shiftTab)
+                    : null,
+                icon: Transform.rotate(
+                  angle: 3.14159,
+                  child: const Icon(Icons.keyboard_tab, size: 16),
+                ),
+                label: Text(keyboardLabels[KeyboardCommands.shiftTab]!),
+                style: _buttonStyle,
+              ),
+            ],
+          ),
+          // Right group
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey(KeyboardCommands.escape)
+                    : null,
+                icon: const Icon(Icons.exit_to_app, size: 16),
+                label: Text(keyboardLabels[KeyboardCommands.escape]!),
+                style: _buttonStyle,
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey(KeyboardCommands.ctrlC)
+                    : null,
+                icon: const Icon(Icons.clear_all, size: 16),
+                label: Text(keyboardLabels[KeyboardCommands.ctrlC]!),
+                style: _buttonStyle,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
+  static final _buttonStyle = OutlinedButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    minimumSize: const Size(0, 36),
+    textStyle: const TextStyle(fontSize: 12),
+  );
 }

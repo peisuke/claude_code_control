@@ -29,7 +29,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Connect WebSocket on start
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _connectWebSocket();
     });
@@ -44,7 +43,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Reconnect on resume
       Future.delayed(
         const Duration(milliseconds: AppConfig.appResumeReconnectDelayMs),
         () {
@@ -55,7 +53,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         },
       );
     } else if (state == AppLifecycleState.paused) {
-      // Disconnect to save battery
       ref.read(websocketServiceProvider).disconnect();
     }
   }
@@ -78,50 +75,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final viewMode = ref.watch(viewProvider);
-    final selectedTarget = ref.watch(selectedTargetProvider);
+    ref.watch(selectedTargetProvider);
     final fileState = ref.watch(fileProvider);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        // If drawer is open, close it
         if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
           Navigator.of(context).pop();
           return;
         }
-        // If viewing a file, go back to file list
         if (viewMode == ViewMode.file && fileState.selectedFile != null) {
           ref.read(fileProvider.notifier).clearSelectedFile();
           return;
         }
-        // Otherwise let the system handle it
         Navigator.of(context).maybePop();
       },
       child: Scaffold(
         key: _scaffoldKey,
         appBar: AppBar(
+          toolbarHeight: 48,
           title: Text(
-            viewMode == ViewMode.tmux
-                ? 'tmux: $selectedTarget'
-                : 'Files',
+            viewMode == ViewMode.tmux ? 'Tmux Controller' : 'Files',
             style: const TextStyle(fontSize: 16),
           ),
           leading: IconButton(
             icon: const Icon(Icons.menu),
-            onPressed: () =>
-                _scaffoldKey.currentState?.openDrawer(),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           ),
           actions: [
             const ConnectionStatus(),
             const SizedBox(width: 4),
-            if (viewMode == ViewMode.tmux)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () =>
-                    ref.read(outputProvider.notifier).refresh(),
-                tooltip: 'Refresh',
-              ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: _showSettings,
@@ -139,16 +124,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  /// Tmux view layout matching web TmuxViewContainer:
+  /// ┌──────────────────────────┐
+  /// │ TerminalOutput (flex: 1) │
+  /// │ TmuxKeyboard             │
+  /// ├──────────────────────────┤
+  /// │ ChoiceButtons or         │
+  /// │ CommandInputArea         │
+  /// └──────────────────────────┘
   Widget _buildTmuxView() {
     return Column(
       children: [
-        // Terminal output (takes most space)
-        const Expanded(child: TerminalOutput()),
-        // Choice buttons (auto-detected)
+        // Terminal output section (flex: 1)
+        Expanded(
+          child: Column(
+            children: [
+              const Expanded(child: TerminalOutput()),
+              const TmuxKeyboard(),
+            ],
+          ),
+        ),
+        // Command input section (flex: none)
         const ChoiceButtons(),
-        // Special keyboard buttons
-        const TmuxKeyboard(),
-        // Command input area
         const CommandInputArea(),
       ],
     );
@@ -161,7 +158,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return const FileViewer();
     }
 
-    // Show file explorer inline when no file is selected
     return const Padding(
       padding: EdgeInsets.all(8.0),
       child: SizedBox.expand(
@@ -174,7 +170,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 }
 
-/// Inline version of file explorer for the main content area
 class FileExplorerInline extends ConsumerStatefulWidget {
   const FileExplorerInline({super.key});
 
@@ -203,15 +198,13 @@ class _FileExplorerInlineState extends ConsumerState<FileExplorerInline> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Path header
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: theme.colorScheme.surfaceContainerHighest,
           child: Text(
             state.currentPath,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(fontFamily: 'monospace'),
+            style:
+                theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
           ),
         ),
         Expanded(
@@ -221,16 +214,15 @@ class _FileExplorerInlineState extends ConsumerState<FileExplorerInline> {
                   children: [
                     if (state.currentPath != '/')
                       ListTile(
-                        leading:
-                            const Icon(Icons.folder_open, size: 20),
+                        leading: const Icon(Icons.folder_open, size: 20),
                         title: const Text('..'),
                         dense: true,
                         onTap: () {
                           final parent = state.currentPath.substring(
-                              0,
-                              state.currentPath.lastIndexOf('/'));
-                          ref.read(fileProvider.notifier).navigateTo(
-                              parent.isEmpty ? '/' : parent);
+                              0, state.currentPath.lastIndexOf('/'));
+                          ref
+                              .read(fileProvider.notifier)
+                              .navigateTo(parent.isEmpty ? '/' : parent);
                         },
                       ),
                     ...state.tree.map((node) {
