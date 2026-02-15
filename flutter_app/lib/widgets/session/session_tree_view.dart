@@ -45,19 +45,19 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
     }
 
     final hierarchy = sessionState.hierarchy;
-    if (hierarchy == null || hierarchy.sessions.isEmpty) {
-      return const Center(child: Text('No sessions'));
-    }
+    final hasSessions = hierarchy != null && hierarchy.sessions.isNotEmpty;
 
     // Auto-expand session containing selected target
-    final targetSession = selectedTarget.split(':').first;
-    if (!_expandedSessions.contains(targetSession)) {
-      _expandedSessions.add(targetSession);
+    if (hasSessions) {
+      final targetSession = selectedTarget.split(':').first;
+      if (!_expandedSessions.contains(targetSession)) {
+        _expandedSessions.add(targetSession);
+      }
     }
 
     return Column(
       children: [
-        // Action bar
+        // Action bar — always visible so users can create/refresh
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
@@ -83,14 +83,16 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
           ),
         ),
         const Divider(height: 1),
-        // Session tree
+        // Session tree or empty message
         Expanded(
-          child: ListView(
-            children: hierarchy.sessions.entries.map((entry) {
-              return _buildSessionTile(
-                  context, entry.key, entry.value, selectedTarget);
-            }).toList(),
-          ),
+          child: hasSessions
+              ? ListView(
+                  children: hierarchy!.sessions.entries.map((entry) {
+                    return _buildSessionTile(
+                        context, entry.key, entry.value, selectedTarget);
+                  }).toList(),
+                )
+              : const Center(child: Text('No sessions')),
         ),
       ],
     );
