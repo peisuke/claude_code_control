@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../services/api_service.dart';
 import 'connection_provider.dart';
+import 'file_provider.dart';
+import 'output_provider.dart';
 import 'session_provider.dart';
 import 'websocket_provider.dart';
 
@@ -175,10 +177,13 @@ class ServerNotifier extends StateNotifier<ServerState> {
     final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
     _ref.read(websocketServiceProvider).updateBaseUrl(
         '${uri.replace(scheme: wsScheme)}/api/tmux/ws');
+    // Reset target to default before reconnecting to avoid stale target on new server.
+    _ref.read(selectedTargetProvider.notifier).state = 'default';
     _ref.read(connectionProvider.notifier).testConnection();
     _ref.read(websocketServiceProvider).resetAndReconnect();
     _ref.read(sessionProvider.notifier).reset();
     _ref.read(sessionProvider.notifier).fetchHierarchy();
+    _ref.read(fileProvider.notifier).reset();
   }
 
   Future<void> _saveUrls() async {

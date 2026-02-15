@@ -52,6 +52,11 @@ class FileNotifier extends StateNotifier<FileState> {
 
   FileNotifier(this._api) : super(const FileState());
 
+  /// Clear file state (e.g. on server switch) so stale data is not shown.
+  void reset() {
+    state = const FileState();
+  }
+
   Future<void> fetchTree({String path = '/'}) async {
     state = state.copyWith(isLoadingTree: true, error: null);
     try {
