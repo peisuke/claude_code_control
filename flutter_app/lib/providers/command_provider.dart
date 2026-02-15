@@ -38,11 +38,15 @@ class CommandNotifier extends StateNotifier<CommandState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _api.sendCommand(command, target: _target);
+      if (!mounted) return;
       await Future.delayed(
           const Duration(milliseconds: AppConfig.commandRefreshDelayMs));
+      if (!mounted) return;
       await _outputNotifier.refresh();
+      if (!mounted) return;
       state = state.copyWith(isLoading: false);
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -50,8 +54,10 @@ class CommandNotifier extends StateNotifier<CommandState> {
   Future<void> sendEnter() async {
     try {
       await _api.sendEnter(target: _target);
+      if (!mounted) return;
       await Future.delayed(
           const Duration(milliseconds: AppConfig.commandRefreshDelayMs));
+      if (!mounted) return;
       await _outputNotifier.refresh();
     } catch (_) {
       // ignore
@@ -62,11 +68,15 @@ class CommandNotifier extends StateNotifier<CommandState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _api.sendCommand(key, target: _target);
+      if (!mounted) return;
       await Future.delayed(
           const Duration(milliseconds: AppConfig.commandRefreshDelayMs));
+      if (!mounted) return;
       await _outputNotifier.refresh();
+      if (!mounted) return;
       state = state.copyWith(isLoading: false);
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

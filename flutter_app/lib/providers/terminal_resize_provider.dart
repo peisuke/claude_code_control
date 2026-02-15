@@ -71,8 +71,10 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
   Future<void> _sendResize(TerminalSize size) async {
     try {
       await _api.resizePane(_target, size.cols, size.rows);
+      if (!mounted) return;
       addDebugLog('RSZ:OK ${size.cols}x${size.rows}');
     } catch (e) {
+      if (!mounted) return;
       addDebugLog('RSZ:ERR $e');
       // Web: lastSizeRef.current = previousSize — reset so retry works
       state = null;

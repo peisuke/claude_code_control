@@ -16,6 +16,7 @@ class ViewNotifier extends StateNotifier<ViewMode> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final mode = prefs.getString(AppConfig.keyViewMode);
     if (mode == 'file') {
       state = ViewMode.file;
@@ -25,6 +26,7 @@ class ViewNotifier extends StateNotifier<ViewMode> {
   Future<void> setMode(ViewMode mode) async {
     state = mode;
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     await prefs.setString(
         AppConfig.keyViewMode, mode == ViewMode.file ? 'file' : 'tmux');
   }

@@ -28,8 +28,11 @@ class AppConfig {
   }
 
   static String get apiBaseUrl => '$_normalizedUrl/api';
-  static String get wsBaseUrl =>
-      '${_normalizedUrl.replaceFirst('http', 'ws')}/api/tmux/ws';
+  static String get wsBaseUrl {
+    final uri = Uri.parse(_normalizedUrl);
+    final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    return '${uri.replace(scheme: wsScheme)}/api/tmux/ws';
+  }
 
   // Timing constants (matching frontend/src/constants/ui.ts)
   static const int commandRefreshDelayMs = 500;

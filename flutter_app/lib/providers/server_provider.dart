@@ -126,6 +126,17 @@ class ServerNotifier extends StateNotifier<ServerState> {
   Future<void> addUrl(String url) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) return;
+
+    // Validate URL format: must have http/https scheme and a host.
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null ||
+        !uri.hasScheme ||
+        !{'http', 'https'}.contains(uri.scheme) ||
+        !uri.hasAuthority ||
+        uri.host.isEmpty) {
+      return;
+    }
+
     if (state.urls.contains(trimmed)) return;
 
     state = state.copyWith(urls: [...state.urls, trimmed]);
@@ -160,8 +171,10 @@ class ServerNotifier extends StateNotifier<ServerState> {
     final normalized = url.replaceAll(RegExp(r'/+$'), '');
     AppConfig.setSavedBackendUrl(url);
     _ref.read(apiServiceProvider).updateBaseUrl('$normalized/api');
+    final uri = Uri.parse(normalized);
+    final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
     _ref.read(websocketServiceProvider).updateBaseUrl(
-        '${normalized.replaceFirst('http', 'ws')}/api/tmux/ws');
+        '${uri.replace(scheme: wsScheme)}/api/tmux/ws');
     _ref.read(connectionProvider.notifier).testConnection();
     _ref.read(websocketServiceProvider).resetAndReconnect();
     _ref.read(sessionProvider.notifier).fetchHierarchy();

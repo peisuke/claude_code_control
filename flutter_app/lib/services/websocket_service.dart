@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/app_config.dart';
 import '../models/tmux_output.dart';
+
 enum WsConnectionState { disconnected, connecting, connected }
 
 /// Factory type for creating WebSocket channels (injectable for testing).
@@ -12,6 +13,7 @@ typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
 
 class WebSocketService {
   WebSocketChannel? _channel;
+  StreamSubscription? _channelSubscription;
   String _wsBaseUrl;
   String _target;
   int _reconnectAttempts = 0;
@@ -133,6 +135,8 @@ class WebSocketService {
   }
 
   void _closeChannel() {
+    _channelSubscription?.cancel();
+    _channelSubscription = null;
     if (_channel != null) {
       _channel!.sink.close(1000, 'Client close');
       _channel = null;
@@ -166,7 +170,7 @@ class WebSocketService {
 
       _setState(WsConnectionState.connected);
 
-      _channel!.stream.listen(
+      _channelSubscription = _channel!.stream.listen(
         (data) {
           try {
             final json = jsonDecode(data as String) as Map<String, dynamic>;

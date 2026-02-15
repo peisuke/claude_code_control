@@ -79,6 +79,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
         includeHistory: true,
         lines: lines,
       );
+      if (!mounted) return;
       _latestContent = output.content;
       _historyPrefix = '';
       state = state.copyWith(content: output.content, totalLoadedLines: 0);
@@ -129,6 +130,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
         includeHistory: true,
         lines: linesToLoad,
       );
+      if (!mounted) return;
       // Reset prefix — will be re-extracted on next WS message.
       _historyPrefix = '';
       _latestContent = response.content;
@@ -138,6 +140,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
         isLoadingHistory: false,
       );
     } catch (_) {
+      if (!mounted) return;
       state = state.copyWith(isLoadingHistory: false);
     }
   }
@@ -150,6 +153,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
         includeHistory: true,
         lines: lines,
       );
+      if (!mounted) return;
       _historyPrefix = '';
       _latestContent = output.content;
       isAtBottom = true;

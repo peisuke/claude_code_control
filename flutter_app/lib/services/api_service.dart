@@ -149,8 +149,13 @@ class ApiService {
 
   Future<bool> healthCheck() async {
     try {
-      final healthUrl = _baseUrl.replaceAll('/api', '/health');
-      final response = await Dio().get(healthUrl);
+      final healthUrl = _baseUrl.endsWith('/api')
+          ? '${_baseUrl.substring(0, _baseUrl.length - 4)}/health'
+          : '$_baseUrl/health';
+      final response = await Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      )).get(healthUrl);
       return response.statusCode == 200;
     } catch (_) {
       return false;

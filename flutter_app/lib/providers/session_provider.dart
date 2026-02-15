@@ -40,6 +40,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final response = await _api.getHierarchy();
+      if (!mounted) return;
       if (response.success && response.data != null) {
         state = state.copyWith(hierarchy: response.data, isLoading: false);
       } else {
@@ -47,6 +48,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
             isLoading: false, error: response.message);
       }
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -54,6 +56,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
   Future<bool> createSession(String name) async {
     try {
       final response = await _api.createSession(name);
+      if (!mounted) return false;
       if (response.success) {
         await fetchHierarchy();
         return true;
@@ -67,6 +70,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
   Future<bool> deleteSession(String name) async {
     try {
       final response = await _api.deleteSession(name);
+      if (!mounted) return false;
       if (response.success) {
         await fetchHierarchy();
         return true;
@@ -81,6 +85,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
     try {
       final response =
           await _api.createWindow(sessionName, windowName: windowName);
+      if (!mounted) return false;
       if (response.success) {
         await fetchHierarchy();
         return true;
@@ -94,6 +99,7 @@ class SessionNotifier extends StateNotifier<SessionState> {
   Future<bool> deleteWindow(String sessionName, String windowIndex) async {
     try {
       final response = await _api.deleteWindow(sessionName, windowIndex);
+      if (!mounted) return false;
       if (response.success) {
         await fetchHierarchy();
         return true;

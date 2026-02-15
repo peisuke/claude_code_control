@@ -15,8 +15,8 @@ final debugLogProvider = StateProvider<String>((ref) => '');
 final List<String> globalDebugLog = [];
 Stopwatch? globalDebugSw;
 
-/// Callback set by the widget to push log updates to the UI.
-void Function()? _onDebugLogAdded;
+/// Callbacks set by widget instances to push log updates to the UI.
+final Set<void Function()> _onDebugLogAddedCallbacks = {};
 
 /// Append a debug log entry from outside the widget.
 void addDebugLog(String msg) {
@@ -24,7 +24,9 @@ void addDebugLog(String msg) {
   final t = globalDebugSw!.elapsedMilliseconds;
   globalDebugLog.add('${t}ms $msg');
   if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
-  _onDebugLogAdded?.call();
+  for (final cb in _onDebugLogAddedCallbacks) {
+    cb();
+  }
 }
 
 class TerminalOutput extends ConsumerStatefulWidget {
@@ -120,18 +122,33 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
   // ─── Lifecycle ────────────────────────────────────────────
 
+  ProviderSubscription<String>? _targetSubscription;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     // Register callback so addDebugLog() from external files (e.g.
     // terminal_resize_provider) also triggers UI updates.
-    _onDebugLogAdded = _scheduleLogPush;
+    _onDebugLogAddedCallbacks.add(_scheduleLogPush);
+
+    // Listen for target changes outside build() to avoid side effects in build.
+    _targetSubscription = ref.listenManual<String>(
+      selectedTargetProvider,
+      (previous, next) {
+        if (previous != null && previous != next) {
+          _resetForTargetChange();
+        }
+        _lastTarget = next;
+      },
+      fireImmediately: true,
+    );
   }
 
   @override
   void dispose() {
-    _onDebugLogAdded = null;
+    _targetSubscription?.close();
+    _onDebugLogAddedCallbacks.remove(_scheduleLogPush);
     _terminalFocusNode.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -289,11 +306,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   @override
   Widget build(BuildContext context) {
     final outputState = ref.watch(outputProvider);
-    final currentTarget = ref.watch(selectedTargetProvider);
-    if (_lastTarget != null && _lastTarget != currentTarget) {
-      _resetForTargetChange();
-    }
-    _lastTarget = currentTarget;
+    // Target change detection moved to ref.listenManual in initState (H6).
 
     final lines = _splitLines(outputState.content);
 

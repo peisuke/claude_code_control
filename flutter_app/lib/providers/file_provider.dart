@@ -56,6 +56,7 @@ class FileNotifier extends StateNotifier<FileState> {
     state = state.copyWith(isLoadingTree: true, error: null);
     try {
       final response = await _api.getFileTree(path: path);
+      if (!mounted) return;
       if (response.success && response.data != null) {
         state = state.copyWith(
           tree: response.data!.tree,
@@ -67,6 +68,7 @@ class FileNotifier extends StateNotifier<FileState> {
             isLoadingTree: false, error: response.message);
       }
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoadingTree: false, error: e.toString());
     }
   }
@@ -75,6 +77,7 @@ class FileNotifier extends StateNotifier<FileState> {
     state = state.copyWith(isLoadingContent: true, error: null);
     try {
       final response = await _api.getFileContent(path);
+      if (!mounted) return;
       if (response.success && response.data != null) {
         state = state.copyWith(
           selectedFile: response.data,
@@ -85,6 +88,7 @@ class FileNotifier extends StateNotifier<FileState> {
             isLoadingContent: false, error: response.message);
       }
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(isLoadingContent: false, error: e.toString());
     }
   }
