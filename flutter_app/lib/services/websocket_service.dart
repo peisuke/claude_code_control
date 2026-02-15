@@ -102,7 +102,6 @@ class WebSocketService {
             'type': 'ping',
             'timestamp': DateTime.now().millisecondsSinceEpoch,
           }));
-          _lastHeartbeatTime = DateTime.now();
         } catch (_) {
           // Silently fail - connection check will handle
         }

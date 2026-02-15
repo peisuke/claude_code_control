@@ -216,6 +216,9 @@ class AnsiParser {
     );
   }
 
+  // xterm 256-color cube intensity values (indices 0-5 → 0,95,135,175,215,255)
+  static const List<int> _cubeValues = [0, 95, 135, 175, 215, 255];
+
   /// 256-color lookup (0-255)
   static Color _color256(int n) {
     if (n < 8) return _standardColors[n];
@@ -224,9 +227,9 @@ class AnsiParser {
     // 216-color cube (indices 16-231)
     if (n < 232) {
       final idx = n - 16;
-      final r = (idx ~/ 36) * 51;
-      final g = ((idx % 36) ~/ 6) * 51;
-      final b = (idx % 6) * 51;
+      final r = _cubeValues[idx ~/ 36];
+      final g = _cubeValues[(idx % 36) ~/ 6];
+      final b = _cubeValues[idx % 6];
       return Color.fromARGB(255, r, g, b);
     }
 
