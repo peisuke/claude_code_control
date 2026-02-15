@@ -65,14 +65,20 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
     );
   }
 
+  /// Format path for display: show last 3 segments with '...' prefix when deep.
+  /// Matches web formatPathDisplay(): parts.length <= 3 → full, else '.../' + last 3.
   Widget _buildBreadcrumbs(BuildContext context, String path) {
-    final parts = path.split('/').where((p) => p.isNotEmpty).toList();
+    final allParts = path.split('/').where((p) => p.isNotEmpty).toList();
     final theme = Theme.of(context);
+    final truncated = allParts.length > 3;
+    final visibleParts = truncated ? allParts.sublist(allParts.length - 3) : allParts;
+    // Offset into allParts so navigation targets resolve to correct full paths.
+    final startIndex = allParts.length - visibleParts.length;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+    return Tooltip(
+      message: path.isEmpty ? '/' : path,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(
           children: [
             InkWell(
@@ -82,20 +88,25 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.primary)),
             ),
-            for (var i = 0; i < parts.length; i++) ...[
+            if (truncated)
+              Text(' / ...', style: theme.textTheme.bodySmall),
+            for (var i = 0; i < visibleParts.length; i++) ...[
               Text(' / ', style: theme.textTheme.bodySmall),
-              InkWell(
-                onTap: () {
-                  final target =
-                      '/${parts.sublist(0, i + 1).join('/')}';
-                  ref.read(fileProvider.notifier).navigateTo(target);
-                },
-                child: Text(
-                  parts[i],
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: i == parts.length - 1
-                        ? null
-                        : theme.colorScheme.primary,
+              Flexible(
+                child: InkWell(
+                  onTap: () {
+                    final target =
+                        '/${allParts.sublist(0, startIndex + i + 1).join('/')}';
+                    ref.read(fileProvider.notifier).navigateTo(target);
+                  },
+                  child: Text(
+                    visibleParts[i],
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: i == visibleParts.length - 1
+                          ? null
+                          : theme.colorScheme.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
