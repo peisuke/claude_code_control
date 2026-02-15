@@ -17,6 +17,10 @@ class SessionTreeView extends ConsumerStatefulWidget {
 class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
   final Set<String> _expandedSessions = {};
 
+  /// Track the last target we auto-expanded for, so we only auto-expand
+  /// once per target change and don't fight user-initiated collapse.
+  String? _lastAutoExpandedTarget;
+
   @override
   Widget build(BuildContext context) {
     final sessionState = ref.watch(sessionProvider);
@@ -47,12 +51,13 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
     final hierarchy = sessionState.hierarchy;
     final hasSessions = hierarchy != null && hierarchy.sessions.isNotEmpty;
 
-    // Auto-expand session containing selected target
-    if (hasSessions) {
+    // Auto-expand session containing selected target (only on target change)
+    if (hasSessions && selectedTarget != _lastAutoExpandedTarget) {
       final targetSession = selectedTarget.split(':').first;
       if (!_expandedSessions.contains(targetSession)) {
         _expandedSessions.add(targetSession);
       }
+      _lastAutoExpandedTarget = selectedTarget;
     }
 
     return Column(
@@ -115,6 +120,13 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                 _expandedSessions.add(sessionName);
               }
             });
+            // Select session's first window (matches web handleSessionClick)
+            if (session.windows.isNotEmpty) {
+              final firstWindow = session.windows.keys.first;
+              final target = '$sessionName:$firstWindow';
+              ref.read(selectedTargetProvider.notifier).state = target;
+              ref.read(websocketServiceProvider).setTarget(target);
+            }
           },
           child: Padding(
             padding:
@@ -199,8 +211,12 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
       children: [
         InkWell(
           onTap: () {
-            ref.read(selectedTargetProvider.notifier).state = target;
-            ref.read(websocketServiceProvider).setTarget(target);
+            // Target first pane for multi-pane windows (matches web behavior)
+            final effectiveTarget = hasPanes
+                ? '$target.${window.panes.keys.first}'
+                : target;
+            ref.read(selectedTargetProvider.notifier).state = effectiveTarget;
+            ref.read(websocketServiceProvider).setTarget(effectiveTarget);
             Navigator.of(context).pop(); // Close drawer
           },
           child: Container(

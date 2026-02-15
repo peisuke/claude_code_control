@@ -82,6 +82,7 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
   }
 
   Future<void> _sendResize(TerminalSize size) async {
+    if (_target.isEmpty) return;
     try {
       await _api.resizePane(_target, size.cols, size.rows);
       if (!mounted) return;
