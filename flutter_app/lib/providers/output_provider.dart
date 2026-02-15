@@ -57,14 +57,15 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
   /// Synchronous flag set directly by the widget. Checked by
   /// onWebSocketMessage to decide whether to update displayed content.
-  /// This avoids the Riverpod state propagation delay that caused
-  /// the race condition.
   bool isAtBottom = true;
 
-  /// Always stores the latest WebSocket content, even when the user
-  /// is scrolled up. When the user returns to bottom we show this
-  /// immediately without waiting for the next WebSocket message.
+  /// Always stores the latest full content (history + live), even when
+  /// the user is scrolled up.
   String _latestContent = '';
+
+  /// History lines from initial/history load. WS messages contain only
+  /// the current visible pane, so we prepend this to keep scrollback.
+  String _historyPrefix = '';
 
   OutputNotifier(this._api, this._target) : super(const OutputState()) {
     _fetchInitialOutput();
@@ -72,8 +73,14 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
   Future<void> _fetchInitialOutput() async {
     try {
-      final output = await _api.getOutput(_target);
+      final lines = AppConfig.minRows * 3;
+      final output = await _api.getOutput(
+        _target,
+        includeHistory: true,
+        lines: lines,
+      );
       _latestContent = output.content;
+      _historyPrefix = '';
       state = state.copyWith(content: output.content, totalLoadedLines: 0);
     } catch (_) {
       // Will retry via WebSocket updates
@@ -81,16 +88,28 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   void onWebSocketMessage(TmuxOutput msg) {
-    _latestContent = msg.content;
+    // First WS message after load: extract history prefix by line count.
+    // Initial content = history + current screen. WS = current screen only.
+    if (_historyPrefix.isEmpty && state.content.isNotEmpty) {
+      final initialLines = state.content.split('\n');
+      final wsLines = msg.content.split('\n');
+      final historyCount = initialLines.length - wsLines.length;
+      if (historyCount > 0) {
+        _historyPrefix =
+            '${initialLines.sublist(0, historyCount).join('\n')}\n';
+      }
+    }
+
+    final fullContent = _historyPrefix.isEmpty
+        ? msg.content
+        : '$_historyPrefix${msg.content}';
+    _latestContent = fullContent;
+
     if (isAtBottom) {
-      state = state.copyWith(content: msg.content, totalLoadedLines: 0);
+      state = state.copyWith(content: fullContent, totalLoadedLines: 0);
     }
   }
 
-  /// Called by the widget when scroll position crosses the threshold.
-  /// When scrolling UP: just sets the flag. No Riverpod state change,
-  /// so no unnecessary widget rebuild.
-  /// When scrolling back to BOTTOM: updates state with latest content.
   void setScrollPosition(bool atBottom) {
     isAtBottom = atBottom;
     if (atBottom && _latestContent.isNotEmpty) {
@@ -110,6 +129,9 @@ class OutputNotifier extends StateNotifier<OutputState> {
         includeHistory: true,
         lines: linesToLoad,
       );
+      // Reset prefix — will be re-extracted on next WS message.
+      _historyPrefix = '';
+      _latestContent = response.content;
       state = state.copyWith(
         content: response.content,
         totalLoadedLines: linesToLoad,
@@ -123,6 +145,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
   Future<void> refresh() async {
     try {
       final output = await _api.getOutput(_target);
+      _historyPrefix = '';
       _latestContent = output.content;
       isAtBottom = true;
       state = state.copyWith(

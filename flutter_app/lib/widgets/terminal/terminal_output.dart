@@ -135,60 +135,59 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   }
 
   // ─── #8  checkIfAtBottom ──────────────────────────────────
-  /// Web: checkIfAtBottom(element)
-  /// scrollHeight - scrollTop - clientHeight < BOTTOM_THRESHOLD
+  /// With reverse: true, pixels=0 is the bottom (most recent content).
   bool _checkIfAtBottom() {
     if (!_scrollController.hasClients) return true;
     final pos = _scrollController.position;
-    return (pos.maxScrollExtent - pos.pixels) < AppConfig.bottomThreshold;
+    return pos.pixels < AppConfig.bottomThreshold;
   }
 
   // ─── #10  handleScroll  (= _onScroll) ────────────────────
-  /// Port of useScrollBasedOutput.handleScroll.
-  /// Key addition: content-change detection via _lastMaxScrollExtent.
   void _onScroll() {
-    // #20: skip scroll events from our own jumpTo
     if (_isAutoScrolling) return;
     if (!_scrollController.hasClients) return;
 
     final position = _scrollController.position;
 
-    // ── #2/#21: detect content change ──
+    // Content change detection: skip scroll events caused by layout changes.
     final isContentChange =
         (position.maxScrollExtent - _lastMaxScrollExtent).abs() > 0.5;
     _lastMaxScrollExtent = position.maxScrollExtent;
-
-    // In Flutter, content-change scroll events are NOT user-initiated,
-    // so we SKIP intent tracking for them.
     if (isContentChange) return;
 
-    // ── #8: atBottom check ──
     final atBottom = _checkIfAtBottom();
 
-    // ── #6: direction detection ──
+    // Direction detection (reverse: up visually = pixels increases).
+    final isScrollingUp = position.pixels > _previousPixels;
     _previousPixels = position.pixels;
 
-    // ── #1: intent tracking ──
+    // Intent tracking.
     final wasAtBottom = !_userScrolledUp;
     if (atBottom != wasAtBottom) {
       _userScrolledUp = !atBottom;
 
-      // #15: tell the output notifier (sync flag).
       ref.read(outputProvider.notifier).setScrollPosition(atBottom);
-
-      // #14: handleScrollPositionChange → refresh rate
       ref.read(websocketServiceProvider).setRefreshRate(
             atBottom
                 ? AppConfig.refreshIntervalFast
                 : AppConfig.refreshIntervalNormal,
           );
 
-      // Trigger rebuild for FAB visibility.
       setState(() {});
+    }
+
+    // History loading: when scrolling up near the visual top.
+    if (isScrollingUp &&
+        position.maxScrollExtent > 0 &&
+        position.pixels > position.maxScrollExtent - AppConfig.scrollThreshold &&
+        !ref.read(outputProvider).isLoadingHistory &&
+        !_isTargetSwitching) {
+      ref.read(outputProvider.notifier).loadMoreHistory();
     }
   }
 
   // ─── #9  scrollToBottom ───────────────────────────────────
+  /// With reverse: true, bottom = position 0.
   void _scrollToBottom({bool force = false}) {
     if (!_scrollController.hasClients) return;
 
@@ -205,7 +204,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
       }
 
       _isAutoScrolling = true;
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _scrollController.jumpTo(0);
       _lastMaxScrollExtent = _scrollController.position.maxScrollExtent;
       _isAutoScrolling = false;
 
@@ -297,13 +296,9 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
       _dbgPrevLines = lines.length;
     }
 
-    // Auto-scroll when at bottom
-    if (!_userScrolledUp &&
-        !_userIsTouching &&
-        !_userScrollInProgress &&
-        outputState.content.isNotEmpty) {
-      _scrollToBottom();
-    }
+    // With reverse: true, position 0 is the bottom. When at bottom
+    // and content changes, the view naturally stays at the bottom.
+    // No explicit auto-scroll needed.
 
     final fontSize = AppConfig.fontSizeLarge;
     final baseStyle = GoogleFonts.ubuntuMono(
@@ -346,13 +341,15 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                   clipBehavior: Clip.antiAlias,
                   child: ListView.builder(
                     controller: _scrollController,
-                    // Allow scrolling even when content fits viewport.
+                    reverse: true,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(AppConfig.terminalPadding),
                     itemCount: lines.length,
                     itemBuilder: (context, index) {
+                      // reverse: index 0 = bottom = last line of content.
+                      final lineIndex = lines.length - 1 - index;
                       final spans =
-                          _getLineSpans(index, lines[index], baseStyle);
+                          _getLineSpans(lineIndex, lines[lineIndex], baseStyle);
                       return Text.rich(
                         TextSpan(children: spans),
                         softWrap: true,
