@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/server_provider.dart';
 import '../../providers/view_provider.dart';
 import '../session/session_tree_view.dart';
 import '../file/file_explorer.dart';
@@ -13,6 +14,9 @@ class Sidebar extends ConsumerWidget {
 
     return Column(
       children: [
+        // Server dropdown
+        const _ServerDropdown(),
+        const Divider(height: 1),
         // Tab bar
         Material(
           color: Theme.of(context).colorScheme.surface,
@@ -47,6 +51,84 @@ class Sidebar extends ConsumerWidget {
               : const FileExplorer(),
         ),
       ],
+    );
+  }
+}
+
+class _ServerDropdown extends ConsumerWidget {
+  const _ServerDropdown();
+
+  /// Strip "http://" prefix for display.
+  String _displayUrl(String url) {
+    return url.replaceFirst(RegExp(r'^https?://'), '');
+  }
+
+  Color _healthDotColor(ServerHealthStatus status) {
+    switch (status) {
+      case ServerHealthStatus.healthy:
+        return Colors.green;
+      case ServerHealthStatus.unhealthy:
+        return Colors.red;
+      case ServerHealthStatus.unknown:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final serverState = ref.watch(serverProvider);
+    final urls = serverState.urls;
+
+    if (urls.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: DropdownButton<int>(
+        value: 0,
+        isExpanded: true,
+        underline: const SizedBox.shrink(),
+        icon: const Icon(Icons.arrow_drop_down, size: 24),
+        items: List.generate(urls.length, (index) {
+          final url = urls[index];
+          final health = serverState.healthOf(url);
+          final isUnhealthy = health == ServerHealthStatus.unhealthy;
+
+          return DropdownMenuItem<int>(
+            value: index,
+            enabled: index == 0 || !isUnhealthy,
+            child: Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _healthDotColor(health),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _displayUrl(url),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isUnhealthy && index != 0
+                          ? Theme.of(context).disabledColor
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+        onChanged: (index) {
+          if (index != null && index != 0) {
+            ref.read(serverProvider.notifier).selectServer(index);
+          }
+        },
+      ),
     );
   }
 }

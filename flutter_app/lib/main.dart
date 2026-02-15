@@ -9,8 +9,14 @@ void main() async {
 
   // Load saved backend URL before any provider is created.
   // This ensures the first HTTP health check uses the correct URL.
+  // New list format (keyBackendUrls) takes priority; fall back to old single key.
   final prefs = await SharedPreferences.getInstance();
-  AppConfig.setSavedBackendUrl(prefs.getString(AppConfig.keyBackendUrl));
+  final urls = prefs.getStringList(AppConfig.keyBackendUrls);
+  if (urls != null && urls.isNotEmpty) {
+    AppConfig.setSavedBackendUrl(urls.first);
+  } else {
+    AppConfig.setSavedBackendUrl(prefs.getString(AppConfig.keyBackendUrl));
+  }
 
   runApp(
     const ProviderScope(

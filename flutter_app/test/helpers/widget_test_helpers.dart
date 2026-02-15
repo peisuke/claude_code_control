@@ -9,6 +9,7 @@ import 'package:tmux_control/models/file_node.dart';
 import 'package:tmux_control/models/tmux_output.dart';
 import 'package:tmux_control/models/tmux_session.dart';
 import 'package:tmux_control/providers/connection_provider.dart';
+import 'package:tmux_control/providers/server_provider.dart';
 import 'package:tmux_control/providers/websocket_provider.dart';
 import 'package:tmux_control/services/api_service.dart';
 import 'package:tmux_control/services/websocket_service.dart';
@@ -171,6 +172,7 @@ class NoOpWebSocketService extends WebSocketService {
   }
 }
 
+
 /// Wraps [child] in ProviderScope + MaterialApp with overridden providers.
 ///
 /// [httpConnected]: simulates HTTP connection state via testConnection().
@@ -201,6 +203,11 @@ Widget buildTestWidget(
       // Override connectionProvider to prevent Timer.periodic(5s) leak.
       connectionProvider.overrideWith((ref) {
         return ConnectionNotifier(mockApi);
+      }),
+      // Override serverProvider to prevent Timer.periodic(10s) leak
+      // and real HTTP health checks.
+      serverProvider.overrideWith((ref) {
+        return ServerNotifier.noInit(ref, healthChecker: (_) async => false);
       }),
       wsConnectionStateProvider.overrideWith((ref) {
         return Stream.value(wsConnected

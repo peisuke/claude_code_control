@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../config/app_config.dart';
+import '../../providers/server_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../providers/connection_provider.dart';
-import '../../providers/websocket_provider.dart';
 
 class SettingsSheet extends ConsumerStatefulWidget {
   const SettingsSheet({super.key});
@@ -14,60 +11,57 @@ class SettingsSheet extends ConsumerStatefulWidget {
 }
 
 class _SettingsSheetState extends ConsumerState<SettingsSheet> {
-  late TextEditingController _urlController;
+  late TextEditingController _newUrlController;
 
   @override
   void initState() {
     super.initState();
-    _urlController = TextEditingController();
-    _loadUrl();
-  }
-
-  Future<void> _loadUrl() async {
-    final prefs = await SharedPreferences.getInstance();
-    final url =
-        prefs.getString(AppConfig.keyBackendUrl) ?? AppConfig.backendUrl;
-    _urlController.text = url;
+    _newUrlController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _urlController.dispose();
+    _newUrlController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveUrl() async {
-    final url = _urlController.text.trim();
+  Future<void> _addUrl() async {
+    final url = _newUrlController.text.trim();
     if (url.isEmpty) return;
+    ref.read(serverProvider.notifier).addUrl(url);
+    _newUrlController.clear();
+  }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConfig.keyBackendUrl, url);
+  Future<void> _removeUrl(int index) async {
+    final wasFirst = index == 0;
+    ref.read(serverProvider.notifier).removeUrl(index);
 
-    // Keep AppConfig in sync for any code that reads backendUrl directly
-    AppConfig.setSavedBackendUrl(url);
-
-    // Strip trailing slash(es) to avoid double-slash in URL paths
-    final normalizedUrl = url.replaceAll(RegExp(r'/+$'), '');
-
-    // Update services
-    ref.read(apiServiceProvider).updateBaseUrl('$normalizedUrl/api');
-    ref.read(websocketServiceProvider).updateBaseUrl(
-        '${normalizedUrl.replaceFirst('http', 'ws')}/api/tmux/ws');
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('URL updated. Reconnecting...')),
-      );
+    if (wasFirst && mounted) {
+      final urls = ref.read(serverProvider).urls;
+      if (urls.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Switched to ${urls.first}')),
+        );
+      }
     }
+  }
 
-    // Test connection
-    ref.read(connectionProvider.notifier).testConnection();
-    ref.read(websocketServiceProvider).resetAndReconnect();
+  Color _healthDotColor(ServerHealthStatus status) {
+    switch (status) {
+      case ServerHealthStatus.healthy:
+        return Colors.green;
+      case ServerHealthStatus.unhealthy:
+        return Colors.red;
+      case ServerHealthStatus.unknown:
+        return Colors.grey;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = ref.watch(themeProvider);
+    final serverState = ref.watch(serverProvider);
+    final urls = serverState.urls;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -92,27 +86,32 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                 ref.read(themeProvider.notifier).toggle(),
           ),
           const Divider(),
-          // Backend URL
-          Text('Backend URL',
+          // Backend URLs
+          Text('Backend URLs',
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
+          // URL list
+          ..._buildUrlList(urls, serverState),
+          const Divider(),
+          // Add new URL
           Row(
             children: [
               Expanded(
                 child: TextField(
-                  controller: _urlController,
+                  controller: _newUrlController,
                   decoration: const InputDecoration(
                     hintText: 'http://10.0.2.2:8000',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
                   style: const TextStyle(fontSize: 14),
+                  onSubmitted: (_) => _addUrl(),
                 ),
               ),
               const SizedBox(width: 8),
               FilledButton(
-                onPressed: _saveUrl,
-                child: const Text('Save'),
+                onPressed: _addUrl,
+                child: const Text('Add'),
               ),
             ],
           ),
@@ -126,5 +125,48 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildUrlList(List<String> urls, ServerState serverState) {
+    return List.generate(urls.length, (index) {
+      final isActive = index == 0;
+      final health = serverState.healthOf(urls[index]);
+      return ListTile(
+        dense: true,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _healthDotColor(health),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isActive)
+              Icon(Icons.check_circle, color: Colors.green, size: 20)
+            else
+              const SizedBox(width: 20),
+          ],
+        ),
+        title: Text(
+          urls[index],
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        subtitle: isActive ? const Text('Active') : null,
+        trailing: urls.length > 1
+            ? IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => _removeUrl(index),
+                tooltip: 'Remove',
+              )
+            : null,
+      );
+    });
   }
 }
