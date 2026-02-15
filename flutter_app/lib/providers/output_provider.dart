@@ -83,6 +83,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   Future<void> _fetchInitialOutput() async {
+    if (_target.isEmpty) return;
     try {
       final lines = AppConfig.minRows * 3;
       final output = await _api.getOutput(

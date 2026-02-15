@@ -201,6 +201,7 @@ class ServerNotifier extends StateNotifier<ServerState> {
       _ref.read(selectedTargetProvider.notifier).state = target;
       _ref.read(websocketServiceProvider).setTarget(target);
       _ref.read(websocketServiceProvider).resetAndReconnect();
+      _ref.read(fileProvider.notifier).fetchTree();
     } else {
       // No sessions — clear WS target and disconnect.
       _ref.read(selectedTargetProvider.notifier).state = '';
