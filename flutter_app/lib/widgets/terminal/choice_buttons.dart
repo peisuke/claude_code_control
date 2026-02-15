@@ -39,6 +39,9 @@ class ChoiceButtons extends ConsumerWidget {
                     : null,
                 style: OutlinedButton.styleFrom(
                   alignment: Alignment.centerLeft,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  ),
                 ),
                 child: Text(
                   '${choice.number}. ${choice.text}',

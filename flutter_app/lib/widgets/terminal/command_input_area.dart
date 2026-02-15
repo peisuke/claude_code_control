@@ -61,8 +61,12 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
       }
     });
 
+    const btnShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    );
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -81,10 +85,12 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                       )
                     : const Icon(Icons.send, size: 16),
                 label: const Text('送信'),
+                style: FilledButton.styleFrom(shape: btnShape),
               ),
               const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: enabled ? _sendEnter : null,
+                style: OutlinedButton.styleFrom(shape: btnShape),
                 child: const Text('Enter'),
               ),
               const Spacer(),
@@ -96,7 +102,9 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                         .sendSpecialKey('\x7f')
                     : null,
                 style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  shape: btnShape,
+                ),
                 child: const Text('Del'),
               ),
               const SizedBox(width: 4),
@@ -109,12 +117,13 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   foregroundColor: Colors.orange,
+                  shape: btnShape,
                 ),
                 child: const Text('Clear'),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           // Row 2: TextField + expand/arrow buttons (matches web layout)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,13 +134,15 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                   scrollController: _scrollController,
                   focusNode: _focusNode,
                   readOnly: false,
-                  maxLines: _expanded ? 20 : 8,
-                  minLines: _expanded ? 20 : 8,
+                  maxLines: _expanded ? 20 : 3,
+                  minLines: _expanded ? 20 : 3,
                   decoration: const InputDecoration(
                     hintText: 'Enter message',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                    ),
                     contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     isDense: true,
                   ),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -147,12 +158,14 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _SmallIconButton(
-                    icon: _expanded ? Icons.expand_less : Icons.expand_more,
+                    icon: _expanded
+                        ? Icons.fullscreen_exit
+                        : Icons.fullscreen,
                     onPressed: () => setState(() => _expanded = !_expanded),
                     tooltip: _expanded ? 'コマンド欄を縮小' : 'コマンド欄を拡大',
                   ),
                   _SmallIconButton(
-                    icon: Icons.arrow_upward,
+                    icon: Icons.keyboard_arrow_up,
                     onPressed: enabled
                         ? () => ref
                             .read(commandProvider.notifier)
@@ -161,7 +174,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                     tooltip: '↑',
                   ),
                   _SmallIconButton(
-                    icon: Icons.arrow_downward,
+                    icon: Icons.keyboard_arrow_down,
                     onPressed: enabled
                         ? () => ref
                             .read(commandProvider.notifier)
@@ -192,13 +205,21 @@ class _SmallIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, size: 20),
-      onPressed: onPressed,
-      tooltip: tooltip,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      padding: EdgeInsets.zero,
-      iconSize: 20,
+    return SizedBox(
+      width: 32,
+      height: 28,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+        ),
+        child: Icon(icon, size: 18),
+      ),
     );
   }
 }

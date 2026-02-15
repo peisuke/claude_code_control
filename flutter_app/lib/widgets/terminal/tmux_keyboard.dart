@@ -84,5 +84,8 @@ class TmuxKeyboard extends ConsumerWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8),
     minimumSize: const Size(0, 36),
     textStyle: const TextStyle(fontSize: 12),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
   );
 }
