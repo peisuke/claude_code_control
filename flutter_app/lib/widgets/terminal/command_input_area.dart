@@ -14,6 +14,7 @@ class CommandInputArea extends ConsumerStatefulWidget {
 
 class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   final _controller = TextEditingController();
+  final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   bool _expanded = false;
   String _lastLogText = '';
@@ -21,6 +22,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -49,6 +51,13 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
         _controller.text = next;
         _controller.selection =
             TextSelection.collapsed(offset: next.length);
+        // Auto-scroll to bottom of log
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController
+                .jumpTo(_scrollController.position.maxScrollExtent);
+          }
+        });
       }
     });
 
@@ -113,6 +122,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
               Expanded(
                 child: TextField(
                   controller: _controller,
+                  scrollController: _scrollController,
                   focusNode: _focusNode,
                   readOnly: false,
                   maxLines: _expanded ? 20 : 8,
