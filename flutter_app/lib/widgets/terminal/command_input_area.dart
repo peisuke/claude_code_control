@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_config.dart';
 import '../../providers/command_provider.dart';
 import '../../providers/websocket_provider.dart';
+import 'terminal_output.dart' show debugLogProvider;
 
 class CommandInputArea extends ConsumerStatefulWidget {
   const CommandInputArea({super.key});
@@ -15,6 +16,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _expanded = false;
+  String _lastLogText = '';
 
   @override
   void dispose() {
@@ -39,6 +41,16 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
     final cmdState = ref.watch(commandProvider);
     final isConnected = ref.watch(wsIsConnectedProvider);
     final enabled = isConnected && !cmdState.isLoading;
+
+    // Debug: update TextField with log (only when new content arrives)
+    ref.listen<String>(debugLogProvider, (_, next) {
+      if (next != _lastLogText) {
+        _lastLogText = next;
+        _controller.text = next;
+        _controller.selection =
+            TextSelection.collapsed(offset: next.length);
+      }
+    });
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -102,11 +114,11 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,
-                  enabled: enabled,
-                  maxLines: _expanded ? 10 : AppConfig.commandInputMinLines,
-                  minLines: _expanded ? 10 : AppConfig.commandInputMinLines,
+                  readOnly: false,
+                  maxLines: _expanded ? 20 : 8,
+                  minLines: _expanded ? 20 : 8,
                   decoration: const InputDecoration(
-                    hintText: 'ls -la',
+                    hintText: 'debug log',
                     border: OutlineInputBorder(),
                     contentPadding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -114,6 +126,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                   ),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontFamily: 'monospace',
+                        fontSize: 10,
                       ),
                   textInputAction: TextInputAction.newline,
                 ),

@@ -8,6 +8,99 @@ import '../../providers/terminal_resize_provider.dart';
 import '../../providers/websocket_provider.dart';
 import '../../utils/ansi_parser.dart';
 
+/// Debug log shared with CommandInputArea's TextField.
+final debugLogProvider = StateProvider<String>((ref) => '');
+
+// ─── Custom scroll classes for history-load pixel correction ───
+
+/// Global debug log list — shared with the widget for logging from
+/// inside applyContentDimensions (where we don't have ref access).
+final List<String> _globalDebugLog = [];
+Stopwatch? _globalDebugSw;
+
+class _HistoryAwareScrollPosition extends ScrollPositionWithSingleContext {
+  _HistoryAwareScrollPosition({
+    required super.physics,
+    required super.context,
+    super.initialPixels,
+    super.keepScrollOffset,
+    super.oldPosition,
+    super.debugLabel,
+  });
+
+  /// Distance from bottom to preserve across a history load.
+  double? _preserveDist;
+
+  void prepareForHistoryLoad() {
+    if (hasContentDimensions && _preserveDist == null) {
+      _preserveDist = maxScrollExtent - pixels;
+      _glog('PREP d=${_preserveDist!.toStringAsFixed(0)}'
+          ' px=${pixels.toStringAsFixed(0)}'
+          ' mx=${maxScrollExtent.toStringAsFixed(0)}');
+    }
+  }
+
+  @override
+  bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
+    if (_preserveDist != null) {
+      // Only consume when mx actually increased (new content loaded).
+      // Skip normal re-layouts where mx is unchanged.
+      final mxIncreased = hasContentDimensions &&
+          (maxScrollExtent - this.maxScrollExtent) > 100;
+      if (mxIncreased) {
+        final dist = _preserveDist!;
+        _preserveDist = null;
+        final oldPx = pixels;
+        final newPx = maxScrollExtent - dist;
+        _glog('ACD fix'
+            ' oldPx=${oldPx.toStringAsFixed(0)}'
+            ' newMx=${maxScrollExtent.toStringAsFixed(0)}'
+            ' dist=${dist.toStringAsFixed(0)}'
+            ' newPx=${newPx.toStringAsFixed(0)}');
+        if (newPx >= minScrollExtent && newPx <= maxScrollExtent) {
+          correctPixels(newPx);
+        }
+      }
+    }
+    return super.applyContentDimensions(minScrollExtent, maxScrollExtent);
+  }
+
+  void _glog(String msg) {
+    final t = (_globalDebugSw ?? (Stopwatch()..start())).elapsedMilliseconds;
+    _globalDebugLog.add('${t}ms $msg');
+    if (_globalDebugLog.length > 10000) _globalDebugLog.removeAt(0);
+  }
+}
+
+class _HistoryAwareScrollController extends ScrollController {
+  _HistoryAwareScrollController({
+    super.initialScrollOffset,
+    super.keepScrollOffset,
+  });
+
+  @override
+  ScrollPosition createScrollPosition(
+    ScrollPhysics physics,
+    ScrollContext context,
+    ScrollPosition? oldPosition,
+  ) {
+    return _HistoryAwareScrollPosition(
+      physics: physics,
+      context: context,
+      initialPixels: initialScrollOffset,
+      keepScrollOffset: keepScrollOffset,
+      oldPosition: oldPosition,
+      debugLabel: debugLabel,
+    );
+  }
+
+  void prepareForHistoryLoad() {
+    if (hasClients) {
+      (position as _HistoryAwareScrollPosition).prepareForHistoryLoad();
+    }
+  }
+}
+
 class TerminalOutput extends ConsumerStatefulWidget {
   const TerminalOutput({super.key});
 
@@ -16,7 +109,8 @@ class TerminalOutput extends ConsumerStatefulWidget {
 }
 
 class _TerminalOutputState extends ConsumerState<TerminalOutput> {
-  final ScrollController _scrollController = ScrollController();
+  final _HistoryAwareScrollController _scrollController =
+      _HistoryAwareScrollController();
 
   // ─── Flags matching web refs ──────────────────────────────
 
@@ -61,6 +155,41 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   /// Web: useEffect([selectedTarget]) resets all flags.
   String? _lastTarget;
 
+  // ─── Debug log ─────────────────────────────────────────────
+  final List<String> _debugLog = [];
+  final Stopwatch _debugSw = Stopwatch()..start();
+  double _dbgPrevPx = -1;
+  double _dbgPrevMax = -1;
+  int _dbgPrevLines = -1;
+  bool _dbgPushScheduled = false;
+
+  void _dbgLog(String tag, {double? px, double? max, int? lines}) {
+    _globalDebugSw ??= _debugSw;
+    final t = _debugSw.elapsedMilliseconds;
+    final p = px != null ? ' px=${px.toStringAsFixed(0)}' : '';
+    final m = max != null ? ' mx=${max.toStringAsFixed(0)}' : '';
+    final d = (px != null && max != null)
+        ? ' d=${(max - px).toStringAsFixed(0)}'
+        : '';
+    final l = lines != null ? ' ln=$lines' : '';
+    final entry = '${t}ms $tag$p$m$d$l';
+    _debugLog.add(entry);
+    _globalDebugLog.add(entry);
+    if (_debugLog.length > 10000) _debugLog.removeAt(0);
+    if (_globalDebugLog.length > 10000) _globalDebugLog.removeAt(0);
+    // Throttle: push to provider once per frame at most
+    if (!_dbgPushScheduled) {
+      _dbgPushScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _dbgPushScheduled = false;
+        if (mounted) {
+          ref.read(debugLogProvider.notifier).state =
+              _globalDebugLog.join('\n');
+        }
+      });
+    }
+  }
+
   // ─── Lifecycle ────────────────────────────────────────────
 
   @override
@@ -104,6 +233,15 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         (position.maxScrollExtent - _lastMaxScrollExtent).abs() > 0.5;
     _lastMaxScrollExtent = position.maxScrollExtent;
 
+    // Log when px or max changed
+    if (position.pixels != _dbgPrevPx ||
+        position.maxScrollExtent != _dbgPrevMax) {
+      _dbgLog(isContentChange ? 'CNT' : 'SCR',
+          px: position.pixels, max: position.maxScrollExtent);
+      _dbgPrevPx = position.pixels;
+      _dbgPrevMax = position.maxScrollExtent;
+    }
+
     // Web: "Always track scroll position intent, even during
     //        content changes" — but in Flutter, content-change
     //        scroll events are NOT user-initiated, so we SKIP
@@ -144,8 +282,14 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         position.pixels < AppConfig.scrollThreshold &&
         !ref.read(outputProvider).isLoadingHistory &&
         !_isTargetSwitching) {
+      // Save dist NOW, before content changes arrive
+      _scrollController.prepareForHistoryLoad();
       ref.read(outputProvider.notifier).loadMoreHistory();
     }
+
+    // Debug: rebuild on every scroll so overlay shows live values.
+    // TODO: remove together with the debug overlay.
+    setState(() {});
   }
 
   // ─── #9  scrollToBottom ───────────────────────────────────
@@ -172,6 +316,9 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
       }
 
       _isAutoScrolling = true;
+      _dbgLog('AUTO',
+          px: _scrollController.position.maxScrollExtent,
+          max: _scrollController.position.maxScrollExtent);
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       // Update _lastMaxScrollExtent so the next _onScroll doesn't
       // see the jumpTo as a content change.
@@ -277,17 +424,27 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         !outputState.isLoadingHistory &&
         _userScrolledUp;
 
+    // Debug: log build with line count changes
+    if (lines.length != _dbgPrevLines) {
+      final hasPos = _scrollController.hasClients &&
+          _scrollController.position.hasContentDimensions;
+      _dbgLog(isHistoryLoad ? 'BLD:HIST' : 'BLD',
+          px: hasPos ? _scrollController.position.pixels : null,
+          max: hasPos ? _scrollController.position.maxScrollExtent : null,
+          lines: lines.length);
+      _dbgPrevLines = lines.length;
+    }
+
     if (isHistoryLoad) {
-      final addedLines = lines.length - _previousLineCount;
+      // Save dist before layout; applyContentDimensions corrects px.
+      _scrollController.prepareForHistoryLoad();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients && addedLines > 0) {
-          final fontSize = AppConfig.fontSizeLarge;
-          final lineHeight = fontSize * AppConfig.lineHeightRatio;
-          _isAutoScrolling = true;
-          _scrollController
-              .jumpTo(_scrollController.offset + addedLines * lineHeight);
+        if (_scrollController.hasClients) {
           _lastMaxScrollExtent = _scrollController.position.maxScrollExtent;
-          _isAutoScrolling = false;
+          _previousPixels = _scrollController.position.pixels;
+          _dbgLog('POST',
+              px: _scrollController.position.pixels,
+              max: _scrollController.position.maxScrollExtent);
         }
       });
     } else if (!_userScrolledUp &&
@@ -379,6 +536,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                   child: const Icon(Icons.arrow_downward),
                 ),
               ),
+            // Debug overlay removed — logs go to CommandInputArea TextField.
           ],
         );
       },
