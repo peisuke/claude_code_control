@@ -1,17 +1,35 @@
 /// Application configuration constants.
 ///
 /// Backend URL can be overridden via --dart-define=BACKEND_URL=http://host:port
+/// or at runtime via SharedPreferences (loaded in main.dart before runApp).
 class AppConfig {
   AppConfig._();
 
-  static const String backendUrl = String.fromEnvironment(
+  static const String _compileTimeUrl = String.fromEnvironment(
     'BACKEND_URL',
     defaultValue: 'http://10.0.2.2:8000',
   );
 
-  static String get apiBaseUrl => '$backendUrl/api';
+  /// Runtime override — set from SharedPreferences in main.dart.
+  static String? _savedBackendUrl;
+
+  /// Call from main() before runApp() to apply the saved URL.
+  static void setSavedBackendUrl(String? url) {
+    _savedBackendUrl = url;
+  }
+
+  /// The effective backend URL: saved URL if available, otherwise compile-time.
+  static String get backendUrl => _savedBackendUrl ?? _compileTimeUrl;
+
+  /// Strip trailing slash(es) to avoid double-slash in URL paths.
+  static String get _normalizedUrl {
+    final url = backendUrl;
+    return url.endsWith('/') ? url.replaceAll(RegExp(r'/+$'), '') : url;
+  }
+
+  static String get apiBaseUrl => '$_normalizedUrl/api';
   static String get wsBaseUrl =>
-      '${backendUrl.replaceFirst('http', 'ws')}/api/tmux/ws';
+      '${_normalizedUrl.replaceFirst('http', 'ws')}/api/tmux/ws';
 
   // Timing constants (matching frontend/src/constants/ui.ts)
   static const int commandRefreshDelayMs = 500;

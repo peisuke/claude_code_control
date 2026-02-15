@@ -11,12 +11,19 @@ import '../../utils/ansi_parser.dart';
 /// Debug log shared with CommandInputArea's TextField.
 final debugLogProvider = StateProvider<String>((ref) => '');
 
-// ─── Custom scroll classes for history-load pixel correction ───
+/// Global debug log — accessible from other files for logging.
+final List<String> globalDebugLog = [];
+Stopwatch? globalDebugSw;
 
-/// Global debug log list — shared with the widget for logging from
-/// inside applyContentDimensions (where we don't have ref access).
-final List<String> _globalDebugLog = [];
-Stopwatch? _globalDebugSw;
+/// Append a debug log entry from outside the widget.
+void addDebugLog(String msg) {
+  globalDebugSw ??= Stopwatch()..start();
+  final t = globalDebugSw!.elapsedMilliseconds;
+  globalDebugLog.add('${t}ms $msg');
+  if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
+}
+
+// ─── Custom scroll classes for history-load pixel correction ───
 
 class _HistoryAwareScrollPosition extends ScrollPositionWithSingleContext {
   _HistoryAwareScrollPosition({
@@ -66,9 +73,9 @@ class _HistoryAwareScrollPosition extends ScrollPositionWithSingleContext {
   }
 
   void _glog(String msg) {
-    final t = (_globalDebugSw ?? (Stopwatch()..start())).elapsedMilliseconds;
-    _globalDebugLog.add('${t}ms $msg');
-    if (_globalDebugLog.length > 10000) _globalDebugLog.removeAt(0);
+    final t = (globalDebugSw ?? (Stopwatch()..start())).elapsedMilliseconds;
+    globalDebugLog.add('${t}ms $msg');
+    if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
   }
 }
 
@@ -155,6 +162,9 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   /// Web: useEffect([selectedTarget]) resets all flags.
   String? _lastTarget;
 
+  /// Debug: track WS connection state changes.
+  bool _dbgLastWs = false;
+
   // ─── Debug log ─────────────────────────────────────────────
   final List<String> _debugLog = [];
   final Stopwatch _debugSw = Stopwatch()..start();
@@ -164,7 +174,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   bool _dbgPushScheduled = false;
 
   void _dbgLog(String tag, {double? px, double? max, int? lines}) {
-    _globalDebugSw ??= _debugSw;
+    globalDebugSw ??= _debugSw;
     final t = _debugSw.elapsedMilliseconds;
     final p = px != null ? ' px=${px.toStringAsFixed(0)}' : '';
     final m = max != null ? ' mx=${max.toStringAsFixed(0)}' : '';
@@ -174,9 +184,9 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     final l = lines != null ? ' ln=$lines' : '';
     final entry = '${t}ms $tag$p$m$d$l';
     _debugLog.add(entry);
-    _globalDebugLog.add(entry);
+    globalDebugLog.add(entry);
     if (_debugLog.length > 10000) _debugLog.removeAt(0);
-    if (_globalDebugLog.length > 10000) _globalDebugLog.removeAt(0);
+    if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
     // Throttle: push to provider once per frame at most
     if (!_dbgPushScheduled) {
       _dbgPushScheduled = true;
@@ -184,7 +194,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         _dbgPushScheduled = false;
         if (mounted) {
           ref.read(debugLogProvider.notifier).state =
-              _globalDebugLog.join('\n');
+              globalDebugLog.join('\n');
         }
       });
     }
@@ -407,6 +417,14 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   @override
   Widget build(BuildContext context) {
     final outputState = ref.watch(outputProvider);
+    // Connect debug log callback
+    ref.read(outputProvider.notifier).debugLog = (msg) => _dbgLog(msg);
+    // Watch WS connection state for logging
+    final wsConnected = ref.watch(wsIsConnectedProvider);
+    if (wsConnected != _dbgLastWs) {
+      _dbgLog('WS:CONN $wsConnected');
+      _dbgLastWs = wsConnected;
+    }
     // Watch the selected target to detect changes.
     final currentTarget = ref.watch(selectedTargetProvider);
     if (_lastTarget != null && _lastTarget != currentTarget) {

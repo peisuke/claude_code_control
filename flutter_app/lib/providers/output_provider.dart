@@ -66,6 +66,9 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// immediately without waiting for the next WebSocket message.
   String _latestContent = '';
 
+  /// Debug log callback — set by the widget for diagnostics.
+  void Function(String)? debugLog;
+
   OutputNotifier(this._api, this._target) : super(const OutputState()) {
     _fetchInitialOutput();
   }
@@ -74,6 +77,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
     try {
       final output = await _api.getOutput(_target);
       _latestContent = output.content;
+      debugLog?.call('INIT ln=${output.content.split('\n').length}');
       state = state.copyWith(content: output.content, totalLoadedLines: 0);
     } catch (_) {
       // Will retry via WebSocket updates
@@ -81,10 +85,15 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   void onWebSocketMessage(TmuxOutput msg) {
+    final changed = msg.content != _latestContent;
     _latestContent = msg.content;
-    // Only update displayed content when user is at bottom.
     if (isAtBottom) {
+      if (changed) {
+        debugLog?.call('WS:UPD ln=${msg.content.split('\n').length}');
+      }
       state = state.copyWith(content: msg.content, totalLoadedLines: 0);
+    } else if (changed) {
+      debugLog?.call('WS:SKIP bot=false ln=${msg.content.split('\n').length}');
     }
   }
 

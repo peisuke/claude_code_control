@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
+import '../providers/connection_provider.dart';
 import '../providers/output_provider.dart';
 import '../providers/view_provider.dart';
 import '../providers/websocket_provider.dart';
+import '../services/websocket_service.dart' show WsConnectionState;
 import '../providers/file_provider.dart';
 import '../widgets/common/connection_status.dart';
 import '../widgets/common/settings_sheet.dart';
 import '../widgets/common/sidebar.dart';
-import '../widgets/terminal/terminal_output.dart';
+import '../widgets/terminal/terminal_output.dart' show TerminalOutput, addDebugLog;
 import '../widgets/terminal/command_input_area.dart';
 import '../widgets/terminal/tmux_keyboard.dart';
 import '../widgets/terminal/choice_buttons.dart';
@@ -25,13 +27,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  /// Guard: prevent didChangeAppLifecycleState(resumed) from firing on
+  /// initial launch. Only reconnect after a genuine pause→resume cycle.
+  /// Web: useAppVisibility only fires on visibilitychange, not on page load.
+  bool _wasPaused = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _connectWebSocket();
-    });
   }
 
   @override
@@ -42,7 +46,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    // Web: useAppVisibility → onAppResume → wsResetAndReconnect()
+    if (state == AppLifecycleState.resumed && _wasPaused) {
+      _wasPaused = false;
       Future.delayed(
         const Duration(milliseconds: AppConfig.appResumeReconnectDelayMs),
         () {
@@ -53,12 +59,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         },
       );
     } else if (state == AppLifecycleState.paused) {
+      _wasPaused = true;
       ref.read(websocketServiceProvider).disconnect();
     }
   }
 
+  /// Web: useAutoRefreshState — connect WS only when HTTP is up and WS
+  /// is not already connected or in the process of connecting.
   void _connectWebSocket() {
     final wsService = ref.read(websocketServiceProvider);
+    // Skip if already connected or connecting
+    if (wsService.currentState != WsConnectionState.disconnected) {
+      addDebugLog('GATE:SKIP ws=${wsService.currentState}');
+      return;
+    }
     final target = ref.read(selectedTargetProvider);
     wsService.setTarget(target);
     wsService.connect();
@@ -74,6 +88,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Web: useAutoRefreshState — gate WS connection on HTTP connectivity.
+    // Only connect WS after HTTP health check succeeds.
+    ref.listen<bool>(connectionProvider, (prev, next) {
+      addDebugLog('HTTP:CHK prev=$prev next=$next');
+      if (next && !(prev ?? false)) {
+        addDebugLog('HTTP:OK → WS connect');
+        _connectWebSocket();
+      }
+    });
+
     final viewMode = ref.watch(viewProvider);
     ref.watch(selectedTargetProvider);
     final fileState = ref.watch(fileProvider);

@@ -43,10 +43,16 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(AppConfig.keyBackendUrl, url);
 
+    // Keep AppConfig in sync for any code that reads backendUrl directly
+    AppConfig.setSavedBackendUrl(url);
+
+    // Strip trailing slash(es) to avoid double-slash in URL paths
+    final normalizedUrl = url.replaceAll(RegExp(r'/+$'), '');
+
     // Update services
-    ref.read(apiServiceProvider).updateBaseUrl('$url/api');
+    ref.read(apiServiceProvider).updateBaseUrl('$normalizedUrl/api');
     ref.read(websocketServiceProvider).updateBaseUrl(
-        '${url.replaceFirst('http', 'ws')}/api/tmux/ws');
+        '${normalizedUrl.replaceFirst('http', 'ws')}/api/tmux/ws');
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
