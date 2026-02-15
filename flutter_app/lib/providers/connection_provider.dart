@@ -14,6 +14,7 @@ final connectionProvider =
 class ConnectionNotifier extends StateNotifier<bool> {
   final ApiService _api;
   Timer? _checkTimer;
+  bool _checking = false;
 
   ConnectionNotifier(this._api) : super(false) {
     _startChecking();
@@ -25,6 +26,8 @@ class ConnectionNotifier extends StateNotifier<bool> {
   }
 
   Future<void> _check() async {
+    if (_checking) return;
+    _checking = true;
     try {
       final result = await _api.testConnection();
       if (!mounted) return;
@@ -32,6 +35,8 @@ class ConnectionNotifier extends StateNotifier<bool> {
     } catch (_) {
       if (!mounted) return;
       state = false;
+    } finally {
+      _checking = false;
     }
   }
 
