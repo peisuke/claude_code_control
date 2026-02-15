@@ -34,7 +34,7 @@ class OutputState {
 final selectedTargetProvider = StateProvider<String>((ref) {
   // Persist whenever the selected target changes.
   ref.listenSelf((prev, next) {
-    if (prev != next && next.isNotEmpty) {
+    if (prev != next) {
       SharedPreferences.getInstance().then((prefs) {
         prefs.setString(AppConfig.keySelectedTarget, next);
       });

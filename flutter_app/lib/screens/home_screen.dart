@@ -54,6 +54,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         const Duration(milliseconds: AppConfig.appResumeReconnectDelayMs),
         () {
           if (mounted) {
+            final target = ref.read(selectedTargetProvider);
+            if (target.isEmpty) return;
             ref.read(websocketServiceProvider).resetAndReconnect();
             ref.read(outputProvider.notifier).refresh();
           }

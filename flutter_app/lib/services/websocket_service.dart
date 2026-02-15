@@ -69,7 +69,8 @@ class WebSocketService {
     _shouldReconnect = true;
     _isManualDisconnect = false;
 
-    if (wasConnected || hadPendingReconnect || wasManuallyDisconnected) {
+    if (target.isNotEmpty &&
+        (wasConnected || hadPendingReconnect || wasManuallyDisconnected)) {
       connect();
     }
   }

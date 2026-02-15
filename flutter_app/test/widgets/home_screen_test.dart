@@ -247,8 +247,13 @@ void main() {
 
         ws.resetTracking();
 
-        // Simulate app resume
+        // Simulate pause→resume cycle (_wasPaused guard requires prior pause)
         final state = tester.state(find.byType(HomeScreen));
+        (state as WidgetsBindingObserver)
+            .didChangeAppLifecycleState(AppLifecycleState.paused);
+        await tester.pump();
+        ws.resetTracking();
+
         (state as WidgetsBindingObserver)
             .didChangeAppLifecycleState(AppLifecycleState.resumed);
 
