@@ -15,12 +15,16 @@ final debugLogProvider = StateProvider<String>((ref) => '');
 final List<String> globalDebugLog = [];
 Stopwatch? globalDebugSw;
 
+/// Callback set by the widget to push log updates to the UI.
+void Function()? _onDebugLogAdded;
+
 /// Append a debug log entry from outside the widget.
 void addDebugLog(String msg) {
   globalDebugSw ??= Stopwatch()..start();
   final t = globalDebugSw!.elapsedMilliseconds;
   globalDebugLog.add('${t}ms $msg');
   if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
+  _onDebugLogAdded?.call();
 }
 
 // ─── Custom scroll classes for history-load pixel correction ───
@@ -162,14 +166,9 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   /// Web: useEffect([selectedTarget]) resets all flags.
   String? _lastTarget;
 
-  /// Debug: track WS connection state changes.
-  bool _dbgLastWs = false;
-
   // ─── Debug log ─────────────────────────────────────────────
   final List<String> _debugLog = [];
   final Stopwatch _debugSw = Stopwatch()..start();
-  double _dbgPrevPx = -1;
-  double _dbgPrevMax = -1;
   int _dbgPrevLines = -1;
   bool _dbgPushScheduled = false;
 
@@ -187,7 +186,12 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     globalDebugLog.add(entry);
     if (_debugLog.length > 10000) _debugLog.removeAt(0);
     if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
-    // Throttle: push to provider once per frame at most
+    _scheduleLogPush();
+  }
+
+  /// Throttled push of globalDebugLog → debugLogProvider (once per frame).
+  /// Called from both _dbgLog (widget-internal) and addDebugLog (external).
+  void _scheduleLogPush() {
     if (!_dbgPushScheduled) {
       _dbgPushScheduled = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -206,10 +210,14 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Register callback so addDebugLog() from external files (e.g.
+    // terminal_resize_provider) also triggers UI updates.
+    _onDebugLogAdded = _scheduleLogPush;
   }
 
   @override
   void dispose() {
+    _onDebugLogAdded = null;
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -242,15 +250,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     final isContentChange =
         (position.maxScrollExtent - _lastMaxScrollExtent).abs() > 0.5;
     _lastMaxScrollExtent = position.maxScrollExtent;
-
-    // Log when px or max changed
-    if (position.pixels != _dbgPrevPx ||
-        position.maxScrollExtent != _dbgPrevMax) {
-      _dbgLog(isContentChange ? 'CNT' : 'SCR',
-          px: position.pixels, max: position.maxScrollExtent);
-      _dbgPrevPx = position.pixels;
-      _dbgPrevMax = position.maxScrollExtent;
-    }
 
     // Web: "Always track scroll position intent, even during
     //        content changes" — but in Flutter, content-change
@@ -326,9 +325,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
       }
 
       _isAutoScrolling = true;
-      _dbgLog('AUTO',
-          px: _scrollController.position.maxScrollExtent,
-          max: _scrollController.position.maxScrollExtent);
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       // Update _lastMaxScrollExtent so the next _onScroll doesn't
       // see the jumpTo as a content change.
@@ -417,14 +413,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   @override
   Widget build(BuildContext context) {
     final outputState = ref.watch(outputProvider);
-    // Connect debug log callback
-    ref.read(outputProvider.notifier).debugLog = (msg) => _dbgLog(msg);
-    // Watch WS connection state for logging
-    final wsConnected = ref.watch(wsIsConnectedProvider);
-    if (wsConnected != _dbgLastWs) {
-      _dbgLog('WS:CONN $wsConnected');
-      _dbgLastWs = wsConnected;
-    }
     // Watch the selected target to detect changes.
     final currentTarget = ref.watch(selectedTargetProvider);
     if (_lastTarget != null && _lastTarget != currentTarget) {
@@ -444,12 +432,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
     // Debug: log build with line count changes
     if (lines.length != _dbgPrevLines) {
-      final hasPos = _scrollController.hasClients &&
-          _scrollController.position.hasContentDimensions;
-      _dbgLog(isHistoryLoad ? 'BLD:HIST' : 'BLD',
-          px: hasPos ? _scrollController.position.pixels : null,
-          max: hasPos ? _scrollController.position.maxScrollExtent : null,
-          lines: lines.length);
+      _dbgLog('BLD', lines: lines.length);
       _dbgPrevLines = lines.length;
     }
 
@@ -460,9 +443,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         if (_scrollController.hasClients) {
           _lastMaxScrollExtent = _scrollController.position.maxScrollExtent;
           _previousPixels = _scrollController.position.pixels;
-          _dbgLog('POST',
-              px: _scrollController.position.pixels,
-              max: _scrollController.position.maxScrollExtent);
         }
       });
     } else if (!_userScrolledUp &&
@@ -488,6 +468,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         // #27: only call resize when constraints actually change.
         if (constraints.maxWidth != _lastConstraintW ||
             constraints.maxHeight != _lastConstraintH) {
+          _dbgLog('LB ${constraints.maxWidth.toStringAsFixed(0)}x${constraints.maxHeight.toStringAsFixed(0)}');
           _lastConstraintW = constraints.maxWidth;
           _lastConstraintH = constraints.maxHeight;
           ref.read(terminalResizeProvider.notifier).onContainerResize(

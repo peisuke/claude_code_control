@@ -5,8 +5,6 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/app_config.dart';
 import '../models/tmux_output.dart';
-import '../widgets/terminal/terminal_output.dart' show addDebugLog;
-
 enum WsConnectionState { disconnected, connecting, connected }
 
 /// Factory type for creating WebSocket channels (injectable for testing).
@@ -146,14 +144,12 @@ class WebSocketService {
     _reconnectTimer = null;
 
     _setState(WsConnectionState.connecting);
-    addDebugLog('WS:TRY url=$_url');
 
     try {
       _channel = _channelFactory != null
           ? _channelFactory!(Uri.parse(_url))
           : WebSocketChannel.connect(Uri.parse(_url));
       await _channel!.ready.timeout(const Duration(seconds: 10));
-      addDebugLog('WS:READY ok');
 
       _reconnectAttempts = 0;
       _shouldReconnect = true;
@@ -214,12 +210,9 @@ class WebSocketService {
           }
         },
       );
-    } catch (e) {
-      addDebugLog('WS:ERR $e');
+    } catch (_) {
       _setState(WsConnectionState.disconnected);
       if (_shouldReconnect && !_isManualDisconnect) {
-        final delay = calculateReconnectDelay();
-        addDebugLog('WS:RETRY #$_reconnectAttempts in ${delay}ms');
         _scheduleReconnect();
       }
     }

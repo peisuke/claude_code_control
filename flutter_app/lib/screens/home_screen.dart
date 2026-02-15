@@ -10,7 +10,7 @@ import '../providers/file_provider.dart';
 import '../widgets/common/connection_status.dart';
 import '../widgets/common/settings_sheet.dart';
 import '../widgets/common/sidebar.dart';
-import '../widgets/terminal/terminal_output.dart' show TerminalOutput, addDebugLog;
+import '../widgets/terminal/terminal_output.dart' show TerminalOutput;
 import '../widgets/terminal/command_input_area.dart';
 import '../widgets/terminal/tmux_keyboard.dart';
 import '../widgets/terminal/choice_buttons.dart';
@@ -69,10 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void _connectWebSocket() {
     final wsService = ref.read(websocketServiceProvider);
     // Skip if already connected or connecting
-    if (wsService.currentState != WsConnectionState.disconnected) {
-      addDebugLog('GATE:SKIP ws=${wsService.currentState}');
-      return;
-    }
+    if (wsService.currentState != WsConnectionState.disconnected) return;
     final target = ref.read(selectedTargetProvider);
     wsService.setTarget(target);
     wsService.connect();
@@ -91,9 +88,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Web: useAutoRefreshState — gate WS connection on HTTP connectivity.
     // Only connect WS after HTTP health check succeeds.
     ref.listen<bool>(connectionProvider, (prev, next) {
-      addDebugLog('HTTP:CHK prev=$prev next=$next');
       if (next && !(prev ?? false)) {
-        addDebugLog('HTTP:OK → WS connect');
         _connectWebSocket();
       }
     });

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../services/api_service.dart';
+import '../widgets/terminal/terminal_output.dart' show addDebugLog;
 import 'connection_provider.dart';
 import 'output_provider.dart';
 
@@ -62,6 +63,7 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
 
     if (state != newSize) {
       state = newSize;
+      addDebugLog('RSZ ${newSize.cols}x${newSize.rows} t=$_target');
       _sendResize(newSize);
     }
   }
@@ -69,8 +71,11 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
   Future<void> _sendResize(TerminalSize size) async {
     try {
       await _api.resizePane(_target, size.cols, size.rows);
-    } catch (_) {
-      // ignore
+      addDebugLog('RSZ:OK ${size.cols}x${size.rows}');
+    } catch (e) {
+      addDebugLog('RSZ:ERR $e');
+      // Web: lastSizeRef.current = previousSize — reset so retry works
+      state = null;
     }
   }
 
