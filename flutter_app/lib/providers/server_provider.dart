@@ -139,16 +139,20 @@ class ServerNotifier extends StateNotifier<ServerState> {
       return;
     }
 
-    if (state.urls.contains(trimmed)) return;
+    // Normalize: keep only scheme + authority (host:port) to prevent
+    // double /api when _applyConnection appends /api.
+    final normalized = '${uri.scheme}://${uri.authority}';
 
-    state = state.copyWith(urls: [...state.urls, trimmed]);
+    if (state.urls.contains(normalized)) return;
+
+    state = state.copyWith(urls: [...state.urls, normalized]);
     await _saveUrls();
 
     // Immediately check health of the new URL
-    final healthy = await _healthChecker(trimmed);
+    final healthy = await _healthChecker(normalized);
     if (!mounted) return;
     final newMap = Map<String, ServerHealthStatus>.from(state.healthMap);
-    newMap[trimmed] =
+    newMap[normalized] =
         healthy ? ServerHealthStatus.healthy : ServerHealthStatus.unhealthy;
     state = state.copyWith(healthMap: newMap);
   }

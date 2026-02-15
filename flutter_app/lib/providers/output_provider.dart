@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/tmux_output.dart';
 import '../services/api_service.dart';
@@ -30,7 +31,17 @@ class OutputState {
   }
 }
 
-final selectedTargetProvider = StateProvider<String>((ref) => 'default');
+final selectedTargetProvider = StateProvider<String>((ref) {
+  // Persist whenever the selected target changes.
+  ref.listenSelf((prev, next) {
+    if (prev != next && next.isNotEmpty) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString(AppConfig.keySelectedTarget, next);
+      });
+    }
+  });
+  return AppConfig.savedSelectedTarget;
+});
 
 final outputProvider =
     StateNotifierProvider<OutputNotifier, OutputState>((ref) {

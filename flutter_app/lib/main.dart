@@ -18,6 +18,10 @@ void main() async {
     AppConfig.setSavedBackendUrl(prefs.getString(AppConfig.keyBackendUrl));
   }
 
+  // Load saved selected target before providers initialize.
+  AppConfig.setSavedSelectedTarget(
+      prefs.getString(AppConfig.keySelectedTarget));
+
   runApp(
     const ProviderScope(
       child: TmuxControlApp(),

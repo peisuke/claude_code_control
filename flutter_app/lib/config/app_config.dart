@@ -13,6 +13,16 @@ class AppConfig {
   /// Runtime override — set from SharedPreferences in main.dart.
   static String? _savedBackendUrl;
 
+  /// Saved selected tmux target — loaded in main.dart before runApp.
+  static String _savedSelectedTarget = 'default';
+  static void setSavedSelectedTarget(String? target) {
+    if (target != null && target.isNotEmpty) {
+      _savedSelectedTarget = target;
+    }
+  }
+
+  static String get savedSelectedTarget => _savedSelectedTarget;
+
   /// Call from main() before runApp() to apply the saved URL.
   static void setSavedBackendUrl(String? url) {
     _savedBackendUrl = url;
