@@ -36,6 +36,7 @@ class TerminalOutput extends ConsumerStatefulWidget {
 
 class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _terminalFocusNode = FocusNode();
 
   // ─── Flags matching web refs ──────────────────────────────
 
@@ -131,6 +132,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   @override
   void dispose() {
     _onDebugLogAdded = null;
+    _terminalFocusNode.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -273,6 +275,9 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         .read(websocketServiceProvider)
         .setRefreshRate(AppConfig.refreshIntervalFast);
 
+    // Steal focus from TextField to prevent keyboard from reopening.
+    _terminalFocusNode.requestFocus();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isTargetSwitching = false;
       _scrollToBottom(force: true);
@@ -326,8 +331,11 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
         return Stack(
           children: [
-            // #18: Listener for instant touch detection.
-            Listener(
+            // Focus target for stealing focus from TextField on target switch.
+            Focus(
+              focusNode: _terminalFocusNode,
+              child: // #18: Listener for instant touch detection.
+              Listener(
               onPointerDown: (_) => _userIsTouching = true,
               onPointerUp: (_) => _userIsTouching = false,
               onPointerCancel: (_) => _userIsTouching = false,
@@ -360,6 +368,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                   ),
                 ),
               ),
+            ),
             ),
             // Loading indicator
             if (outputState.isLoadingHistory)

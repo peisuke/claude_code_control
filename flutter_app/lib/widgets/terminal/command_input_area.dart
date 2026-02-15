@@ -128,7 +128,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                   maxLines: _expanded ? 20 : 8,
                   minLines: _expanded ? 20 : 8,
                   decoration: const InputDecoration(
-                    hintText: 'debug log',
+                    hintText: 'Enter message',
                     border: OutlineInputBorder(),
                     contentPadding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 8),
