@@ -169,7 +169,7 @@ class ServerNotifier extends StateNotifier<ServerState> {
     }
   }
 
-  void _applyConnection(String url) {
+  Future<void> _applyConnection(String url) async {
     final normalized = url.replaceAll(RegExp(r'/+$'), '');
     AppConfig.setSavedBackendUrl(url);
     _ref.read(apiServiceProvider).updateBaseUrl('$normalized/api');
@@ -177,13 +177,29 @@ class ServerNotifier extends StateNotifier<ServerState> {
     final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
     _ref.read(websocketServiceProvider).updateBaseUrl(
         '${uri.replace(scheme: wsScheme)}/api/tmux/ws');
-    // Reset target to default before reconnecting to avoid stale target on new server.
-    _ref.read(selectedTargetProvider.notifier).state = 'default';
     _ref.read(connectionProvider.notifier).testConnection();
-    _ref.read(websocketServiceProvider).resetAndReconnect();
     _ref.read(sessionProvider.notifier).reset();
-    _ref.read(sessionProvider.notifier).fetchHierarchy();
     _ref.read(fileProvider.notifier).reset();
+
+    // Fetch hierarchy first, then select a valid target before reconnecting WS.
+    await _ref.read(sessionProvider.notifier).fetchHierarchy();
+    if (!mounted) return;
+
+    final hierarchy = _ref.read(sessionProvider).hierarchy;
+    if (hierarchy != null && hierarchy.sessions.isNotEmpty) {
+      final firstSession = hierarchy.sessions.values.first;
+      final firstWindow = firstSession.windows.isNotEmpty
+          ? firstSession.windows.keys.first
+          : null;
+      final target = firstWindow != null
+          ? '${firstSession.name}:$firstWindow'
+          : firstSession.name;
+      _ref.read(selectedTargetProvider.notifier).state = target;
+    } else {
+      _ref.read(selectedTargetProvider.notifier).state = 'default';
+    }
+
+    _ref.read(websocketServiceProvider).resetAndReconnect();
   }
 
   Future<void> _saveUrls() async {
