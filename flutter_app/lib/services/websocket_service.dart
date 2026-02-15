@@ -54,6 +54,7 @@ class WebSocketService {
   void setTarget(String target) {
     if (_target == target) return;
     final wasConnected = _currentState == WsConnectionState.connected;
+    final hadPendingReconnect = _reconnectTimer != null;
 
     _stopHeartbeat();
     _stopConnectionCheck();
@@ -67,7 +68,7 @@ class WebSocketService {
     _shouldReconnect = true;
     _isManualDisconnect = false;
 
-    if (wasConnected) {
+    if (wasConnected || hadPendingReconnect) {
       connect();
     }
   }

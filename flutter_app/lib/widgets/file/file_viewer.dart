@@ -64,7 +64,7 @@ class FileViewer extends ConsumerWidget {
         ),
         // Content
         Expanded(
-          child: file.isImage
+          child: file.isImage && !file.path.toLowerCase().endsWith('.svg')
               ? _buildImageViewer(file.content)
               : _buildTextViewer(context, file.content),
         ),
