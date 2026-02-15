@@ -27,91 +27,6 @@ void addDebugLog(String msg) {
   _onDebugLogAdded?.call();
 }
 
-// ─── Custom scroll classes for history-load pixel correction ───
-
-class _HistoryAwareScrollPosition extends ScrollPositionWithSingleContext {
-  _HistoryAwareScrollPosition({
-    required super.physics,
-    required super.context,
-    super.initialPixels,
-    super.keepScrollOffset,
-    super.oldPosition,
-    super.debugLabel,
-  });
-
-  /// Distance from bottom to preserve across a history load.
-  double? _preserveDist;
-
-  void prepareForHistoryLoad() {
-    if (hasContentDimensions && _preserveDist == null) {
-      _preserveDist = maxScrollExtent - pixels;
-      _glog('PREP d=${_preserveDist!.toStringAsFixed(0)}'
-          ' px=${pixels.toStringAsFixed(0)}'
-          ' mx=${maxScrollExtent.toStringAsFixed(0)}');
-    }
-  }
-
-  @override
-  bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
-    if (_preserveDist != null) {
-      // Only consume when mx actually increased (new content loaded).
-      // Skip normal re-layouts where mx is unchanged.
-      final mxIncreased = hasContentDimensions &&
-          (maxScrollExtent - this.maxScrollExtent) > 100;
-      if (mxIncreased) {
-        final dist = _preserveDist!;
-        _preserveDist = null;
-        final oldPx = pixels;
-        final newPx = maxScrollExtent - dist;
-        _glog('ACD fix'
-            ' oldPx=${oldPx.toStringAsFixed(0)}'
-            ' newMx=${maxScrollExtent.toStringAsFixed(0)}'
-            ' dist=${dist.toStringAsFixed(0)}'
-            ' newPx=${newPx.toStringAsFixed(0)}');
-        if (newPx >= minScrollExtent && newPx <= maxScrollExtent) {
-          correctPixels(newPx);
-        }
-      }
-    }
-    return super.applyContentDimensions(minScrollExtent, maxScrollExtent);
-  }
-
-  void _glog(String msg) {
-    final t = (globalDebugSw ?? (Stopwatch()..start())).elapsedMilliseconds;
-    globalDebugLog.add('${t}ms $msg');
-    if (globalDebugLog.length > 10000) globalDebugLog.removeAt(0);
-  }
-}
-
-class _HistoryAwareScrollController extends ScrollController {
-  _HistoryAwareScrollController({
-    super.initialScrollOffset,
-    super.keepScrollOffset,
-  });
-
-  @override
-  ScrollPosition createScrollPosition(
-    ScrollPhysics physics,
-    ScrollContext context,
-    ScrollPosition? oldPosition,
-  ) {
-    return _HistoryAwareScrollPosition(
-      physics: physics,
-      context: context,
-      initialPixels: initialScrollOffset,
-      keepScrollOffset: keepScrollOffset,
-      oldPosition: oldPosition,
-      debugLabel: debugLabel,
-    );
-  }
-
-  void prepareForHistoryLoad() {
-    if (hasClients) {
-      (position as _HistoryAwareScrollPosition).prepareForHistoryLoad();
-    }
-  }
-}
-
 class TerminalOutput extends ConsumerStatefulWidget {
   const TerminalOutput({super.key});
 
@@ -120,8 +35,7 @@ class TerminalOutput extends ConsumerStatefulWidget {
 }
 
 class _TerminalOutputState extends ConsumerState<TerminalOutput> {
-  final _HistoryAwareScrollController _scrollController =
-      _HistoryAwareScrollController();
+  final ScrollController _scrollController = ScrollController();
 
   // ─── Flags matching web refs ──────────────────────────────
 
@@ -155,9 +69,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   /// For resize: only call provider when constraints change. (#27)
   double _lastConstraintW = 0;
   double _lastConstraintH = 0;
-
-  /// For history-load scroll preservation. (#5)
-  int _previousLineCount = 0;
 
   /// Web: isTargetSwitchingRef — prevents history loading during target change.
   bool _isTargetSwitching = false;
@@ -243,29 +154,21 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     final position = _scrollController.position;
 
     // ── #2/#21: detect content change ──
-    // Web: const scrollHeightDiff = Math.abs(
-    //         element.scrollHeight - lastScrollHeightRef.current);
-    //       const isContentChange = scrollHeightDiff > 100;
-    //       lastScrollHeightRef.current = element.scrollHeight;
     final isContentChange =
         (position.maxScrollExtent - _lastMaxScrollExtent).abs() > 0.5;
     _lastMaxScrollExtent = position.maxScrollExtent;
 
-    // Web: "Always track scroll position intent, even during
-    //        content changes" — but in Flutter, content-change
-    //        scroll events are NOT user-initiated, so we SKIP
-    //        intent tracking for them.  (This is the key fix.)
+    // In Flutter, content-change scroll events are NOT user-initiated,
+    // so we SKIP intent tracking for them.
     if (isContentChange) return;
 
     // ── #8: atBottom check ──
     final atBottom = _checkIfAtBottom();
 
     // ── #6: direction detection ──
-    final isScrollingUp = position.pixels < _previousPixels;
     _previousPixels = position.pixels;
 
     // ── #1: intent tracking ──
-    // Web: if (atBottom !== wasAtBottom) { ... }
     final wasAtBottom = !_userScrolledUp;
     if (atBottom != wasAtBottom) {
       _userScrolledUp = !atBottom;
@@ -283,33 +186,12 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
       // Trigger rebuild for FAB visibility.
       setState(() {});
     }
-
-    // ── #10 cont: history loading ──
-    // Web: if (isScrollingUp && element.scrollTop < SCROLL_THRESHOLD
-    //         && !isLoadingRef.current && !isTargetSwitchingRef.current)
-    if (isScrollingUp &&
-        position.pixels < AppConfig.scrollThreshold &&
-        !ref.read(outputProvider).isLoadingHistory &&
-        !_isTargetSwitching) {
-      // Save dist NOW, before content changes arrive
-      _scrollController.prepareForHistoryLoad();
-      ref.read(outputProvider.notifier).loadMoreHistory();
-    }
-
-    // Debug: rebuild on every scroll so overlay shows live values.
-    // TODO: remove together with the debug overlay.
-    setState(() {});
   }
 
   // ─── #9  scrollToBottom ───────────────────────────────────
-  /// Port of useScrollBasedOutput.scrollToBottom.
-  /// force=true: explicit user action (FAB tap, target switch).
-  /// force=false: auto-update when new content arrives.
   void _scrollToBottom({bool force = false}) {
     if (!_scrollController.hasClients) return;
 
-    // Web: if (!force && userScrolledUpRef.current) return;
-    // Flutter adds: _userIsTouching, _userScrollInProgress
     if (!force &&
         (_userScrolledUp || _userIsTouching || _userScrollInProgress)) {
       return;
@@ -317,8 +199,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      // Re-check at execution time (user may have started scrolling
-      // between scheduling and now).
       if (!force &&
           (_userScrolledUp || _userIsTouching || _userScrollInProgress)) {
         return;
@@ -326,8 +206,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
       _isAutoScrolling = true;
       _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      // Update _lastMaxScrollExtent so the next _onScroll doesn't
-      // see the jumpTo as a content change.
       _lastMaxScrollExtent = _scrollController.position.maxScrollExtent;
       _isAutoScrolling = false;
 
@@ -362,28 +240,19 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   }
 
   // ─── #19  _handleScrollNotification ───────────────────────
-  /// Detect user scroll lifecycle (drag start → fling end) via
-  /// the Flutter notification system.
+  /// Detect user scroll lifecycle (drag start → fling end).
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification) {
-      // dragDetails != null ⇒ user's finger initiated the scroll.
-      // null ⇒ programmatic or ballistic (fling continuation).
       if (notification.dragDetails != null) {
         _userScrollInProgress = true;
       }
     } else if (notification is ScrollEndNotification) {
-      // All motion stopped (including fling).
       _userScrollInProgress = false;
     }
-    return false; // Don't absorb — let child widgets still see it.
+    return false;
   }
 
-  // ─── Build ────────────────────────────────────────────────
-
   // ─── Target change detection ─────────────────────────────
-  /// Port of useScrollBasedOutput useEffect([selectedTarget]).
-  /// Resets all scroll flags and forces scroll to bottom when
-  /// the user switches to a different tmux target.
   void _resetForTargetChange() {
     _userScrolledUp = false;
     _userIsTouching = false;
@@ -391,29 +260,29 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     _isAutoScrolling = false;
     _lastMaxScrollExtent = 0;
     _previousPixels = 0;
-    _previousLineCount = 0;
     _lineCache.clear();
     _lastContent = '';
     _isTargetSwitching = true;
+    // Reset cached constraints so LayoutBuilder re-sends resize for new target.
+    _lastConstraintW = 0;
+    _lastConstraintH = 0;
 
-    // Tell the provider we're at bottom.
     ref.read(outputProvider.notifier).setScrollPosition(true);
     ref
         .read(websocketServiceProvider)
         .setRefreshRate(AppConfig.refreshIntervalFast);
 
-    // Web: requestAnimationFrame(() => { isTargetSwitchingRef.current = false; });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isTargetSwitching = false;
-      // Web: needsScrollToBottomRef — scroll to bottom once DOM settles.
       _scrollToBottom(force: true);
     });
   }
 
+  // ─── Build ────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final outputState = ref.watch(outputProvider);
-    // Watch the selected target to detect changes.
     final currentTarget = ref.watch(selectedTargetProvider);
     if (_lastTarget != null && _lastTarget != currentTarget) {
       _resetForTargetChange();
@@ -422,39 +291,19 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
     final lines = _splitLines(outputState.content);
 
-    // ── #5 / #11: history-load scroll preservation ──
-    // Detect: line count increased while user is scrolled up and
-    // not currently loading (i.e. load just completed).
-    final isHistoryLoad = lines.length > _previousLineCount &&
-        _previousLineCount > 0 &&
-        !outputState.isLoadingHistory &&
-        _userScrolledUp;
-
     // Debug: log build with line count changes
     if (lines.length != _dbgPrevLines) {
       _dbgLog('BLD', lines: lines.length);
       _dbgPrevLines = lines.length;
     }
 
-    if (isHistoryLoad) {
-      // Save dist before layout; applyContentDimensions corrects px.
-      _scrollController.prepareForHistoryLoad();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _lastMaxScrollExtent = _scrollController.position.maxScrollExtent;
-          _previousPixels = _scrollController.position.pixels;
-        }
-      });
-    } else if (!_userScrolledUp &&
+    // Auto-scroll when at bottom
+    if (!_userScrolledUp &&
         !_userIsTouching &&
         !_userScrollInProgress &&
         outputState.content.isNotEmpty) {
-      // #15: auto-scroll when at bottom
-      // Web: shouldAutoUpdate = !hasUserScrolledUp() || checkIsAtBottom()
-      //      if (shouldAutoUpdate) { setOutput(output); scrollToBottom(); }
       _scrollToBottom();
     }
-    _previousLineCount = lines.length;
 
     final fontSize = AppConfig.fontSizeLarge;
     final baseStyle = GoogleFonts.ubuntuMono(
@@ -497,6 +346,8 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                   clipBehavior: Clip.antiAlias,
                   child: ListView.builder(
                     controller: _scrollController,
+                    // Allow scrolling even when content fits viewport.
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(AppConfig.terminalPadding),
                     itemCount: lines.length,
                     itemBuilder: (context, index) {
@@ -535,7 +386,6 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                   child: const Icon(Icons.arrow_downward),
                 ),
               ),
-            // Debug overlay removed — logs go to CommandInputArea TextField.
           ],
         );
       },

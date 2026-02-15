@@ -115,9 +115,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         key: _scaffoldKey,
         appBar: AppBar(
           toolbarHeight: 48,
-          title: Text(
-            viewMode == ViewMode.tmux ? 'Tmux Controller' : 'Files',
-            style: const TextStyle(fontSize: 16),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                viewMode == ViewMode.tmux ? 'Tmux Controller' : 'Files',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const Text(
+                'build: 02/15 19:08',
+                style: TextStyle(fontSize: 9, color: Colors.grey),
+              ),
+            ],
           ),
           leading: IconButton(
             icon: const Icon(Icons.menu),
