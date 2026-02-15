@@ -4,6 +4,7 @@ import '../../models/tmux_session.dart';
 import '../../providers/output_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/websocket_provider.dart';
+import '../../utils/tmux_utils.dart';
 import 'delete_confirmation_dialog.dart';
 
 class SessionTreeView extends ConsumerStatefulWidget {
@@ -129,7 +130,7 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                   child: Text(
                     sessionName,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: selectedTarget.startsWith(sessionName)
+                      fontWeight: TmuxUtils.parseTarget(selectedTarget).session == sessionName
                           ? FontWeight.bold
                           : FontWeight.normal,
                     ),
