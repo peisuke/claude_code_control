@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../providers/output_provider.dart';
 import '../../providers/terminal_resize_provider.dart';
 import '../../providers/websocket_provider.dart';
+import '../../services/websocket_service.dart' show WsConnectionState;
 import '../../utils/ansi_parser.dart';
 
 /// Debug log shared with CommandInputArea's TextField.
@@ -123,6 +124,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   // ─── Lifecycle ────────────────────────────────────────────
 
   ProviderSubscription<String>? _targetSubscription;
+  ProviderSubscription<AsyncValue<WsConnectionState>>? _wsSubscription;
 
   @override
   void initState() {
@@ -143,10 +145,23 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
       },
       fireImmediately: true,
     );
+
+    // Retry pending resize when WebSocket reconnects.
+    _wsSubscription = ref.listenManual<AsyncValue<WsConnectionState>>(
+      wsConnectionStateProvider,
+      (previous, next) {
+        final wasConnected = previous?.valueOrNull == WsConnectionState.connected;
+        final isConnected = next.valueOrNull == WsConnectionState.connected;
+        if (!wasConnected && isConnected) {
+          ref.read(terminalResizeProvider.notifier).retrySend();
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _wsSubscription?.close();
     _targetSubscription?.close();
     _onDebugLogAddedCallbacks.remove(_scheduleLogPush);
     _terminalFocusNode.dispose();

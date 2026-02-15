@@ -42,6 +42,9 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
     });
   }
 
+  /// Last desired size — kept even after send failure so retry can re-send.
+  TerminalSize? _pendingSize;
+
   void _calculateAndSend(double width, double height, double fontSize) {
     if (width <= 0 || height <= 0) return;
 
@@ -63,8 +66,18 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
 
     if (state != newSize) {
       state = newSize;
+      _pendingSize = newSize;
       addDebugLog('RSZ ${newSize.cols}x${newSize.rows} t=$_target');
       _sendResize(newSize);
+    }
+  }
+
+  /// Retry sending the last calculated size (e.g. after reconnect).
+  void retrySend() {
+    final size = _pendingSize;
+    if (size != null) {
+      addDebugLog('RSZ:RETRY ${size.cols}x${size.rows} t=$_target');
+      _sendResize(size);
     }
   }
 
@@ -72,11 +85,12 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
     try {
       await _api.resizePane(_target, size.cols, size.rows);
       if (!mounted) return;
+      _pendingSize = null;
       addDebugLog('RSZ:OK ${size.cols}x${size.rows}');
     } catch (e) {
       if (!mounted) return;
+      // _pendingSize kept for retry on reconnect
       addDebugLog('RSZ:ERR $e');
-      // Web: lastSizeRef.current = previousSize — reset so retry works
       state = null;
     }
   }

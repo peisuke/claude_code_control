@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../models/file_node.dart';
 import '../../providers/file_provider.dart';
 
 class FileViewer extends ConsumerWidget {
@@ -64,12 +65,30 @@ class FileViewer extends ConsumerWidget {
         ),
         // Content
         Expanded(
-          child: file.isImage && !file.path.toLowerCase().endsWith('.svg')
-              ? _buildImageViewer(file.content)
-              : _buildTextViewer(context, file.content),
+          child: _buildContentViewer(context, file),
         ),
       ],
     );
+  }
+
+  Widget _buildContentViewer(BuildContext context, FileContentResponse file) {
+    final isSvg = file.path.toLowerCase().endsWith('.svg');
+
+    if (file.isImage && !isSvg) {
+      return _buildImageViewer(file.content);
+    }
+
+    // SVG or image with base64-encoded content: decode to text for display.
+    if (file.isImage && isSvg) {
+      try {
+        final decoded = utf8.decode(base64Decode(file.content));
+        return _buildTextViewer(context, decoded);
+      } catch (_) {
+        return _buildTextViewer(context, file.content);
+      }
+    }
+
+    return _buildTextViewer(context, file.content);
   }
 
   Widget _buildImageViewer(String base64Content) {
