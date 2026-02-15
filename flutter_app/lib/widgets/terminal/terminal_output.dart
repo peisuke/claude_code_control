@@ -370,14 +370,15 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
               // #19: NotificationListener for fling lifecycle.
               child: NotificationListener<ScrollNotification>(
                 onNotification: _handleScrollNotification,
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.terminalBackground,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ListView.builder(
+                child: SelectionArea(
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.terminalBackground,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ListView.builder(
                     controller: _scrollController,
                     reverse: true,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -394,6 +395,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                       );
                     },
                   ),
+                ),
                 ),
               ),
             ),
