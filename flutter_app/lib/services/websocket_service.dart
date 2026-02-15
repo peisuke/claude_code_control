@@ -239,8 +239,8 @@ class WebSocketService {
   void _scheduleReconnect() {
     // Cancel any existing timer to prevent duplicate reconnect races.
     _reconnectTimer?.cancel();
-    _reconnectAttempts++;
     final delay = calculateReconnectDelay();
+    _reconnectAttempts++;
 
     _reconnectTimer = Timer(Duration(milliseconds: delay), () {
       if (_shouldReconnect && !_isManualDisconnect) {

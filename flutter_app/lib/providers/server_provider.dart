@@ -195,6 +195,7 @@ class ServerNotifier extends StateNotifier<ServerState> {
           ? '${firstSession.name}:$firstWindow'
           : firstSession.name;
       _ref.read(selectedTargetProvider.notifier).state = target;
+      _ref.read(websocketServiceProvider).setTarget(target);
       _ref.read(websocketServiceProvider).resetAndReconnect();
     } else {
       // No sessions — disconnect WS and clear target.
