@@ -121,7 +121,7 @@ class ServerNotifier extends StateNotifier<ServerState> {
     newUrls.insert(0, selected);
     state = state.copyWith(urls: newUrls);
     await _saveUrls();
-    _applyConnection(selected);
+    await _applyConnection(selected);
   }
 
   /// Add a new URL to the end of the list.
@@ -139,9 +139,13 @@ class ServerNotifier extends StateNotifier<ServerState> {
       return;
     }
 
-    // Normalize: keep only scheme + authority (host:port) to prevent
-    // double /api when _applyConnection appends /api.
-    final normalized = '${uri.scheme}://${uri.authority}';
+    // Strip trailing /api (and trailing slashes) to prevent double /api
+    // when _applyConnection appends /api. Preserve other path prefixes
+    // for path-based deployments (e.g. https://host/tmux-control).
+    final cleanPath = uri.path
+        .replaceAll(RegExp(r'/api/?$'), '')
+        .replaceAll(RegExp(r'/+$'), '');
+    final normalized = '${uri.scheme}://${uri.authority}$cleanPath';
 
     if (state.urls.contains(normalized)) return;
 
