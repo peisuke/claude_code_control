@@ -74,6 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Skip if already connected or connecting
     if (wsService.currentState != WsConnectionState.disconnected) return;
     final target = ref.read(selectedTargetProvider);
+    if (target.isEmpty) return;
     wsService.setTarget(target);
     wsService.connect();
   }
