@@ -102,17 +102,19 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
   /// Throttled push of globalDebugLog → debugLogProvider (once per frame).
   /// Called from both _dbgLog (widget-internal) and addDebugLog (external).
+  /// Currently disabled — logs still accumulate in globalDebugLog but
+  /// are not pushed to the UI. Re-enable by uncommenting the body.
   void _scheduleLogPush() {
-    if (!_dbgPushScheduled) {
-      _dbgPushScheduled = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _dbgPushScheduled = false;
-        if (mounted) {
-          ref.read(debugLogProvider.notifier).state =
-              globalDebugLog.join('\n');
-        }
-      });
-    }
+    // if (!_dbgPushScheduled) {
+    //   _dbgPushScheduled = true;
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     _dbgPushScheduled = false;
+    //     if (mounted) {
+    //       ref.read(debugLogProvider.notifier).state =
+    //           globalDebugLog.join('\n');
+    //     }
+    //   });
+    // }
   }
 
   // ─── Lifecycle ────────────────────────────────────────────

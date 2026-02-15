@@ -123,7 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 style: const TextStyle(fontSize: 16),
               ),
               const Text(
-                'build: 02/15 19:20',
+                'build: 02/15 19:45',
                 style: TextStyle(fontSize: 9, color: Colors.grey),
               ),
             ],

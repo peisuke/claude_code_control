@@ -144,7 +144,12 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
   Future<void> refresh() async {
     try {
-      final output = await _api.getOutput(_target);
+      final lines = AppConfig.minRows * 3;
+      final output = await _api.getOutput(
+        _target,
+        includeHistory: true,
+        lines: lines,
+      );
       _historyPrefix = '';
       _latestContent = output.content;
       isAtBottom = true;
