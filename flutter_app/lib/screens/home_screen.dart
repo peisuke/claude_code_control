@@ -7,6 +7,7 @@ import '../providers/view_provider.dart';
 import '../providers/websocket_provider.dart';
 import '../services/websocket_service.dart' show WsConnectionState;
 import '../providers/file_provider.dart';
+import '../utils/choice_detector.dart';
 import '../widgets/common/connection_status.dart';
 import '../widgets/common/settings_sheet.dart';
 import '../widgets/common/sidebar.dart';
@@ -123,7 +124,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 style: const TextStyle(fontSize: 16),
               ),
               const Text(
-                'build: 02/15 20:14',
+                'build: 02/15 20:30',
                 style: TextStyle(fontSize: 9, color: Colors.grey),
               ),
             ],
@@ -161,6 +162,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// │ CommandInputArea         │
   /// └──────────────────────────┘
   Widget _buildTmuxView() {
+    final outputState = ref.watch(outputProvider);
+    final choices = ChoiceDetector.detect(outputState.content);
+    final hasChoices = choices.isNotEmpty;
+
     return Column(
       children: [
         // Terminal output section (flex: 1)
@@ -168,13 +173,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Column(
             children: [
               const Expanded(child: TerminalOutput()),
-              const TmuxKeyboard(),
+              if (!hasChoices) const TmuxKeyboard(),
             ],
           ),
         ),
-        // Command input section (flex: none)
-        const ChoiceButtons(),
-        const CommandInputArea(),
+        // Web: choices present → show only ChoiceButtons, hide input area
+        if (hasChoices)
+          const ChoiceButtons()
+        else
+          const CommandInputArea(),
       ],
     );
   }

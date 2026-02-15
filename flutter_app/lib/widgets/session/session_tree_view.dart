@@ -197,8 +197,8 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
         InkWell(
           onTap: () {
             ref.read(selectedTargetProvider.notifier).state = target;
-            // Set WebSocket target
             ref.read(websocketServiceProvider).setTarget(target);
+            Navigator.of(context).pop(); // Close drawer
           },
           child: Container(
             color: isSelected
@@ -252,6 +252,7 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
               onTap: () {
                 ref.read(selectedTargetProvider.notifier).state = paneTarget;
                 ref.read(websocketServiceProvider).setTarget(paneTarget);
+                Navigator.of(context).pop(); // Close drawer
               },
               child: Container(
                 color: isPaneSelected

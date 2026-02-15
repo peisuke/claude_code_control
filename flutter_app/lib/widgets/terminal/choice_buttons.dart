@@ -16,14 +16,19 @@ class ChoiceButtons extends ConsumerWidget {
 
     if (choices.isEmpty) return const SizedBox.shrink();
 
+    // Web: vertical Stack with spacing=1 (8px), buttons flex equally,
+    // outlined style, left-aligned text, min 44px height.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: choices.map((choice) {
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FilledButton.tonal(
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton(
                 onPressed: isConnected
                     ? () async {
                         final notifier = ref.read(commandProvider.notifier);
@@ -32,10 +37,13 @@ class ChoiceButtons extends ConsumerWidget {
                         await notifier.sendEnter();
                       }
                     : null,
+                style: OutlinedButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                ),
                 child: Text(
                   '${choice.number}. ${choice.text}',
-                  textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ),

@@ -120,6 +120,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
           ref.read(fileProvider.notifier).navigateTo(node.path);
         } else {
           ref.read(fileProvider.notifier).fetchFileContent(node.path);
+          Navigator.of(context).pop(); // Close drawer
         }
       },
     );

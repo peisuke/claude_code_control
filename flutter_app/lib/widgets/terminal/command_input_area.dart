@@ -136,7 +136,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                   ),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontFamily: 'monospace',
-                        fontSize: 10,
+                        fontSize: 14,
                       ),
                   textInputAction: TextInputAction.newline,
                 ),
