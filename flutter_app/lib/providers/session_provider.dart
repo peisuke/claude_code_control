@@ -36,6 +36,11 @@ class SessionNotifier extends StateNotifier<SessionState> {
     fetchHierarchy();
   }
 
+  /// Clear session state (e.g. on server switch) so stale data is not shown.
+  void reset() {
+    state = const SessionState(isLoading: true);
+  }
+
   Future<void> fetchHierarchy() async {
     state = state.copyWith(isLoading: true, error: null);
     try {

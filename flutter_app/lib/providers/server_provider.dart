@@ -177,6 +177,7 @@ class ServerNotifier extends StateNotifier<ServerState> {
         '${uri.replace(scheme: wsScheme)}/api/tmux/ws');
     _ref.read(connectionProvider.notifier).testConnection();
     _ref.read(websocketServiceProvider).resetAndReconnect();
+    _ref.read(sessionProvider.notifier).reset();
     _ref.read(sessionProvider.notifier).fetchHierarchy();
   }
 
