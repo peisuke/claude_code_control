@@ -5,7 +5,7 @@ from typing import List
 class Settings(BaseSettings):
     app_name: str = "SSH Client API"
     debug: bool = False
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:3010"]
+    cors_origins: List[str] = ["*"]
 
     class Config:
         env_file = ".env"
