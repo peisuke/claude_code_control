@@ -39,7 +39,7 @@ up-backend:  ## Start backend-only container (no frontend build)
 	$(COMPOSE) --profile backend up -d --build backend
 
 down-backend:  ## Stop backend-only container
-	$(COMPOSE) --profile backend down
+	$(COMPOSE) --profile backend rm -sf backend
 
 logs-backend:  ## Follow backend-only container logs
 	$(COMPOSE) --profile backend logs -f backend
