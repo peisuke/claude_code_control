@@ -15,7 +15,7 @@ class TestLoadSettings:
 
     def test_load_settings_file_exists(self, tmp_path):
         """Test loading settings from existing file"""
-        settings_data = {"session_name": "test-session", "auto_create_session": True, "capture_history": True}
+        settings_data = {"session_name": "test-session", "capture_history": True}
         settings_file = tmp_path / "settings.json"
         settings_file.write_text(json.dumps(settings_data))
 
@@ -49,7 +49,7 @@ class TestSaveSettings:
 
     def test_save_settings_success(self, tmp_path):
         """Test saving settings successfully"""
-        settings = TmuxSettings(session_name="my-session", auto_create_session=True)
+        settings = TmuxSettings(session_name="my-session")
         settings_file = tmp_path / "settings.json"
 
         with patch("app.routers.settings.SETTINGS_FILE", str(settings_file)):
@@ -86,7 +86,6 @@ class TestSettingsEndpoints:
         """Test PUT /api/settings/"""
         new_settings = {
             "session_name": "updated-session",
-            "auto_create_session": True,
             "capture_history": False
         }
 
@@ -103,7 +102,6 @@ class TestSettingsEndpoints:
         """Test PUT /api/settings/ when save fails"""
         new_settings = {
             "session_name": "test",
-            "auto_create_session": False,
             "capture_history": True
         }
 

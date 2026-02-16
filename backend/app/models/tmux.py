@@ -9,7 +9,6 @@ class CommandRequest(BaseModel):
 
 class TmuxSettings(BaseModel):
     session_name: str = "default"
-    auto_create_session: bool = True
     capture_history: bool = True
 
 

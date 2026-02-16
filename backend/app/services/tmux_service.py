@@ -58,12 +58,6 @@ class TmuxService:
             process.returncode
         )
 
-    async def _ensure_session_exists(self, target: str) -> None:
-        """Ensure the session for the given target exists, creating it if needed."""
-        session_name = target.split(':')[0] if ':' in target else target
-        if not await self.session_exists(session_name):
-            await self.create_session(session_name)
-
     async def send_command(self, command: str, target: str = None) -> bool:
         """Send a command to tmux target (session, window, or pane)"""
         target = target or self.default_session
@@ -77,7 +71,6 @@ class TmuxService:
             return False
 
         try:
-            await self._ensure_session_exists(target)
             _, _, returncode = await self._execute_tmux_command(
                 ["tmux", "send-keys", "-t", target, command]
             )
@@ -95,7 +88,6 @@ class TmuxService:
             return False
 
         try:
-            await self._ensure_session_exists(target)
             _, _, returncode = await self._execute_tmux_command(
                 ["tmux", "send-keys", "-t", target, "Enter"]
             )
@@ -115,7 +107,6 @@ class TmuxService:
         rows = max(24, min(rows, 200))
 
         try:
-            await self._ensure_session_exists(target)
             _, stderr, returncode = await self._execute_tmux_command(
                 ["tmux", "resize-window", "-t", target, "-x", str(cols), "-y", str(rows)]
             )
