@@ -8,7 +8,6 @@ class CommandRequest(BaseModel):
 
 
 class TmuxSettings(BaseModel):
-    session_name: str = "default"
     capture_history: bool = True
 
 

@@ -12,7 +12,7 @@ export class TmuxUtils {
   /**
    * Parse tmux target format (session:window.pane)
    * @param target - Target string in format "session:window.pane"
-   * @param defaultSession - Default session name if not provided (defaults to 'default')
+   * @param defaultSession - Default session name if not provided (defaults to '')
    */
   static parseTarget(target: string, defaultSession: string = ''): { session: string; window?: string; pane?: string } {
     const parts = target.split(':');
