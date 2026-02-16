@@ -12,14 +12,14 @@ describe('TmuxAPI', () => {
   });
 
   describe('sendCommand', () => {
-    it('should send command with default target', async () => {
+    it('should send command with target', async () => {
       const mockResponse = { success: true, message: 'Command sent' };
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await tmuxAPI.sendCommand('ls -la');
+      const result = await tmuxAPI.sendCommand('ls -la', 'my-session');
 
       expect(mockFetch).toHaveBeenCalledWith('/api/tmux/send-command', {
         method: 'POST',
@@ -28,7 +28,7 @@ describe('TmuxAPI', () => {
         },
         body: JSON.stringify({
           command: 'ls -la',
-          target: 'default',
+          target: 'my-session',
         }),
       });
       expect(result).toEqual(mockResponse);
@@ -61,7 +61,7 @@ describe('TmuxAPI', () => {
         status: 500,
       });
 
-      await expect(tmuxAPI.sendCommand('ls')).rejects.toThrow('HTTP error! status: 500');
+      await expect(tmuxAPI.sendCommand('ls', 'my-session')).rejects.toThrow('HTTP error! status: 500');
     });
   });
 
@@ -73,9 +73,9 @@ describe('TmuxAPI', () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await tmuxAPI.sendEnter();
+      const result = await tmuxAPI.sendEnter('my-session');
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/tmux/send-enter?target=default', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/tmux/send-enter?target=my-session', {
         method: 'POST',
       });
       expect(result).toEqual(mockResponse);
@@ -101,7 +101,7 @@ describe('TmuxAPI', () => {
         status: 404,
       });
 
-      await expect(tmuxAPI.sendEnter()).rejects.toThrow('HTTP error! status: 404');
+      await expect(tmuxAPI.sendEnter('test')).rejects.toThrow('HTTP error! status: 404');
     });
   });
 
@@ -113,9 +113,9 @@ describe('TmuxAPI', () => {
         json: () => Promise.resolve(mockOutput),
       });
 
-      const result = await tmuxAPI.getOutput();
+      const result = await tmuxAPI.getOutput('my-session');
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/tmux/output?target=default');
+      expect(mockFetch).toHaveBeenCalledWith('/api/tmux/output?target=my-session');
       expect(result).toEqual(mockOutput);
     });
 
@@ -161,7 +161,7 @@ describe('TmuxAPI', () => {
         status: 503,
       });
 
-      await expect(tmuxAPI.getOutput()).rejects.toThrow('HTTP error! status: 503');
+      await expect(tmuxAPI.getOutput('test')).rejects.toThrow('HTTP error! status: 503');
     });
   });
 

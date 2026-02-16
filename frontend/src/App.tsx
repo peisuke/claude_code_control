@@ -8,9 +8,8 @@ import { tmuxAPI } from './services/api';
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  // Initialize with saved target or default
   const [selectedTarget, setSelectedTarget] = useState(() => {
-    return localStorage.getItem('tmux-selected-target') || 'default';
+    return localStorage.getItem('tmux-selected-target') || '';
   });
 
   // Check connection status on app load
@@ -42,6 +41,7 @@ function App() {
 
   const handleTargetChange = (target: string) => {
     setSelectedTarget(target);
+    localStorage.setItem('tmux-selected-target', target);
   };
 
   return (

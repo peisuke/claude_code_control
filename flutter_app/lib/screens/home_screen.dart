@@ -97,8 +97,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
+    // Connect WS when target changes (e.g., first session selected on fresh
+    // install where initial target is empty).
+    ref.listen<String>(selectedTargetProvider, (prev, next) {
+      if (next.isNotEmpty && ref.read(connectionProvider)) {
+        _connectWebSocket();
+      }
+    });
+
     final viewMode = ref.watch(viewProvider);
-    ref.watch(selectedTargetProvider);
     final fileState = ref.watch(fileProvider);
 
     return PopScope(

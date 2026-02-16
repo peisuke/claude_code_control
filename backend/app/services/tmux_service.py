@@ -30,7 +30,6 @@ def validate_tmux_name(name: str) -> bool:
 
 class TmuxService:
     def __init__(self):
-        self.default_session = "default"
         socket_path = os.environ.get("TMUX_SOCKET_PATH")
         if socket_path and not os.path.isabs(socket_path):
             logger.warning(f"TMUX_SOCKET_PATH must be absolute, ignoring: {socket_path}")
@@ -58,15 +57,8 @@ class TmuxService:
             process.returncode
         )
 
-    async def _ensure_session_exists(self, target: str) -> None:
-        """Ensure the session for the given target exists, creating it if needed."""
-        session_name = target.split(':')[0] if ':' in target else target
-        if not await self.session_exists(session_name):
-            await self.create_session(session_name)
-
     async def send_command(self, command: str, target: str = None) -> bool:
         """Send a command to tmux target (session, window, or pane)"""
-        target = target or self.default_session
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")
@@ -77,7 +69,6 @@ class TmuxService:
             return False
 
         try:
-            await self._ensure_session_exists(target)
             _, _, returncode = await self._execute_tmux_command(
                 ["tmux", "send-keys", "-t", target, command]
             )
@@ -88,14 +79,12 @@ class TmuxService:
 
     async def send_enter(self, target: str = None) -> bool:
         """Send Enter key to tmux target"""
-        target = target or self.default_session
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")
             return False
 
         try:
-            await self._ensure_session_exists(target)
             _, _, returncode = await self._execute_tmux_command(
                 ["tmux", "send-keys", "-t", target, "Enter"]
             )
@@ -115,7 +104,6 @@ class TmuxService:
         rows = max(24, min(rows, 200))
 
         try:
-            await self._ensure_session_exists(target)
             _, stderr, returncode = await self._execute_tmux_command(
                 ["tmux", "resize-window", "-t", target, "-x", str(cols), "-y", str(rows)]
             )
@@ -131,7 +119,6 @@ class TmuxService:
 
     async def get_output(self, target: str = None, include_history: bool = False, lines: int = None) -> str:
         """Get current tmux target output, optionally including scrollback history"""
-        target = target or self.default_session
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")

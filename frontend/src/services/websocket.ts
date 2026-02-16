@@ -19,7 +19,7 @@ export class WebSocketService {
   private onReconnectingCallback?: (attempt: number, maxAttempts: number) => void;
   private lastRefreshRate: number = 0.1;
 
-  constructor(target: string = 'default') {
+  constructor(target: string) {
     this.sessionName = target;
     // Use the same host as the current page, with WebSocket protocol
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

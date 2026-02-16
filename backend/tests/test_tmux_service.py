@@ -105,13 +105,13 @@ class TestTmuxService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_send_command_default_target(self, service, mock_subprocess):
+    async def test_send_command_no_target(self, service, mock_subprocess):
         mock_exec, mock_process = mock_subprocess
         mock_process.returncode = 0
 
         result = await service.send_command("ls")
 
-        assert result is True
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_send_enter_success(self, service, mock_subprocess):
@@ -367,33 +367,3 @@ class TestTmuxService:
         assert result["default"]["name"] == "default"
         assert "0" in result["default"]["windows"]
 
-    @pytest.mark.asyncio
-    async def test_ensure_session_exists_creates_session(self, service, mock_subprocess):
-        mock_exec, mock_process = mock_subprocess
-        mock_process.returncode = 0
-
-        with patch.object(service, 'session_exists', AsyncMock(return_value=False)):
-            with patch.object(service, 'create_session', AsyncMock(return_value=True)) as mock_create:
-                await service._ensure_session_exists("new-session")
-
-                mock_create.assert_called_once_with("new-session")
-
-    @pytest.mark.asyncio
-    async def test_ensure_session_exists_no_create_if_exists(self, service, mock_subprocess):
-        mock_exec, mock_process = mock_subprocess
-
-        with patch.object(service, 'session_exists', AsyncMock(return_value=True)):
-            with patch.object(service, 'create_session', AsyncMock()) as mock_create:
-                await service._ensure_session_exists("default")
-
-                mock_create.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_ensure_session_exists_parses_target(self, service, mock_subprocess):
-        mock_exec, mock_process = mock_subprocess
-
-        with patch.object(service, 'session_exists', AsyncMock(return_value=False)):
-            with patch.object(service, 'create_session', AsyncMock(return_value=True)) as mock_create:
-                await service._ensure_session_exists("mysession:0.0")
-
-                mock_create.assert_called_once_with("mysession")

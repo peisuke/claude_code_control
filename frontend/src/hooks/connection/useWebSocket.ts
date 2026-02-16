@@ -16,7 +16,7 @@ interface UseWebSocketReturn {
   error: string | null;
 }
 
-export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => {
+export const useWebSocket = (target: string): UseWebSocketReturn => {
   const [lastMessage, setLastMessage] = useState<TmuxOutput | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -26,6 +26,7 @@ export const useWebSocket = (target: string = 'default'): UseWebSocketReturn => 
   const wsRef = useRef<WebSocketService | null>(null);
 
   const connect = useCallback(() => {
+    if (!target) return;
     if (wsRef.current?.isConnected()) {
       return;
     }

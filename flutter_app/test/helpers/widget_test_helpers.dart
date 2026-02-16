@@ -9,6 +9,7 @@ import 'package:tmux_control/models/file_node.dart';
 import 'package:tmux_control/models/tmux_output.dart';
 import 'package:tmux_control/models/tmux_session.dart';
 import 'package:tmux_control/providers/connection_provider.dart';
+import 'package:tmux_control/providers/output_provider.dart';
 import 'package:tmux_control/providers/server_provider.dart';
 import 'package:tmux_control/providers/websocket_provider.dart';
 import 'package:tmux_control/services/api_service.dart';
@@ -53,13 +54,13 @@ class NoOpApiService extends ApiService {
 
   @override
   Future<ApiResponse> sendCommand(String command,
-      {String target = 'default'}) async {
+      {required String target}) async {
     sentCommands.add(command);
     return const ApiResponse(success: true, message: '');
   }
 
   @override
-  Future<ApiResponse> sendEnter({String target = 'default'}) async {
+  Future<ApiResponse> sendEnter({required String target}) async {
     sentEnters.add(target);
     return const ApiResponse(success: true, message: '');
   }
@@ -184,6 +185,7 @@ Widget buildTestWidget(
   bool httpConnected = true,
   bool wsConnected = true,
   String outputContent = '',
+  String selectedTarget = 'default',
   TmuxHierarchy hierarchy = const TmuxHierarchy(sessions: {}),
   List<FileNode> fileTree = const [],
   String fileTreePath = '/',
@@ -200,6 +202,7 @@ Widget buildTestWidget(
   return ProviderScope(
     overrides: [
       apiServiceProvider.overrideWithValue(mockApi),
+      selectedTargetProvider.overrideWith((ref) => selectedTarget),
       // Override connectionProvider to prevent Timer.periodic(5s) leak.
       connectionProvider.overrideWith((ref) {
         return ConnectionNotifier(mockApi);

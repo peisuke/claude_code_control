@@ -64,7 +64,7 @@ void main() {
 
         expect(service.currentState, WsConnectionState.disconnected);
         expect(service.reconnectAttempts, 0);
-        expect(service.target, 'default');
+        expect(service.target, '');
 
         service.dispose();
       });

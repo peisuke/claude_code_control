@@ -79,16 +79,16 @@ void main() {
     // ── sendCommand ──────────────────────────────────────────
 
     group('sendCommand', () {
-      // Port of: "should send command with default target"
-      test('should send command with default target', () async {
+      // Port of: "should send command with target"
+      test('should send command with target', () async {
         mock.mockResolve({'success': true, 'message': 'Command sent'});
 
-        final result = await api.sendCommand('ls -la');
+        final result = await api.sendCommand('ls -la', target: 'my-session');
 
         expect(mock.lastRequest.method, 'POST');
         expect(mock.lastRequest.path, '/tmux/send-command');
         expect(mock.lastRequest.data['command'], 'ls -la');
-        expect(mock.lastRequest.data['target'], 'default');
+        expect(mock.lastRequest.data['target'], 'my-session');
         expect(result.success, true);
         expect(result.message, 'Command sent');
       });
@@ -108,7 +108,7 @@ void main() {
         mock.mockReject(statusCode: 500);
 
         expect(
-          () => api.sendCommand('ls'),
+          () => api.sendCommand('ls', target: 'test'),
           throwsA(isA<DioException>()),
         );
       });
@@ -117,15 +117,15 @@ void main() {
     // ── sendEnter ────────────────────────────────────────────
 
     group('sendEnter', () {
-      // Port of: "should send enter with default target"
-      test('should send enter with default target', () async {
+      // Port of: "should send enter with target"
+      test('should send enter with target', () async {
         mock.mockResolve({'success': true, 'message': ''});
 
-        final result = await api.sendEnter();
+        final result = await api.sendEnter(target: 'my-session');
 
         expect(mock.lastRequest.method, 'POST');
         expect(mock.lastRequest.path, '/tmux/send-enter');
-        expect(mock.lastRequest.queryParameters['target'], 'default');
+        expect(mock.lastRequest.queryParameters['target'], 'my-session');
         expect(result.success, true);
       });
 
@@ -143,7 +143,7 @@ void main() {
         mock.mockReject(statusCode: 404);
 
         expect(
-          () => api.sendEnter(),
+          () => api.sendEnter(target: 'test'),
           throwsA(isA<DioException>()),
         );
       });

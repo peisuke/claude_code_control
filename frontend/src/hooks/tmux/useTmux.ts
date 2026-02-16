@@ -2,9 +2,9 @@ import { useState, useCallback } from 'react';
 import { tmuxAPI } from '../../services/api';
 
 interface UseTmuxReturn {
-  sendCommand: (command: string, target?: string) => Promise<void>;
-  sendEnter: (target?: string) => Promise<void>;
-  getOutput: (target?: string) => Promise<string>;
+  sendCommand: (command: string, target: string) => Promise<void>;
+  sendEnter: (target: string) => Promise<void>;
+  getOutput: (target: string) => Promise<string>;
   isLoading: boolean;
   error: string | null;
 }
@@ -13,7 +13,7 @@ export const useTmux = (): UseTmuxReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendCommand = useCallback(async (command: string, target?: string) => {
+  const sendCommand = useCallback(async (command: string, target: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -27,7 +27,7 @@ export const useTmux = (): UseTmuxReturn => {
     }
   }, []);
 
-  const sendEnter = useCallback(async (target?: string) => {
+  const sendEnter = useCallback(async (target: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -41,7 +41,7 @@ export const useTmux = (): UseTmuxReturn => {
     }
   }, []);
 
-  const getOutput = useCallback(async (target?: string, includeHistory: boolean = false, lines?: number): Promise<string> => {
+  const getOutput = useCallback(async (target: string, includeHistory: boolean = false, lines?: number): Promise<string> => {
     setIsLoading(true);
     setError(null);
 

@@ -45,12 +45,12 @@ class TestConnectionManager:
         assert ws2 in manager.active_connections["session1"]
 
     @pytest.mark.asyncio
-    async def test_connect_default_session(self, manager, mock_websocket):
-        """Test connecting to default session"""
-        await manager.connect(mock_websocket)
-
-        assert "default" in manager.active_connections
-        assert mock_websocket in manager.active_connections["default"]
+    async def test_connect_requires_session_name(self, manager, mock_websocket):
+        """Test that connect requires a session name argument"""
+        import inspect
+        sig = inspect.signature(manager.connect)
+        param = sig.parameters['session_name']
+        assert param.default is inspect.Parameter.empty
 
     def test_disconnect_existing_connection(self, manager, mock_websocket):
         """Test disconnecting an existing connection"""

@@ -3,7 +3,7 @@ import { TmuxOutput, ApiResponse, FileTreeResponse, FileContentResponse, TmuxSes
 class TmuxAPI {
   private baseURL = process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : '/api';
 
-  async sendCommand(command: string, target?: string): Promise<ApiResponse> {
+  async sendCommand(command: string, target: string): Promise<ApiResponse> {
     const response = await fetch(`${this.baseURL}/tmux/send-command`, {
       method: 'POST',
       headers: {
@@ -11,7 +11,7 @@ class TmuxAPI {
       },
       body: JSON.stringify({
         command,
-        target: target || 'default',
+        target,
       }),
     });
 
@@ -22,7 +22,7 @@ class TmuxAPI {
     return response.json();
   }
 
-  async sendEnter(target: string = 'default'): Promise<ApiResponse> {
+  async sendEnter(target: string): Promise<ApiResponse> {
     const response = await fetch(`${this.baseURL}/tmux/send-enter?target=${encodeURIComponent(target)}`, {
       method: 'POST',
     });
@@ -34,7 +34,7 @@ class TmuxAPI {
     return response.json();
   }
 
-  async getOutput(target: string = 'default', includeHistory: boolean = false, lines?: number): Promise<TmuxOutput> {
+  async getOutput(target: string, includeHistory: boolean = false, lines?: number): Promise<TmuxOutput> {
     const params = new URLSearchParams({ target });
     if (includeHistory) {
       params.append('include_history', 'true');

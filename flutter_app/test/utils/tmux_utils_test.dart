@@ -59,9 +59,9 @@ void main() {
         );
       });
 
-      test('should use default session for empty input', () {
+      test('should use empty session for empty input', () {
         final result = TmuxUtils.parseTarget('');
-        expect(result, const TmuxTarget(session: 'default'));
+        expect(result, const TmuxTarget(session: ''));
       });
 
       test('should allow custom default session', () {

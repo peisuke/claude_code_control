@@ -15,7 +15,7 @@ class TestLoadSettings:
 
     def test_load_settings_file_exists(self, tmp_path):
         """Test loading settings from existing file"""
-        settings_data = {"session_name": "test-session", "auto_create_session": True, "capture_history": True}
+        settings_data = {"capture_history": False}
         settings_file = tmp_path / "settings.json"
         settings_file.write_text(json.dumps(settings_data))
 
@@ -24,7 +24,7 @@ class TestLoadSettings:
                 with patch("builtins.open", mock_open(read_data=json.dumps(settings_data))):
                     settings = load_settings()
 
-        assert settings.session_name == "test-session"
+        assert settings.capture_history is False
 
     def test_load_settings_file_not_exists(self):
         """Test loading settings when file doesn't exist"""
@@ -49,7 +49,7 @@ class TestSaveSettings:
 
     def test_save_settings_success(self, tmp_path):
         """Test saving settings successfully"""
-        settings = TmuxSettings(session_name="my-session", auto_create_session=True)
+        settings = TmuxSettings(capture_history=False)
         settings_file = tmp_path / "settings.json"
 
         with patch("app.routers.settings.SETTINGS_FILE", str(settings_file)):
@@ -78,15 +78,12 @@ class TestSettingsEndpoints:
 
         assert response.status_code == 200
         data = response.json()
-        # Should have settings structure with session_name
-        assert "session_name" in data
+        assert "capture_history" in data
 
     @pytest.mark.asyncio
     async def test_update_settings(self):
         """Test PUT /api/settings/"""
         new_settings = {
-            "session_name": "updated-session",
-            "auto_create_session": True,
             "capture_history": False
         }
 
@@ -102,8 +99,6 @@ class TestSettingsEndpoints:
     async def test_update_settings_failure(self):
         """Test PUT /api/settings/ when save fails"""
         new_settings = {
-            "session_name": "test",
-            "auto_create_session": False,
             "capture_history": True
         }
 
