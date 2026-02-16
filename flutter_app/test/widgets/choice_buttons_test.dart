@@ -42,10 +42,10 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(OutlinedButton), findsNothing);
       });
 
-      testWidgets('should render as FilledButton widgets',
+      testWidgets('should render as OutlinedButton widgets',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           const ChoiceButtons(),
@@ -55,8 +55,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Two choice buttons should be rendered as FilledButton
-        expect(find.byType(FilledButton), findsNWidgets(2));
+        // Two choice buttons should be rendered as OutlinedButton
+        expect(find.byType(OutlinedButton), findsNWidgets(2));
       });
     });
 
@@ -73,8 +73,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        final buttons = tester.widgetList<FilledButton>(
-          find.byType(FilledButton),
+        final buttons = tester.widgetList<OutlinedButton>(
+          find.byType(OutlinedButton),
         );
         for (final button in buttons) {
           expect(button.onPressed, isNull,
@@ -91,8 +91,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        final buttons = tester.widgetList<FilledButton>(
-          find.byType(FilledButton),
+        final buttons = tester.widgetList<OutlinedButton>(
+          find.byType(OutlinedButton),
         );
         for (final button in buttons) {
           expect(button.onPressed, isNotNull,

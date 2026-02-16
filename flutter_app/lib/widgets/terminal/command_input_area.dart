@@ -133,6 +133,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
                   controller: _controller,
                   scrollController: _scrollController,
                   focusNode: _focusNode,
+                  enabled: enabled,
                   readOnly: false,
                   maxLines: _expanded ? 20 : 3,
                   minLines: _expanded ? 20 : 3,

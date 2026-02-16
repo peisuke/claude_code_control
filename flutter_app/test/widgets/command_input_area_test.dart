@@ -85,7 +85,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.text('ls -la'), findsOneWidget);
+        expect(find.text('Enter message'), findsOneWidget);
       });
 
       testWidgets('should accept text input', (tester) async {
@@ -125,13 +125,23 @@ void main() {
               reason: 'FilledButton should be disabled');
         }
 
-        final outlinedButtons = tester.widgetList<OutlinedButton>(
-          find.byType(OutlinedButton),
+        // Note: expand/collapse button (fullscreen icon) stays enabled
+        // because it's purely UI state, not dependent on WS connection.
+        // Check command-related OutlinedButtons are disabled.
+        final enterButton = tester.widget<OutlinedButton>(
+          find.widgetWithText(OutlinedButton, 'Enter'),
         );
-        for (final button in outlinedButtons) {
-          expect(button.onPressed, isNull,
-              reason: 'OutlinedButton should be disabled');
-        }
+        expect(enterButton.onPressed, isNull);
+
+        final delButton = tester.widget<OutlinedButton>(
+          find.widgetWithText(OutlinedButton, 'Del'),
+        );
+        expect(delButton.onPressed, isNull);
+
+        final clearButton = tester.widget<OutlinedButton>(
+          find.widgetWithText(OutlinedButton, 'Clear'),
+        );
+        expect(clearButton.onPressed, isNull);
       });
 
       testWidgets('should disable TextField when WS disconnected',
@@ -176,15 +186,15 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Initially collapsed - should show expand_more icon
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        // Initially collapsed - should show fullscreen icon
+        expect(find.byIcon(Icons.fullscreen), findsOneWidget);
 
         // Tap expand button
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(Icons.fullscreen));
         await tester.pump();
 
-        // Should now show expand_less icon
-        expect(find.byIcon(Icons.expand_less), findsOneWidget);
+        // Should now show fullscreen_exit icon
+        expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
       });
     });
 
@@ -199,7 +209,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
       });
 
       testWidgets('should render arrow down button', (tester) async {
@@ -211,7 +221,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
       });
     });
   });
