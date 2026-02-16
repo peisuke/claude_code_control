@@ -103,8 +103,12 @@ void main() {
       });
 
       testWidgets('should render choice buttons component', (tester) async {
+        // ChoiceButtons only renders when choices are detected in output
         final ws = NoOpWebSocketService();
-        await tester.pumpWidget(_buildHomeScreen(ws: ws));
+        final api = NoOpApiService(
+          outputContent: 'Choose:\n1. Yes\n2. No\n',
+        );
+        await tester.pumpWidget(_buildHomeScreen(ws: ws, api: api));
         await tester.pump();
         await tester.pump();
         await tester.pump();
