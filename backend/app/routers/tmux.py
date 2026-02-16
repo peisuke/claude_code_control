@@ -27,6 +27,12 @@ MAX_POLL_INTERVAL = 10.0
 T = TypeVar('T')
 
 
+def _validate_target(target: str) -> None:
+    """Raise 422 if target is empty or whitespace-only."""
+    if not target or not target.strip():
+        raise HTTPException(status_code=422, detail="target is required")
+
+
 async def _handle_tmux_operation(
     operation: Callable[[], Awaitable[T]],
     error_context: str,
@@ -55,6 +61,8 @@ def _require_success(success: bool, failure_detail: str) -> None:
 @router.post("/send-command")
 async def send_command(request: CommandRequest):
     """Send command to tmux session"""
+    _validate_target(request.target)
+
     async def _op():
         success = await tmux_service.send_command(request.command, request.target)
         _require_success(success, "Failed to send command")
@@ -66,6 +74,8 @@ async def send_command(request: CommandRequest):
 @router.post("/send-enter")
 async def send_enter(target: str):
     """Send Enter key to tmux target"""
+    _validate_target(target)
+
     async def _op():
         success = await tmux_service.send_enter(target)
         _require_success(success, "Failed to send enter")
@@ -77,6 +87,8 @@ async def send_enter(target: str):
 @router.post("/resize")
 async def resize_pane(target: str, cols: int = 80, rows: int = 24):
     """Resize tmux pane to match frontend terminal dimensions"""
+    _validate_target(target)
+
     async def _op():
         success = await tmux_service.resize_pane(target, cols, rows)
         _require_success(success, "Failed to resize pane")
@@ -88,6 +100,8 @@ async def resize_pane(target: str, cols: int = 80, rows: int = 24):
 @router.get("/output")
 async def get_output(target: str, include_history: bool = False, lines: Optional[int] = None):
     """Get current tmux target output, optionally including scrollback history"""
+    _validate_target(target)
+
     async def _op():
         output = await tmux_service.get_output(target, include_history=include_history, lines=lines)
         return TmuxOutput(
@@ -216,6 +230,10 @@ async def monitor_target_output(target: str):
 async def websocket_endpoint(websocket: WebSocket, target: str):
     """WebSocket endpoint for real-time tmux output of specific target"""
     global background_tasks
+
+    if not target or not target.strip():
+        await websocket.close(code=1008, reason="target is required")
+        return
 
     await manager.connect(websocket, target)
 
