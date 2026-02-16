@@ -26,7 +26,7 @@ class MockApiService extends ApiService {
 
   @override
   Future<ApiResponse> sendCommand(String command,
-      {String target = 'default'}) async {
+      {required String target}) async {
     sendCommandCalls.add(_SendCommandCall(command, target));
     if (sendCommandError != null) {
       final err = sendCommandError!;
@@ -37,7 +37,7 @@ class MockApiService extends ApiService {
   }
 
   @override
-  Future<ApiResponse> sendEnter({String target = 'default'}) async {
+  Future<ApiResponse> sendEnter({required String target}) async {
     sendEnterCalls.add(target);
     if (sendEnterError != null) {
       final err = sendEnterError!;

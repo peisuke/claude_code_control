@@ -18,6 +18,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tmux_control/config/app_config.dart';
 import 'package:tmux_control/providers/connection_provider.dart';
+import 'package:tmux_control/providers/output_provider.dart';
 import 'package:tmux_control/providers/view_provider.dart';
 import 'package:tmux_control/providers/websocket_provider.dart';
 import 'package:tmux_control/screens/home_screen.dart';
@@ -43,6 +44,7 @@ Widget _buildHomeScreen({
   return ProviderScope(
     overrides: [
       apiServiceProvider.overrideWithValue(mockApi),
+      selectedTargetProvider.overrideWith((ref) => 'default'),
       connectionProvider.overrideWith((ref) => ConnectionNotifier(mockApi)),
       wsConnectionStateProvider.overrideWith((ref) => Stream.value(
             wsConnected

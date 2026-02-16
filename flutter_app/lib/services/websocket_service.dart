@@ -39,7 +39,7 @@ class WebSocketService {
 
   WebSocketService({
     String? wsBaseUrl,
-    String target = 'default',
+    String target = '',
     WebSocketChannelFactory? channelFactory,
   })  : _wsBaseUrl = wsBaseUrl ?? AppConfig.wsBaseUrl,
         _target = target,

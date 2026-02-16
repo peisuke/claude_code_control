@@ -31,7 +31,7 @@ class TmuxUtils {
   }
 
   /// Parse tmux target format (session:window.pane).
-  static TmuxTarget parseTarget(String target, [String defaultSession = 'default']) {
+  static TmuxTarget parseTarget(String target, [String defaultSession = '']) {
     final parts = target.split(':');
     final session = parts[0].isEmpty ? defaultSession : parts[0];
 

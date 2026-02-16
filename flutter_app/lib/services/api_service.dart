@@ -32,7 +32,7 @@ class ApiService {
   // --- Tmux endpoints ---
 
   Future<ApiResponse> sendCommand(String command,
-      {String target = 'default'}) async {
+      {required String target}) async {
     final response = await _dio.post('/tmux/send-command', data: {
       'command': command,
       'target': target,
@@ -40,7 +40,7 @@ class ApiService {
     return ApiResponse.fromJson(response.data as Map<String, dynamic>, null);
   }
 
-  Future<ApiResponse> sendEnter({String target = 'default'}) async {
+  Future<ApiResponse> sendEnter({required String target}) async {
     final response = await _dio.post('/tmux/send-enter',
         queryParameters: {'target': target});
     return ApiResponse.fromJson(response.data as Map<String, dynamic>, null);
