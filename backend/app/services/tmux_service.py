@@ -30,7 +30,6 @@ def validate_tmux_name(name: str) -> bool:
 
 class TmuxService:
     def __init__(self):
-        self.default_session = "default"
         socket_path = os.environ.get("TMUX_SOCKET_PATH")
         if socket_path and not os.path.isabs(socket_path):
             logger.warning(f"TMUX_SOCKET_PATH must be absolute, ignoring: {socket_path}")
@@ -60,7 +59,6 @@ class TmuxService:
 
     async def send_command(self, command: str, target: str = None) -> bool:
         """Send a command to tmux target (session, window, or pane)"""
-        target = target or self.default_session
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")
@@ -81,7 +79,6 @@ class TmuxService:
 
     async def send_enter(self, target: str = None) -> bool:
         """Send Enter key to tmux target"""
-        target = target or self.default_session
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")
@@ -122,7 +119,6 @@ class TmuxService:
 
     async def get_output(self, target: str = None, include_history: bool = False, lines: int = None) -> str:
         """Get current tmux target output, optionally including scrollback history"""
-        target = target or self.default_session
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")

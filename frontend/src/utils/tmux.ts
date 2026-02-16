@@ -14,7 +14,7 @@ export class TmuxUtils {
    * @param target - Target string in format "session:window.pane"
    * @param defaultSession - Default session name if not provided (defaults to 'default')
    */
-  static parseTarget(target: string, defaultSession: string = 'default'): { session: string; window?: string; pane?: string } {
+  static parseTarget(target: string, defaultSession: string = ''): { session: string; window?: string; pane?: string } {
     const parts = target.split(':');
     const session = parts[0] || defaultSession;
 

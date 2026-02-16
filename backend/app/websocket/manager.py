@@ -9,13 +9,13 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, List[WebSocket]] = {}
     
-    async def connect(self, websocket: WebSocket, session_name: str = "default"):
+    async def connect(self, websocket: WebSocket, session_name: str):
         await websocket.accept()
         if session_name not in self.active_connections:
             self.active_connections[session_name] = []
         self.active_connections[session_name].append(websocket)
     
-    def disconnect(self, websocket: WebSocket, session_name: str = "default"):
+    def disconnect(self, websocket: WebSocket, session_name: str):
         if session_name in self.active_connections:
             if websocket in self.active_connections[session_name]:
                 self.active_connections[session_name].remove(websocket)
@@ -26,7 +26,7 @@ class ConnectionManager:
     def has_connections_for_session(self, session_name: str) -> bool:
         return session_name in self.active_connections and len(self.active_connections[session_name]) > 0
     
-    async def send_personal_message(self, message: str, websocket: WebSocket, session_name: str = "default"):
+    async def send_personal_message(self, message: str, websocket: WebSocket, session_name: str):
         try:
             await websocket.send_text(message)
         except Exception as e:

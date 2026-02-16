@@ -50,11 +50,10 @@ class TestTmuxRouterSendEnter:
         assert data["success"] is True
         assert "Enter sent" in data["message"]
 
-    def test_send_enter_default_target(self, test_client, mock_tmux_service):
+    def test_send_enter_missing_target(self, test_client, mock_tmux_service):
         response = test_client.post("/api/tmux/send-enter")
 
-        assert response.status_code == 200
-        mock_tmux_service.send_enter.assert_called_with("default")
+        assert response.status_code == 422
 
     def test_send_enter_failure(self, test_client, mock_tmux_service):
         mock_tmux_service.send_enter.return_value = False
@@ -77,11 +76,10 @@ class TestTmuxRouterGetOutput:
         assert "timestamp" in data
         assert data["target"] == "default"
 
-    def test_get_output_default_target(self, test_client, mock_tmux_service):
+    def test_get_output_missing_target(self, test_client, mock_tmux_service):
         response = test_client.get("/api/tmux/output")
 
-        assert response.status_code == 200
-        mock_tmux_service.get_output.assert_called_with("default", include_history=False, lines=None)
+        assert response.status_code == 422
 
     def test_get_output_with_history(self, test_client, mock_tmux_service):
         response = test_client.get("/api/tmux/output?target=default&include_history=true")

@@ -4,7 +4,7 @@ from typing import Optional, Any
 
 class CommandRequest(BaseModel):
     command: str
-    target: Optional[str] = "default"  # Can be session, session:window, or session:window.pane
+    target: str  # session, session:window, or session:window.pane
 
 
 class TmuxSettings(BaseModel):

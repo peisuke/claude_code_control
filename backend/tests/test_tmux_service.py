@@ -105,13 +105,13 @@ class TestTmuxService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_send_command_default_target(self, service, mock_subprocess):
+    async def test_send_command_no_target(self, service, mock_subprocess):
         mock_exec, mock_process = mock_subprocess
         mock_process.returncode = 0
 
         result = await service.send_command("ls")
 
-        assert result is True
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_send_enter_success(self, service, mock_subprocess):

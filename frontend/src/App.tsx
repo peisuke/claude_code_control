@@ -10,7 +10,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Initialize with saved target or default
   const [selectedTarget, setSelectedTarget] = useState(() => {
-    return localStorage.getItem('tmux-selected-target') || 'default';
+    return localStorage.getItem('tmux-selected-target') || '';
   });
 
   // Check connection status on app load

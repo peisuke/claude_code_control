@@ -71,10 +71,10 @@ describe('WebSocketService', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with default target', () => {
-      const defaultService = new WebSocketService();
-      expect(defaultService.getConnectionState()).toBe('no-websocket');
-      defaultService.destroy();
+    it('should initialize with a target', () => {
+      const service = new WebSocketService('my-session');
+      expect(service.getConnectionState()).toBe('no-websocket');
+      service.destroy();
     });
 
     it('should initialize with custom target', () => {

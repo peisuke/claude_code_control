@@ -64,7 +64,7 @@ async def send_command(request: CommandRequest):
 
 
 @router.post("/send-enter")
-async def send_enter(target: str = "default"):
+async def send_enter(target: str):
     """Send Enter key to tmux target"""
     async def _op():
         success = await tmux_service.send_enter(target)
@@ -75,7 +75,7 @@ async def send_enter(target: str = "default"):
 
 
 @router.post("/resize")
-async def resize_pane(target: str = "default", cols: int = 80, rows: int = 24):
+async def resize_pane(target: str, cols: int = 80, rows: int = 24):
     """Resize tmux pane to match frontend terminal dimensions"""
     async def _op():
         success = await tmux_service.resize_pane(target, cols, rows)
@@ -86,7 +86,7 @@ async def resize_pane(target: str = "default", cols: int = 80, rows: int = 24):
 
 
 @router.get("/output")
-async def get_output(target: str = "default", include_history: bool = False, lines: Optional[int] = None):
+async def get_output(target: str, include_history: bool = False, lines: Optional[int] = None):
     """Get current tmux target output, optionally including scrollback history"""
     async def _op():
         output = await tmux_service.get_output(target, include_history=include_history, lines=lines)
@@ -213,7 +213,7 @@ async def monitor_target_output(target: str):
 
 
 @router.websocket("/ws/{target:path}")
-async def websocket_endpoint(websocket: WebSocket, target: str = "default"):
+async def websocket_endpoint(websocket: WebSocket, target: str):
     """WebSocket endpoint for real-time tmux output of specific target"""
     global background_tasks
 
