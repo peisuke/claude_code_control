@@ -26,6 +26,7 @@ export const useWebSocket = (target: string): UseWebSocketReturn => {
   const wsRef = useRef<WebSocketService | null>(null);
 
   const connect = useCallback(() => {
+    if (!target) return;
     if (wsRef.current?.isConnected()) {
       return;
     }

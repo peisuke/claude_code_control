@@ -70,12 +70,12 @@ export const useOutputState = ({
     }
   }, [lastMessage, selectedTarget, autoRefresh, setOutput]);
 
-  // Initial load
+  // Initial load — skip when target is empty (fresh install, no session selected)
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && selectedTarget) {
       handleRefresh();
     }
-  }, [isConnected, handleRefresh]);
+  }, [isConnected, selectedTarget, handleRefresh]);
 
   const state: OutputState = {
     output,
