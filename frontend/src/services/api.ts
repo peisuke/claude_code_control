@@ -3,7 +3,7 @@ import { TmuxOutput, ApiResponse, FileTreeResponse, FileContentResponse, TmuxSes
 class TmuxAPI {
   private baseURL = process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : '/api';
 
-  async sendCommand(command: string, target?: string): Promise<ApiResponse> {
+  async sendCommand(command: string, target: string): Promise<ApiResponse> {
     const response = await fetch(`${this.baseURL}/tmux/send-command`, {
       method: 'POST',
       headers: {

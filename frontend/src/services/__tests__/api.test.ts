@@ -12,14 +12,14 @@ describe('TmuxAPI', () => {
   });
 
   describe('sendCommand', () => {
-    it('should send command with default target', async () => {
+    it('should send command with target', async () => {
       const mockResponse = { success: true, message: 'Command sent' };
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await tmuxAPI.sendCommand('ls -la');
+      const result = await tmuxAPI.sendCommand('ls -la', 'my-session');
 
       expect(mockFetch).toHaveBeenCalledWith('/api/tmux/send-command', {
         method: 'POST',
@@ -28,7 +28,7 @@ describe('TmuxAPI', () => {
         },
         body: JSON.stringify({
           command: 'ls -la',
-          target: 'default',
+          target: 'my-session',
         }),
       });
       expect(result).toEqual(mockResponse);
@@ -61,7 +61,7 @@ describe('TmuxAPI', () => {
         status: 500,
       });
 
-      await expect(tmuxAPI.sendCommand('ls')).rejects.toThrow('HTTP error! status: 500');
+      await expect(tmuxAPI.sendCommand('ls', 'my-session')).rejects.toThrow('HTTP error! status: 500');
     });
   });
 
