@@ -17,7 +17,19 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   bool _expanded = false;
+  bool _hasText = false;
   String _lastLogText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      final hasText = _controller.text.trim().isNotEmpty;
+      if (hasText != _hasText) {
+        setState(() => _hasText = hasText);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -75,7 +87,7 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
             children: [
               // Left group
               FilledButton.icon(
-                onPressed: enabled ? _sendCommand : null,
+                onPressed: enabled && _hasText ? _sendCommand : null,
                 icon: cmdState.isLoading
                     ? const SizedBox(
                         width: 16,
