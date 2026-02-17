@@ -76,6 +76,7 @@ class TerminalResizeNotifier extends StateNotifier<TerminalSize?> {
   void retrySend() {
     final size = _pendingSize ?? state;
     if (size != null) {
+      _pendingSize = size;
       addDebugLog('RSZ:RETRY ${size.cols}x${size.rows} t=$_target');
       _sendResize(size);
     }
