@@ -12,24 +12,31 @@ class SettingsSheet extends ConsumerStatefulWidget {
 
 class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   late TextEditingController _newUrlController;
+  late TextEditingController _newNameController;
+  final FocusNode _nameFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _newUrlController = TextEditingController();
+    _newNameController = TextEditingController();
   }
 
   @override
   void dispose() {
     _newUrlController.dispose();
+    _newNameController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _addUrl() async {
     final url = _newUrlController.text.trim();
     if (url.isEmpty) return;
-    ref.read(serverProvider.notifier).addUrl(url);
+    final name = _newNameController.text.trim();
+    ref.read(serverProvider.notifier).addEntry(url, name: name);
     _newUrlController.clear();
+    _newNameController.clear();
   }
 
   Future<void> _removeUrl(int index) async {
@@ -37,12 +44,46 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     ref.read(serverProvider.notifier).removeUrl(index);
 
     if (wasFirst && mounted) {
-      final urls = ref.read(serverProvider).urls;
-      if (urls.isNotEmpty) {
+      final entries = ref.read(serverProvider).entries;
+      if (entries.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Switched to ${urls.first}')),
+          SnackBar(content: Text('Switched to ${entries.first.displayName}')),
         );
       }
+    }
+  }
+
+  Future<void> _editName(int index, ServerEntry entry) async {
+    final controller = TextEditingController(text: entry.name);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Name'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: entry.url,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          onSubmitted: (value) => Navigator.of(context).pop(value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (result != null) {
+      ref.read(serverProvider.notifier).updateName(index, result);
     }
   }
 
@@ -61,9 +102,9 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   Widget build(BuildContext context) {
     final isDarkMode = ref.watch(themeProvider);
     final serverState = ref.watch(serverProvider);
-    final urls = serverState.urls;
+    final entries = serverState.entries;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
@@ -91,21 +132,39 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           // URL list
-          ..._buildUrlList(urls, serverState),
+          ..._buildUrlList(entries, serverState),
           const Divider(),
           // Add new URL
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _newUrlController,
-                  decoration: const InputDecoration(
-                    hintText: 'http://10.0.2.2:8000',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  style: const TextStyle(fontSize: 14),
-                  onSubmitted: (_) => _addUrl(),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _newUrlController,
+                      decoration: const InputDecoration(
+                        hintText: 'http://10.0.2.2:8000',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(fontSize: 14),
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) =>
+                          _nameFocusNode.requestFocus(),
+                    ),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: _newNameController,
+                      focusNode: _nameFocusNode,
+                      decoration: const InputDecoration(
+                        hintText: 'Name (optional)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(fontSize: 14),
+                      onSubmitted: (_) => _addUrl(),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -127,10 +186,13 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     );
   }
 
-  List<Widget> _buildUrlList(List<String> urls, ServerState serverState) {
-    return List.generate(urls.length, (index) {
+  List<Widget> _buildUrlList(
+      List<ServerEntry> entries, ServerState serverState) {
+    return List.generate(entries.length, (index) {
+      final entry = entries[index];
       final isActive = index == 0;
-      final health = serverState.healthOf(urls[index]);
+      final health = serverState.healthOf(entry.url);
+      final hasName = entry.name.isNotEmpty;
       return ListTile(
         dense: true,
         leading: Row(
@@ -152,14 +214,18 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
           ],
         ),
         title: Text(
-          urls[index],
+          entry.displayName,
           style: TextStyle(
             fontSize: 14,
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-        subtitle: isActive ? const Text('Active') : null,
-        trailing: urls.length > 1
+        subtitle: hasName
+            ? Text(entry.url,
+                style: const TextStyle(fontSize: 12))
+            : (isActive ? const Text('Active') : null),
+        onTap: () => _editName(index, entry),
+        trailing: entries.length > 1
             ? IconButton(
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: () => _removeUrl(index),

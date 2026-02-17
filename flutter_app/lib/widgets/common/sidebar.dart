@@ -77,9 +77,9 @@ class _ServerDropdown extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final serverState = ref.watch(serverProvider);
-    final urls = serverState.urls;
+    final entries = serverState.entries;
 
-    if (urls.isEmpty) return const SizedBox.shrink();
+    if (entries.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -88,10 +88,13 @@ class _ServerDropdown extends ConsumerWidget {
         isExpanded: true,
         underline: const SizedBox.shrink(),
         icon: const Icon(Icons.arrow_drop_down, size: 24),
-        items: List.generate(urls.length, (index) {
-          final url = urls[index];
-          final health = serverState.healthOf(url);
+        items: List.generate(entries.length, (index) {
+          final entry = entries[index];
+          final health = serverState.healthOf(entry.url);
           final isUnhealthy = health == ServerHealthStatus.unhealthy;
+          final label = entry.name.isNotEmpty
+              ? entry.name
+              : _displayUrl(entry.url);
 
           return DropdownMenuItem<int>(
             value: index,
@@ -109,7 +112,7 @@ class _ServerDropdown extends ConsumerWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    _displayUrl(url),
+                    label,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,

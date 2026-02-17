@@ -86,4 +86,5 @@ class AppConfig {
   static const String keyDarkMode = 'tmux-dark-mode';
   static const String keyBackendUrl = 'tmux-backend-url';
   static const String keyBackendUrls = 'tmux-backend-urls'; // List<String>
+  static const String keyBackendEntries = 'tmux-backend-entries'; // List<JSON>
 }

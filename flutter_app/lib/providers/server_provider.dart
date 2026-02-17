@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,27 +14,47 @@ import 'websocket_provider.dart';
 
 enum ServerHealthStatus { unknown, healthy, unhealthy }
 
+class ServerEntry {
+  final String url;
+  final String name;
+
+  const ServerEntry({required this.url, this.name = ''});
+
+  String get displayName => name.isNotEmpty ? name : url;
+
+  Map<String, String> toJson() => {'url': url, 'name': name};
+
+  factory ServerEntry.fromJson(Map<String, dynamic> j) =>
+      ServerEntry(url: j['url'] as String, name: j['name'] as String? ?? '');
+
+  ServerEntry copyWith({String? name}) =>
+      ServerEntry(url: url, name: name ?? this.name);
+}
+
 class ServerState {
-  final List<String> urls;
+  final List<ServerEntry> entries;
   final Map<String, ServerHealthStatus> healthMap;
 
   const ServerState({
-    this.urls = const [],
+    this.entries = const [],
     this.healthMap = const {},
   });
 
+  /// Convenience getter: list of URLs from entries.
+  List<String> get urls => entries.map((e) => e.url).toList();
+
   /// The active server URL is always the first in the list.
-  String? get activeUrl => urls.isNotEmpty ? urls.first : null;
+  String? get activeUrl => entries.isNotEmpty ? entries.first.url : null;
 
   ServerHealthStatus healthOf(String url) =>
       healthMap[url] ?? ServerHealthStatus.unknown;
 
   ServerState copyWith({
-    List<String>? urls,
+    List<ServerEntry>? entries,
     Map<String, ServerHealthStatus>? healthMap,
   }) {
     return ServerState(
-      urls: urls ?? this.urls,
+      entries: entries ?? this.entries,
       healthMap: healthMap ?? this.healthMap,
     );
   }
@@ -69,20 +90,34 @@ class ServerNotifier extends StateNotifier<ServerState> {
 
   Future<void> _loadUrls() async {
     final prefs = await SharedPreferences.getInstance();
-    final urls = prefs.getStringList(AppConfig.keyBackendUrls);
-    if (urls != null && urls.isNotEmpty) {
-      state = state.copyWith(urls: List<String>.from(urls));
+
+    // Try new JSON-based entries key first
+    final entriesJson = prefs.getStringList(AppConfig.keyBackendEntries);
+    if (entriesJson != null && entriesJson.isNotEmpty) {
+      final entries = entriesJson
+          .map((s) => ServerEntry.fromJson(
+              jsonDecode(s) as Map<String, dynamic>))
+          .toList();
+      state = state.copyWith(entries: entries);
     } else {
-      // Migrate from old single-URL key
-      final oldUrl = prefs.getString(AppConfig.keyBackendUrl);
-      if (oldUrl != null && oldUrl.isNotEmpty) {
-        state = state.copyWith(urls: [oldUrl]);
-        await prefs.setStringList(AppConfig.keyBackendUrls, [oldUrl]);
+      // Migrate from old List<String> URLs key
+      final urls = prefs.getStringList(AppConfig.keyBackendUrls);
+      if (urls != null && urls.isNotEmpty) {
+        final entries =
+            urls.map((u) => ServerEntry(url: u)).toList();
+        state = state.copyWith(entries: entries);
       } else {
-        state = state.copyWith(urls: [AppConfig.backendUrl]);
-        await prefs.setStringList(
-            AppConfig.keyBackendUrls, [AppConfig.backendUrl]);
+        // Migrate from old single-URL key
+        final oldUrl = prefs.getString(AppConfig.keyBackendUrl);
+        if (oldUrl != null && oldUrl.isNotEmpty) {
+          state = state.copyWith(entries: [ServerEntry(url: oldUrl)]);
+        } else {
+          state = state.copyWith(
+              entries: [ServerEntry(url: AppConfig.backendUrl)]);
+        }
       }
+      // Persist in new format
+      await _saveUrls();
     }
     _startHealthChecks();
   }
@@ -94,39 +129,39 @@ class ServerNotifier extends StateNotifier<ServerState> {
   }
 
   Future<void> _checkAllHealth() async {
-    final urls = state.urls;
-    if (urls.isEmpty) return;
+    final entries = state.entries;
+    if (entries.isEmpty) return;
 
-    final futures = urls.map((url) async {
-      final healthy = await _healthChecker(url);
+    final futures = entries.map((entry) async {
+      final healthy = await _healthChecker(entry.url);
       return MapEntry(
-          url,
+          entry.url,
           healthy
               ? ServerHealthStatus.healthy
               : ServerHealthStatus.unhealthy);
     });
 
-    final entries = await Future.wait(futures);
+    final results = await Future.wait(futures);
     if (!mounted) return;
 
-    final newMap = Map<String, ServerHealthStatus>.fromEntries(entries);
+    final newMap = Map<String, ServerHealthStatus>.fromEntries(results);
     state = state.copyWith(healthMap: newMap);
   }
 
   /// Select a server by moving it to index 0 (making it active).
   Future<void> selectServer(int index) async {
-    if (index < 0 || index >= state.urls.length || index == 0) return;
+    if (index < 0 || index >= state.entries.length || index == 0) return;
 
-    final newUrls = List<String>.from(state.urls);
-    final selected = newUrls.removeAt(index);
-    newUrls.insert(0, selected);
-    state = state.copyWith(urls: newUrls);
+    final newEntries = List<ServerEntry>.from(state.entries);
+    final selected = newEntries.removeAt(index);
+    newEntries.insert(0, selected);
+    state = state.copyWith(entries: newEntries);
     await _saveUrls();
-    await _applyConnection(selected);
+    await _applyConnection(selected.url);
   }
 
-  /// Add a new URL to the end of the list.
-  Future<void> addUrl(String url) async {
+  /// Add a new server entry to the end of the list.
+  Future<void> addEntry(String url, {String name = ''}) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) return;
 
@@ -148,9 +183,19 @@ class ServerNotifier extends StateNotifier<ServerState> {
         .replaceAll(RegExp(r'/+$'), '');
     final normalized = '${uri.scheme}://${uri.authority}$cleanPath';
 
-    if (state.urls.contains(normalized)) return;
+    final existingIndex =
+        state.entries.indexWhere((e) => e.url == normalized);
+    if (existingIndex >= 0) {
+      // URL already exists — update name if provided, otherwise no-op.
+      final trimmedName = name.trim();
+      if (trimmedName.isNotEmpty) {
+        await updateName(existingIndex, trimmedName);
+      }
+      return;
+    }
 
-    state = state.copyWith(urls: [...state.urls, normalized]);
+    final entry = ServerEntry(url: normalized, name: name.trim());
+    state = state.copyWith(entries: [...state.entries, entry]);
     await _saveUrls();
 
     // Immediately check health of the new URL
@@ -162,19 +207,32 @@ class ServerNotifier extends StateNotifier<ServerState> {
     state = state.copyWith(healthMap: newMap);
   }
 
-  /// Remove a URL by index. Cannot remove the last URL.
+  /// Backwards-compatible alias for addEntry.
+  Future<void> addUrl(String url) => addEntry(url);
+
+  /// Update the display name of a server entry at [index].
+  Future<void> updateName(int index, String name) async {
+    if (index < 0 || index >= state.entries.length) return;
+
+    final newEntries = List<ServerEntry>.from(state.entries);
+    newEntries[index] = newEntries[index].copyWith(name: name.trim());
+    state = state.copyWith(entries: newEntries);
+    await _saveUrls();
+  }
+
+  /// Remove a server entry by index. Cannot remove the last entry.
   Future<void> removeUrl(int index) async {
-    if (state.urls.length <= 1) return;
-    if (index < 0 || index >= state.urls.length) return;
+    if (state.entries.length <= 1) return;
+    if (index < 0 || index >= state.entries.length) return;
 
     final wasFirst = index == 0;
-    final newUrls = List<String>.from(state.urls);
-    newUrls.removeAt(index);
-    state = state.copyWith(urls: newUrls);
+    final newEntries = List<ServerEntry>.from(state.entries);
+    newEntries.removeAt(index);
+    state = state.copyWith(entries: newEntries);
     await _saveUrls();
 
     if (wasFirst) {
-      _applyConnection(newUrls.first);
+      _applyConnection(newEntries.first.url);
     }
   }
 
@@ -218,6 +276,10 @@ class ServerNotifier extends StateNotifier<ServerState> {
 
   Future<void> _saveUrls() async {
     final prefs = await SharedPreferences.getInstance();
+    final entriesJson =
+        state.entries.map((e) => jsonEncode(e.toJson())).toList();
+    await prefs.setStringList(AppConfig.keyBackendEntries, entriesJson);
+    // Also keep old key in sync for backwards compatibility during rollback
     await prefs.setStringList(AppConfig.keyBackendUrls, state.urls);
   }
 
