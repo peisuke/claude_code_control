@@ -14,27 +14,38 @@ class ConnectionStatus extends ConsumerWidget {
     final Color color;
     final String label;
     final IconData icon;
+    final bool isDisconnected;
 
     if (httpConnected && wsConnected) {
       color = Colors.green;
       label = 'Connected';
       icon = Icons.cloud_done;
+      isDisconnected = false;
     } else if (httpConnected) {
       color = Colors.orange;
       label = 'WS Disconnected';
       icon = Icons.cloud_off;
+      isDisconnected = true;
     } else {
       color = Colors.red;
       label = 'Disconnected';
       icon = Icons.cloud_off;
+      isDisconnected = true;
     }
 
-    return Chip(
+    final chip = Chip(
       avatar: Icon(icon, size: 16, color: color),
       label: Text(label, style: TextStyle(fontSize: 12, color: color)),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+
+    if (!isDisconnected) return chip;
+
+    return GestureDetector(
+      onTap: () => ref.read(websocketServiceProvider).resetAndReconnect(),
+      child: chip,
     );
   }
 }
