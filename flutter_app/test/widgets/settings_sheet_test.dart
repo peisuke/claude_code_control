@@ -33,7 +33,10 @@ Override _serverOverride({
       ref,
       healthChecker: healthChecker ?? (_) async => false,
     );
-    notifier.debugState = ServerState(urls: urls, healthMap: healthMap);
+    notifier.debugState = ServerState(
+      entries: urls.map((u) => ServerEntry(url: u)).toList(),
+      healthMap: healthMap,
+    );
     return notifier;
   });
 }
@@ -164,7 +167,7 @@ void main() {
 
     // ── URL list management ─────────────────────────────────
     group('URL list management', () {
-      testWidgets('should render TextField for new URL input',
+      testWidgets('should render TextFields for URL and name input',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           const SettingsSheet(),
@@ -172,7 +175,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byType(TextField), findsOneWidget);
+        // URL field + name field
+        expect(find.byType(TextField), findsNWidgets(2));
       });
 
       testWidgets('should render FilledButton for Add', (tester) async {
@@ -241,9 +245,9 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Enter new URL
+        // Enter new URL in the URL field (first TextField)
         await tester.enterText(
-            find.byType(TextField), 'http://host2:8080');
+            find.byType(TextField).first, 'http://host2:8080');
         await tester.pump();
 
         // Tap Add
@@ -274,7 +278,7 @@ void main() {
 
         // Try to add existing URL
         await tester.enterText(
-            find.byType(TextField), 'http://host1:8000');
+            find.byType(TextField).first, 'http://host1:8000');
         await tester.pump();
 
         await tester.tap(find.text('Add'));

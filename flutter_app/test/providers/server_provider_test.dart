@@ -231,8 +231,9 @@ void main() {
 
       test('should return unknown for unchecked URLs', () {
         final container = createNoInitContainer(
-          initialState:
-              const ServerState(urls: ['http://host1:8000']),
+          initialState: const ServerState(
+            entries: [ServerEntry(url: 'http://host1:8000')],
+          ),
         );
 
         final state = container.read(serverProvider);
@@ -248,10 +249,10 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: [
-              'http://host1:8000',
-              'http://host2:8000',
-              'http://host3:8000'
+            entries: [
+              ServerEntry(url: 'http://host1:8000'),
+              ServerEntry(url: 'http://host2:8000'),
+              ServerEntry(url: 'http://host3:8000'),
             ],
           ),
         );
@@ -271,7 +272,10 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000', 'http://host2:8000'],
+            entries: [
+              ServerEntry(url: 'http://host1:8000'),
+              ServerEntry(url: 'http://host2:8000'),
+            ],
           ),
         );
 
@@ -286,7 +290,7 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -301,7 +305,10 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000', 'http://host2:8000'],
+            entries: [
+              ServerEntry(url: 'http://host1:8000'),
+              ServerEntry(url: 'http://host2:8000'),
+            ],
           ),
         );
 
@@ -321,7 +328,7 @@ void main() {
         final container = createNoInitContainer(
           healthChecker: (_) async => true,
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -339,7 +346,7 @@ void main() {
         final container = createNoInitContainer(
           healthChecker: (_) async => true,
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -356,7 +363,7 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -372,7 +379,7 @@ void main() {
         final container = createNoInitContainer(
           healthChecker: (_) async => true,
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -390,7 +397,10 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000', 'http://host2:8000'],
+            entries: [
+              ServerEntry(url: 'http://host1:8000'),
+              ServerEntry(url: 'http://host2:8000'),
+            ],
           ),
         );
 
@@ -405,7 +415,7 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -421,7 +431,7 @@ void main() {
         final container = createNoInitContainer(
           healthChecker: (_) async => true,
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
@@ -439,7 +449,10 @@ void main() {
 
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000', 'http://host2:8000'],
+            entries: [
+              ServerEntry(url: 'http://host1:8000'),
+              ServerEntry(url: 'http://host2:8000'),
+            ],
           ),
         );
 
@@ -454,8 +467,10 @@ void main() {
     // ── activeUrl ───────────────────────────────────────────
     group('activeUrl', () {
       test('should return first URL as active', () {
-        const state = ServerState(
-            urls: ['http://host1:8000', 'http://host2:8000']);
+        const state = ServerState(entries: [
+          ServerEntry(url: 'http://host1:8000'),
+          ServerEntry(url: 'http://host2:8000'),
+        ]);
         expect(state.activeUrl, 'http://host1:8000');
       });
 
@@ -465,12 +480,162 @@ void main() {
       });
     });
 
+    // ── ServerEntry ─────────────────────────────────────────
+    group('ServerEntry', () {
+      test('displayName returns name when set', () {
+        const entry = ServerEntry(url: 'http://host:8000', name: 'My Server');
+        expect(entry.displayName, 'My Server');
+      });
+
+      test('displayName returns url when name is empty', () {
+        const entry = ServerEntry(url: 'http://host:8000');
+        expect(entry.displayName, 'http://host:8000');
+      });
+
+      test('toJson and fromJson round-trip', () {
+        const entry = ServerEntry(url: 'http://host:8000', name: 'Dev');
+        final json = entry.toJson();
+        final restored = ServerEntry.fromJson(json);
+        expect(restored.url, 'http://host:8000');
+        expect(restored.name, 'Dev');
+      });
+
+      test('fromJson handles missing name', () {
+        final entry = ServerEntry.fromJson({'url': 'http://host:8000'});
+        expect(entry.name, '');
+      });
+    });
+
+    // ── updateName ──────────────────────────────────────────
+    group('updateName', () {
+      test('should update the name of an entry', () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final container = createNoInitContainer(
+          initialState: const ServerState(
+            entries: [ServerEntry(url: 'http://host1:8000')],
+          ),
+        );
+
+        await container
+            .read(serverProvider.notifier)
+            .updateName(0, 'Production');
+
+        final state = container.read(serverProvider);
+        expect(state.entries.first.name, 'Production');
+        expect(state.entries.first.displayName, 'Production');
+      });
+
+      test('should ignore out-of-range index', () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final container = createNoInitContainer(
+          initialState: const ServerState(
+            entries: [ServerEntry(url: 'http://host1:8000')],
+          ),
+        );
+
+        await container
+            .read(serverProvider.notifier)
+            .updateName(5, 'Bad');
+
+        final state = container.read(serverProvider);
+        expect(state.entries.first.name, '');
+      });
+
+      test('should persist after name update', () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final container = createNoInitContainer(
+          initialState: const ServerState(
+            entries: [ServerEntry(url: 'http://host1:8000')],
+          ),
+        );
+
+        await container
+            .read(serverProvider.notifier)
+            .updateName(0, 'Staging');
+
+        final prefs = await SharedPreferences.getInstance();
+        final entriesJson =
+            prefs.getStringList(AppConfig.keyBackendEntries);
+        expect(entriesJson, isNotNull);
+        expect(entriesJson!.first, contains('"name":"Staging"'));
+      });
+    });
+
+    // ── addEntry with name ──────────────────────────────────
+    group('addEntry with name', () {
+      test('should add entry with name', () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final container = createNoInitContainer(
+          healthChecker: (_) async => true,
+          initialState: const ServerState(
+            entries: [ServerEntry(url: 'http://host1:8000')],
+          ),
+        );
+
+        await container
+            .read(serverProvider.notifier)
+            .addEntry('http://host2:8000', name: 'Staging');
+
+        final state = container.read(serverProvider);
+        expect(state.entries.length, 2);
+        expect(state.entries.last.name, 'Staging');
+        expect(state.entries.last.url, 'http://host2:8000');
+      });
+
+      test('should update name when adding duplicate URL with name', () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final container = createNoInitContainer(
+          healthChecker: (_) async => true,
+          initialState: const ServerState(
+            entries: [ServerEntry(url: 'http://host1:8000')],
+          ),
+        );
+
+        // Add same URL with a name → should update existing entry's name
+        await container
+            .read(serverProvider.notifier)
+            .addEntry('http://host1:8000', name: 'Production');
+
+        final state = container.read(serverProvider);
+        expect(state.entries.length, 1);
+        expect(state.entries.first.name, 'Production');
+      });
+
+      test('should not update when adding duplicate URL without name',
+          () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final container = createNoInitContainer(
+          healthChecker: (_) async => true,
+          initialState: const ServerState(
+            entries: [
+              ServerEntry(url: 'http://host1:8000', name: 'Existing'),
+            ],
+          ),
+        );
+
+        // Add same URL without name → no-op, keep existing name
+        await container
+            .read(serverProvider.notifier)
+            .addEntry('http://host1:8000');
+
+        final state = container.read(serverProvider);
+        expect(state.entries.length, 1);
+        expect(state.entries.first.name, 'Existing');
+      });
+    });
+
     // ── Timer cleanup ───────────────────────────────────────
     group('timer cleanup', () {
       test('should dispose without errors', () {
         final container = createNoInitContainer(
           initialState: const ServerState(
-            urls: ['http://host1:8000'],
+            entries: [ServerEntry(url: 'http://host1:8000')],
           ),
         );
 
