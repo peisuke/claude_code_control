@@ -317,7 +317,17 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
       idx++;
     }
     final name = idx.toString();
-    await ref.read(sessionProvider.notifier).createSession(name);
+    final success = await ref.read(sessionProvider.notifier).createSession(name);
+    if (success && mounted) {
+      // Auto-select the new session's first window
+      final updated = ref.read(sessionProvider).hierarchy;
+      final session = updated?.sessions[name];
+      if (session != null && session.windows.isNotEmpty) {
+        final target = '$name:${session.windows.keys.first}';
+        ref.read(selectedTargetProvider.notifier).state = target;
+        ref.read(websocketServiceProvider).setTarget(target);
+      }
+    }
   }
 
   Future<void> _createWindow(
