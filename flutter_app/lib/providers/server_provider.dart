@@ -8,6 +8,7 @@ import 'connection_provider.dart';
 import 'file_provider.dart';
 import 'output_provider.dart';
 import 'session_provider.dart';
+import 'terminal_resize_provider.dart';
 import 'websocket_provider.dart';
 
 enum ServerHealthStatus { unknown, healthy, unhealthy }
@@ -205,6 +206,7 @@ class ServerNotifier extends StateNotifier<ServerState> {
       _ref.read(selectedTargetProvider.notifier).state = target;
       _ref.read(websocketServiceProvider).setTarget(target);
       _ref.read(websocketServiceProvider).resetAndReconnect();
+      _ref.read(terminalResizeProvider.notifier).retrySend();
       _ref.read(fileProvider.notifier).fetchTree();
     } else {
       // No sessions — clear WS target and disconnect.
