@@ -8,7 +8,7 @@ class ConnectionStatus extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final httpConnected = ref.watch(connectionProvider);
+    final httpState = ref.watch(connectionProvider);
     final wsConnected = ref.watch(wsIsConnectedProvider);
 
     final Color color;
@@ -16,16 +16,21 @@ class ConnectionStatus extends ConsumerWidget {
     final IconData icon;
     final bool isDisconnected;
 
-    if (httpConnected && wsConnected) {
+    if (httpState == HttpConnectionState.connected && wsConnected) {
       color = Colors.green;
       label = 'Connected';
       icon = Icons.cloud_done;
       isDisconnected = false;
-    } else if (httpConnected) {
+    } else if (httpState == HttpConnectionState.connected) {
       color = Colors.orange;
       label = 'WS Disconnected';
       icon = Icons.cloud_off;
       isDisconnected = true;
+    } else if (httpState == HttpConnectionState.connecting) {
+      color = Colors.blue;
+      label = 'Connecting';
+      icon = Icons.cloud_sync;
+      isDisconnected = false;
     } else {
       color = Colors.red;
       label = 'Disconnected';

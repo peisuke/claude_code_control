@@ -91,8 +91,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     // Web: useAutoRefreshState — gate WS connection on HTTP connectivity.
     // Only connect WS after HTTP health check succeeds.
-    ref.listen<bool>(connectionProvider, (prev, next) {
-      if (next && !(prev ?? false)) {
+    ref.listen<HttpConnectionState>(connectionProvider, (prev, next) {
+      if (next == HttpConnectionState.connected &&
+          prev != HttpConnectionState.connected) {
         _connectWebSocket();
       }
     });
@@ -100,7 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Connect WS when target changes (e.g., first session selected on fresh
     // install where initial target is empty).
     ref.listen<String>(selectedTargetProvider, (prev, next) {
-      if (next.isNotEmpty && ref.read(connectionProvider)) {
+      if (next.isNotEmpty &&
+          ref.read(connectionProvider) == HttpConnectionState.connected) {
         _connectWebSocket();
       }
     });

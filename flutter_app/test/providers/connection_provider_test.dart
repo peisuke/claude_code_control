@@ -1,6 +1,6 @@
-/// Port of frontend/src/hooks/__tests__/useConnectionState.test.ts (health check portion)
+/// Port of frontend/src/hooks/__tests__/useHttpConnectionState.test.ts (health check portion)
 ///
-/// The web's useConnectionState combines WebSocket state, app visibility, and
+/// The web's useHttpConnectionState combines WebSocket state, app visibility, and
 /// HTTP health checks. In Flutter, the HTTP health check is isolated in
 /// ConnectionNotifier which polls testConnection() every 5 seconds.
 ///
@@ -39,7 +39,7 @@ class MockApiService extends ApiService {
 }
 
 void main() {
-  group('ConnectionNotifier (useConnectionState health check port)', () {
+  group('ConnectionNotifier (useHttpConnectionState health check port)', () {
     late MockApiService mockApi;
 
     setUp(() {
@@ -48,11 +48,11 @@ void main() {
 
     // ── initial state ──────────────────────────────────────────
     group('initial state', () {
-      test('should have false as initial state', () async {
+      test('should have connecting as initial state', () async {
         // Port of: "should return WebSocket state" (initial isConnected check)
-        // In Flutter, ConnectionNotifier starts with false (not connected yet).
+        // In Flutter, ConnectionNotifier starts with connecting (not checked yet).
         final notifier = ConnectionNotifier(mockApi);
-        expect(notifier.debugState, false);
+        expect(notifier.debugState, HttpConnectionState.connecting);
 
         // Wait for the async _check to complete before disposing.
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -60,7 +60,7 @@ void main() {
       });
 
       test('should call testConnection immediately on creation', () async {
-        // Port of: implicit behavior in web's useConnectionState
+        // Port of: implicit behavior in web's useHttpConnectionState
         // The notifier calls _check() in the constructor.
         final notifier = ConnectionNotifier(mockApi);
 
@@ -74,36 +74,39 @@ void main() {
 
     // ── health check success/failure ─────────────────────────
     group('health check', () {
-      test('should set state to true when testConnection succeeds', () async {
+      test('should set state to connected when testConnection succeeds',
+          () async {
         // Port of: "should return WebSocket state" wsConnected=true scenario
         mockApi.shouldSucceed = true;
         final notifier = ConnectionNotifier(mockApi);
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(notifier.debugState, true);
+        expect(notifier.debugState, HttpConnectionState.connected);
         notifier.dispose();
       });
 
-      test('should set state to false when testConnection returns failure',
+      test(
+          'should set state to disconnected when testConnection returns failure',
           () async {
         mockApi.shouldSucceed = false;
         final notifier = ConnectionNotifier(mockApi);
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(notifier.debugState, false);
+        expect(notifier.debugState, HttpConnectionState.disconnected);
         notifier.dispose();
       });
 
-      test('should set state to false when testConnection throws', () async {
+      test('should set state to disconnected when testConnection throws',
+          () async {
         // Port of: "should return wsError from useWebSocket" error scenario
         mockApi.shouldThrow = true;
         final notifier = ConnectionNotifier(mockApi);
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(notifier.debugState, false);
+        expect(notifier.debugState, HttpConnectionState.disconnected);
         notifier.dispose();
       });
 
@@ -113,13 +116,13 @@ void main() {
         final notifier = ConnectionNotifier(mockApi);
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(notifier.debugState, false);
+        expect(notifier.debugState, HttpConnectionState.disconnected);
 
         // Connection recovers
         mockApi.shouldSucceed = true;
         await notifier.testConnection();
 
-        expect(notifier.debugState, true);
+        expect(notifier.debugState, HttpConnectionState.connected);
         notifier.dispose();
       });
 
@@ -128,13 +131,13 @@ void main() {
         final notifier = ConnectionNotifier(mockApi);
 
         await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(notifier.debugState, true);
+        expect(notifier.debugState, HttpConnectionState.connected);
 
         // Connection drops
         mockApi.shouldThrow = true;
         await notifier.testConnection();
 
-        expect(notifier.debugState, false);
+        expect(notifier.debugState, HttpConnectionState.disconnected);
         notifier.dispose();
       });
     });
