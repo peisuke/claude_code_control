@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_config.dart';
 import '../../providers/command_provider.dart';
+import '../../providers/output_provider.dart';
 import '../../providers/websocket_provider.dart';
 import 'terminal_output.dart' show debugLogProvider;
 
@@ -19,6 +20,9 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
   bool _expanded = false;
   bool _hasText = false;
   String _lastLogText = '';
+
+  // Per-target draft cache (in-memory only)
+  final Map<String, String> _draftCache = {};
 
   @override
   void initState() {
@@ -44,6 +48,9 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
     if (text.isEmpty) return;
     ref.read(commandProvider.notifier).sendCommand(text);
     _controller.clear();
+    // Clear cached draft for the current target after successful send
+    final target = ref.read(selectedTargetProvider);
+    _draftCache.remove(target);
   }
 
   void _sendEnter() {
@@ -55,6 +62,24 @@ class _CommandInputAreaState extends ConsumerState<CommandInputArea> {
     final cmdState = ref.watch(commandProvider);
     final isConnected = ref.watch(wsIsConnectedProvider);
     final enabled = isConnected && !cmdState.isLoading;
+
+    // Save/restore draft text when switching tmux windows
+    ref.listen<String>(selectedTargetProvider, (prev, next) {
+      if (prev != null && prev != next) {
+        // Save current text for the old target
+        final text = _controller.text;
+        if (text.isNotEmpty) {
+          _draftCache[prev] = text;
+        } else {
+          _draftCache.remove(prev);
+        }
+        // Restore text for the new target
+        final restored = _draftCache[next] ?? '';
+        _controller.text = restored;
+        _controller.selection =
+            TextSelection.collapsed(offset: restored.length);
+      }
+    });
 
     // Debug: update TextField with log (only when new content arrives)
     ref.listen<String>(debugLogProvider, (_, next) {
