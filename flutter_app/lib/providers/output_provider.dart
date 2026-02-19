@@ -29,6 +29,17 @@ class OutputState {
       totalLoadedLines: totalLoadedLines ?? this.totalLoadedLines,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OutputState &&
+          content == other.content &&
+          isLoadingHistory == other.isLoadingHistory &&
+          totalLoadedLines == other.totalLoadedLines;
+
+  @override
+  int get hashCode => Object.hash(content, isLoadingHistory, totalLoadedLines);
 }
 
 final selectedTargetProvider = StateProvider<String>((ref) {
@@ -78,6 +89,15 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// the current visible pane, so we prepend this to keep scrollback.
   String _historyPrefix = '';
 
+  /// true after a history fetch (initial load / refreshHistory / loadMore).
+  /// Set to false when a WS message brings different content, meaning
+  /// the history prefix is now stale. Checked on scroll-up to decide
+  /// whether to re-fetch before showing history.
+  bool _historyFresh = false;
+
+  /// Previous WS content for change detection.
+  String _lastWsContent = '';
+
   OutputNotifier(this._api, this._target) : super(const OutputState()) {
     _fetchInitialOutput();
   }
@@ -94,6 +114,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
       if (!mounted) return;
       _latestContent = output.content;
       _historyPrefix = '';
+      _historyFresh = true;
       state = state.copyWith(content: output.content, totalLoadedLines: 0);
     } catch (_) {
       // Will retry via WebSocket updates
@@ -113,6 +134,15 @@ class OutputNotifier extends StateNotifier<OutputState> {
       }
     }
 
+    // Detect content change → history prefix is now stale.
+    // Only invalidate while at bottom — when scrolled up, the user is
+    // reading history and we don't want to re-trigger refreshHistory.
+    if (_historyFresh && isAtBottom && _lastWsContent.isNotEmpty &&
+        msg.content != _lastWsContent) {
+      _historyFresh = false;
+    }
+    _lastWsContent = msg.content;
+
     final fullContent = _historyPrefix.isEmpty
         ? msg.content
         : '$_historyPrefix${msg.content}';
@@ -130,7 +160,41 @@ class OutputNotifier extends StateNotifier<OutputState> {
     }
   }
 
+  /// Re-fetch 3 screens of history when the user scrolls up and the
+  /// current history prefix is stale. Called from the widget's scroll
+  /// handler instead of / before loadMoreHistory.
+  Future<void> refreshHistory() async {
+    if (_historyFresh || state.isLoadingHistory) return;
+    state = state.copyWith(isLoadingHistory: true);
+
+    try {
+      final lines = AppConfig.minRows * 3;
+      final output = await _api.getOutput(
+        _target,
+        includeHistory: true,
+        lines: lines,
+      );
+      if (!mounted) return;
+      _historyPrefix = '';
+      _historyFresh = true;
+      _lastWsContent = '';
+      _latestContent = output.content;
+      state = state.copyWith(
+        content: output.content,
+        totalLoadedLines: 0,
+        isLoadingHistory: false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      state = state.copyWith(isLoadingHistory: false);
+    }
+  }
+
   Future<void> loadMoreHistory() async {
+    // If history is stale, refresh first instead of loading more.
+    if (!_historyFresh) {
+      return refreshHistory();
+    }
     if (state.isLoadingHistory) return;
     state = state.copyWith(isLoadingHistory: true);
 
@@ -143,8 +207,9 @@ class OutputNotifier extends StateNotifier<OutputState> {
         lines: linesToLoad,
       );
       if (!mounted) return;
-      // Reset prefix — will be re-extracted on next WS message.
       _historyPrefix = '';
+      _historyFresh = true;
+      _lastWsContent = '';
       _latestContent = response.content;
       state = state.copyWith(
         content: response.content,
@@ -167,6 +232,8 @@ class OutputNotifier extends StateNotifier<OutputState> {
       );
       if (!mounted) return;
       _historyPrefix = '';
+      _historyFresh = true;
+      _lastWsContent = '';
       _latestContent = output.content;
       isAtBottom = true;
       state = state.copyWith(
