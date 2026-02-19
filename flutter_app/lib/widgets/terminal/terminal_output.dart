@@ -125,6 +125,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
 
   ProviderSubscription<String>? _targetSubscription;
   ProviderSubscription<AsyncValue<WsConnectionState>>? _wsSubscription;
+  ProviderSubscription<OutputState>? _outputSubscription;
 
   @override
   void initState() {
@@ -157,10 +158,38 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
         }
       },
     );
+
+    // Preserve scroll position when history loading completes.
+    // With reverse: true, pixels is measured from the bottom. When content
+    // is replaced with more history, Flutter's layout re-estimation can
+    // cause a micro-shift. Save pixels before the new layout and restore
+    // it in a post-frame callback.
+    _outputSubscription = ref.listenManual<OutputState>(
+      outputProvider,
+      (previous, next) {
+        if (previous != null &&
+            previous.isLoadingHistory &&
+            !next.isLoadingHistory &&
+            _userScrolledUp &&
+            _scrollController.hasClients) {
+          final savedPixels = _scrollController.position.pixels;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients && _userScrolledUp) {
+              _isAutoScrolling = true;
+              _scrollController.jumpTo(savedPixels);
+              _lastMaxScrollExtent =
+                  _scrollController.position.maxScrollExtent;
+              _isAutoScrolling = false;
+            }
+          });
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _outputSubscription?.close();
     _wsSubscription?.close();
     _targetSubscription?.close();
     _onDebugLogAddedCallbacks.remove(_scheduleLogPush);
@@ -189,7 +218,21 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     final isContentChange =
         (position.maxScrollExtent - _lastMaxScrollExtent).abs() > 0.5;
     _lastMaxScrollExtent = position.maxScrollExtent;
-    if (isContentChange) return;
+
+    // After refreshHistory/loadMoreHistory updates content, the user may
+    // already be at the top. The content-change scroll event would normally
+    // be skipped, so check for history loading here before returning.
+    if (isContentChange) {
+      if (_userScrolledUp &&
+          position.maxScrollExtent > 0 &&
+          position.pixels >
+              position.maxScrollExtent - AppConfig.scrollThreshold &&
+          !ref.read(outputProvider).isLoadingHistory &&
+          !_isTargetSwitching) {
+        ref.read(outputProvider.notifier).loadMoreHistory();
+      }
+      return;
+    }
 
     final atBottom = _checkIfAtBottom();
 
