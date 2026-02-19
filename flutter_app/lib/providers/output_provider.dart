@@ -29,6 +29,17 @@ class OutputState {
       totalLoadedLines: totalLoadedLines ?? this.totalLoadedLines,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OutputState &&
+          content == other.content &&
+          isLoadingHistory == other.isLoadingHistory &&
+          totalLoadedLines == other.totalLoadedLines;
+
+  @override
+  int get hashCode => Object.hash(content, isLoadingHistory, totalLoadedLines);
 }
 
 final selectedTargetProvider = StateProvider<String>((ref) {

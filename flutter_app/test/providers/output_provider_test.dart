@@ -457,4 +457,301 @@ void main() {
       });
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════
+  // _historyFresh lifecycle & refreshHistory
+  // ═══════════════════════════════════════════════════════════════
+  group('_historyFresh lifecycle & refreshHistory', () {
+    /// Helper: create a notifier with initial content so _historyFresh = true
+    /// after the initial fetch.
+    Future<OutputNotifier> freshNotifier(MockApiService api) async {
+      api.nextOutput = TmuxOutput(
+        content: 'line1\nline2\nline3',
+        timestamp: '',
+        target: 'sess',
+      );
+      final n = OutputNotifier(api, 'sess');
+      await Future.delayed(Duration.zero);
+      api.clearCalls();
+      return n;
+    }
+
+    /// Helper: invalidate _historyFresh by sending two different WS messages
+    /// while isAtBottom = true.
+    void invalidateFresh(OutputNotifier n) {
+      n.isAtBottom = true;
+      // First WS sets _lastWsContent (does not invalidate because
+      // _lastWsContent is empty).
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'screen-A',
+        timestamp: '',
+        target: 'sess',
+      ));
+      // Second WS with different content → _historyFresh = false.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'screen-B',
+        timestamp: '',
+        target: 'sess',
+      ));
+    }
+
+    // ── refreshHistory ───────────────────────────────────────
+    test('refreshHistory fetches when _historyFresh is false', () async {
+      final n = await freshNotifier(mockApi);
+      invalidateFresh(n);
+      mockApi.clearCalls();
+
+      mockApi.nextOutput = TmuxOutput(
+        content: 'refreshed content',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.refreshHistory();
+
+      expect(mockApi.getOutputCalls.length, 1);
+      expect(mockApi.getOutputCalls[0].includeHistory, true);
+      expect(mockApi.getOutputCalls[0].lines, AppConfig.minRows * 3);
+      expect(n.debugState.content, 'refreshed content');
+      expect(n.debugState.isLoadingHistory, false);
+      expect(n.debugState.totalLoadedLines, 0);
+    });
+
+    test('refreshHistory is no-op when _historyFresh is true', () async {
+      final n = await freshNotifier(mockApi);
+      // _historyFresh is true after initial fetch — should be skipped.
+      await n.refreshHistory();
+
+      expect(mockApi.getOutputCalls, isEmpty);
+    });
+
+    test('refreshHistory is no-op when isLoadingHistory is true', () async {
+      final n = await freshNotifier(mockApi);
+      invalidateFresh(n);
+      mockApi.clearCalls();
+      mockApi.manualComplete = true;
+
+      // Start first refreshHistory (will block on API).
+      final f1 = n.refreshHistory();
+      expect(n.debugState.isLoadingHistory, true);
+
+      // Second call should be skipped.
+      await n.refreshHistory();
+      expect(mockApi.pendingCount, 1); // only one API call
+
+      mockApi.completeGetOutput(TmuxOutput(
+        content: 'done',
+        timestamp: '',
+        target: 'sess',
+      ));
+      await f1;
+    });
+
+    test('refreshHistory resets isLoadingHistory on error', () async {
+      final n = await freshNotifier(mockApi);
+      invalidateFresh(n);
+      mockApi.clearCalls();
+
+      mockApi.nextError = Exception('server error');
+      await n.refreshHistory();
+
+      expect(n.debugState.isLoadingHistory, false);
+    });
+
+    // ── _historyFresh invalidation via WS ────────────────────
+    test('WS content change while at bottom invalidates _historyFresh',
+        () async {
+      final n = await freshNotifier(mockApi);
+      n.isAtBottom = true;
+
+      // First WS sets _lastWsContent.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'pane-v1',
+        timestamp: '',
+        target: 'sess',
+      ));
+      // _historyFresh still true (first WS, _lastWsContent was empty).
+      // refreshHistory should still no-op.
+      mockApi.clearCalls();
+      await n.refreshHistory();
+      expect(mockApi.getOutputCalls, isEmpty);
+
+      // Second WS with DIFFERENT content → invalidates.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'pane-v2',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // Now refreshHistory should work.
+      mockApi.nextOutput = TmuxOutput(
+        content: 'fresh',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.refreshHistory();
+      expect(mockApi.getOutputCalls.length, 1);
+    });
+
+    test('WS same content does NOT invalidate _historyFresh', () async {
+      final n = await freshNotifier(mockApi);
+      n.isAtBottom = true;
+
+      // Two identical WS messages.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'same',
+        timestamp: '',
+        target: 'sess',
+      ));
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'same',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // _historyFresh should still be true → refreshHistory no-op.
+      mockApi.clearCalls();
+      await n.refreshHistory();
+      expect(mockApi.getOutputCalls, isEmpty);
+    });
+
+    test('WS content change while scrolled up does NOT invalidate _historyFresh',
+        () async {
+      final n = await freshNotifier(mockApi);
+      n.isAtBottom = true;
+
+      // First WS sets _lastWsContent.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'v1',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // Scroll up before second WS.
+      n.isAtBottom = false;
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'v2',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // _historyFresh should still be true → refreshHistory no-op.
+      mockApi.clearCalls();
+      await n.refreshHistory();
+      expect(mockApi.getOutputCalls, isEmpty);
+    });
+
+    test('first WS message does NOT invalidate _historyFresh (empty _lastWsContent)',
+        () async {
+      final n = await freshNotifier(mockApi);
+      n.isAtBottom = true;
+
+      // Very first WS message — _lastWsContent is empty.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'first-ever',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // _historyFresh should still be true.
+      mockApi.clearCalls();
+      await n.refreshHistory();
+      expect(mockApi.getOutputCalls, isEmpty);
+    });
+
+    // ── loadMoreHistory delegation ───────────────────────────
+    test('loadMoreHistory delegates to refreshHistory when _historyFresh is false',
+        () async {
+      final n = await freshNotifier(mockApi);
+      invalidateFresh(n);
+      mockApi.clearCalls();
+
+      mockApi.nextOutput = TmuxOutput(
+        content: 'refreshed via delegation',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.loadMoreHistory();
+
+      // Should have called refreshHistory (minRows * 3 lines, not
+      // historyLinesPerLoad).
+      expect(mockApi.getOutputCalls.length, 1);
+      expect(mockApi.getOutputCalls[0].lines, AppConfig.minRows * 3);
+      expect(n.debugState.content, 'refreshed via delegation');
+      expect(n.debugState.totalLoadedLines, 0);
+    });
+
+    test('loadMoreHistory proceeds normally when _historyFresh is true',
+        () async {
+      final n = await freshNotifier(mockApi);
+      // _historyFresh is true after initial fetch.
+      mockApi.clearCalls();
+
+      mockApi.nextOutput = TmuxOutput(
+        content: 'more history',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.loadMoreHistory();
+
+      // Should use historyLinesPerLoad, not minRows * 3.
+      expect(mockApi.getOutputCalls.length, 1);
+      expect(mockApi.getOutputCalls[0].lines, AppConfig.historyLinesPerLoad);
+      expect(n.debugState.totalLoadedLines, AppConfig.historyLinesPerLoad);
+    });
+
+    test('refreshHistory re-enables normal loadMoreHistory afterwards',
+        () async {
+      final n = await freshNotifier(mockApi);
+      invalidateFresh(n);
+      mockApi.clearCalls();
+
+      // First: refreshHistory (via delegation).
+      mockApi.nextOutput = TmuxOutput(
+        content: 'refreshed',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.loadMoreHistory();
+      expect(mockApi.getOutputCalls[0].lines, AppConfig.minRows * 3);
+
+      // Now _historyFresh is true again → normal loadMore should work.
+      mockApi.nextOutput = TmuxOutput(
+        content: 'loaded more',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.loadMoreHistory();
+      expect(mockApi.getOutputCalls[1].lines, AppConfig.historyLinesPerLoad);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // OutputState equality
+  // ═══════════════════════════════════════════════════════════════
+  group('OutputState equality', () {
+    test('equal states are ==', () {
+      const a = OutputState(content: 'x', isLoadingHistory: true, totalLoadedLines: 5);
+      const b = OutputState(content: 'x', isLoadingHistory: true, totalLoadedLines: 5);
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('different content is not ==', () {
+      const a = OutputState(content: 'x');
+      const b = OutputState(content: 'y');
+      expect(a, isNot(equals(b)));
+    });
+
+    test('different isLoadingHistory is not ==', () {
+      const a = OutputState(isLoadingHistory: false);
+      const b = OutputState(isLoadingHistory: true);
+      expect(a, isNot(equals(b)));
+    });
+
+    test('different totalLoadedLines is not ==', () {
+      const a = OutputState(totalLoadedLines: 0);
+      const b = OutputState(totalLoadedLines: 100);
+      expect(a, isNot(equals(b)));
+    });
+  });
 }
