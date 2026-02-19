@@ -723,6 +723,50 @@ void main() {
       await n.loadMoreHistory();
       expect(mockApi.getOutputCalls[1].lines, AppConfig.historyLinesPerLoad);
     });
+
+    test('refreshHistory resets WS baseline so next same-pane WS does not invalidate',
+        () async {
+      // Codex review: after refreshHistory, _lastWsContent should be
+      // reset so the next WS frame with the same pane content doesn't
+      // incorrectly mark _historyFresh as stale.
+      final n = await freshNotifier(mockApi);
+      n.isAtBottom = true;
+
+      // Two different WS messages → _historyFresh = false.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'pane-old',
+        timestamp: '',
+        target: 'sess',
+      ));
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'pane-current',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // refreshHistory.
+      mockApi.clearCalls();
+      mockApi.nextOutput = TmuxOutput(
+        content: 'refreshed',
+        timestamp: '',
+        target: 'sess',
+      );
+      await n.refreshHistory();
+      expect(n.debugState.content, 'refreshed');
+
+      // Now a WS message arrives with the same pane as before the refresh.
+      // _lastWsContent was reset, so this first WS should NOT invalidate.
+      n.onWebSocketMessage(TmuxOutput(
+        content: 'pane-current',
+        timestamp: '',
+        target: 'sess',
+      ));
+
+      // _historyFresh should still be true → refreshHistory is no-op.
+      mockApi.clearCalls();
+      await n.refreshHistory();
+      expect(mockApi.getOutputCalls, isEmpty);
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════

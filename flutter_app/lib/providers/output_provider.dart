@@ -177,6 +177,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
       if (!mounted) return;
       _historyPrefix = '';
       _historyFresh = true;
+      _lastWsContent = '';
       _latestContent = output.content;
       state = state.copyWith(
         content: output.content,
@@ -208,6 +209,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
       if (!mounted) return;
       _historyPrefix = '';
       _historyFresh = true;
+      _lastWsContent = '';
       _latestContent = response.content;
       state = state.copyWith(
         content: response.content,
@@ -231,6 +233,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
       if (!mounted) return;
       _historyPrefix = '';
       _historyFresh = true;
+      _lastWsContent = '';
       _latestContent = output.content;
       isAtBottom = true;
       state = state.copyWith(
