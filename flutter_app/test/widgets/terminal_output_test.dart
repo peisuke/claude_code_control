@@ -135,14 +135,16 @@ void main() {
         expect(find.byType(ListView), findsOneWidget);
       });
 
-      testWidgets('should not show scroll-to-bottom FAB by default',
+      testWidgets('should show refresh FAB by default (at bottom)',
           (tester) async {
-        // Port of: scroll handling — FAB only appears when scrolled up
+        // FAB is always visible: refresh icon at bottom, arrow_downward when scrolled up
         await tester.pumpWidget(_build(content: 'test'));
         await tester.pump();
         await tester.pump();
 
-        expect(find.byType(FloatingActionButton), findsNothing);
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_downward), findsNothing);
       });
     });
 
