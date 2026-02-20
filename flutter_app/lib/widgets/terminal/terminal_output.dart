@@ -334,8 +334,7 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
   void _handleRefresh() {
     _lineCache.clear();
     _lastContent = '';
-    _lastConstraintW = 0;
-    _lastConstraintH = 0;
+    ref.read(terminalResizeProvider.notifier).retrySend();
     ref.read(outputProvider.notifier).refresh();
     _scrollToBottom(force: true);
   }
