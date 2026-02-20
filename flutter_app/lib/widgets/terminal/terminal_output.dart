@@ -330,6 +330,15 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
     return false;
   }
 
+  // ─── Refresh (manual reload without target switch) ───────
+  void _handleRefresh() {
+    _lineCache.clear();
+    _lastContent = '';
+    ref.read(terminalResizeProvider.notifier).retrySend();
+    ref.read(outputProvider.notifier).refresh();
+    _scrollToBottom(force: true);
+  }
+
   // ─── Target change detection ─────────────────────────────
   void _resetForTargetChange() {
     _userScrolledUp = false;
@@ -457,16 +466,19 @@ class _TerminalOutputState extends ConsumerState<TerminalOutput> {
                   ),
                 ),
               ),
-            // Scroll-to-bottom FAB
-            if (_userScrolledUp)
-              Positioned(
-                bottom: 24,
-                right: 24,
-                child: FloatingActionButton.small(
-                  onPressed: () => _scrollToBottom(force: true),
-                  child: const Icon(Icons.arrow_downward),
+            // FAB: scroll-to-bottom when scrolled up, refresh when at bottom
+            Positioned(
+              bottom: 24,
+              right: 24,
+              child: FloatingActionButton.small(
+                onPressed: _userScrolledUp
+                    ? () => _scrollToBottom(force: true)
+                    : _handleRefresh,
+                child: Icon(
+                  _userScrolledUp ? Icons.arrow_downward : Icons.refresh,
                 ),
               ),
+            ),
           ],
         );
       },
