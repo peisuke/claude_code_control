@@ -317,7 +317,30 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
       idx++;
     }
     final name = idx.toString();
-    await ref.read(sessionProvider.notifier).createSession(name);
+    final notifier = ref.read(sessionProvider.notifier);
+    final success = await notifier.createSession(name);
+    if (!mounted) return;
+
+    // createSession internally calls fetchHierarchy, but the hierarchy
+    // may be stale when the tmux server was just started (0→1 sessions).
+    // Retry once after a short delay if the new session is missing.
+    var updated = ref.read(sessionProvider).hierarchy;
+    if ((success && updated?.sessions[name] == null) || !success) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      await notifier.fetchHierarchy();
+      if (!mounted) return;
+      updated = ref.read(sessionProvider).hierarchy;
+    }
+
+    // Auto-select the new session's first window and connect WebSocket
+    final session = updated?.sessions[name];
+    if (session != null && session.windows.isNotEmpty) {
+      final target = '$name:${session.windows.keys.first}';
+      ref.read(selectedTargetProvider.notifier).state = target;
+      ref.read(websocketServiceProvider).setTarget(target);
+      ref.read(websocketServiceProvider).resetAndReconnect();
+    }
   }
 
   Future<void> _createWindow(
