@@ -209,6 +209,56 @@ class TestTmuxRouterDeleteWindow:
         assert "Failed to delete window" in response.json()["detail"]
 
 
+class TestTmuxRouterRenameSession:
+    """Tests for /api/tmux/rename-session endpoint"""
+
+    def test_rename_session_success(self, test_client, mock_tmux_service):
+        mock_tmux_service.rename_session = AsyncMock(return_value=True)
+
+        response = test_client.put("/api/tmux/rename-session?old_name=old&new_name=new")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "renamed" in data["message"]
+        mock_tmux_service.rename_session.assert_called_with("old", "new")
+
+    def test_rename_session_failure(self, test_client, mock_tmux_service):
+        mock_tmux_service.rename_session = AsyncMock(return_value=False)
+
+        response = test_client.put("/api/tmux/rename-session?old_name=old&new_name=new")
+
+        assert response.status_code == 500
+        assert "Failed to rename session" in response.json()["detail"]
+
+
+class TestTmuxRouterRenameWindow:
+    """Tests for /api/tmux/rename-window endpoint"""
+
+    def test_rename_window_success(self, test_client, mock_tmux_service):
+        mock_tmux_service.rename_window = AsyncMock(return_value=True)
+
+        response = test_client.put(
+            "/api/tmux/rename-window?session_name=default&window_index=0&new_name=renamed"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "renamed" in data["message"]
+        mock_tmux_service.rename_window.assert_called_with("default", "0", "renamed")
+
+    def test_rename_window_failure(self, test_client, mock_tmux_service):
+        mock_tmux_service.rename_window = AsyncMock(return_value=False)
+
+        response = test_client.put(
+            "/api/tmux/rename-window?session_name=default&window_index=0&new_name=renamed"
+        )
+
+        assert response.status_code == 500
+        assert "Failed to rename window" in response.json()["detail"]
+
+
 class TestTmuxRouterStatus:
     """Tests for /api/tmux/status endpoint"""
 

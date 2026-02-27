@@ -349,6 +349,54 @@ class TestTmuxService:
         assert result is False
 
     @pytest.mark.asyncio
+    async def test_rename_session_success(self, service, mock_subprocess):
+        mock_exec, mock_process = mock_subprocess
+        mock_process.returncode = 0
+
+        result = await service.rename_session("old-session", "new-session")
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_rename_session_invalid_old_name(self, service):
+        result = await service.rename_session("invalid;name", "new-session")
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_rename_session_invalid_new_name(self, service):
+        result = await service.rename_session("old-session", "invalid;name")
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_rename_window_success(self, service, mock_subprocess):
+        mock_exec, mock_process = mock_subprocess
+        mock_process.returncode = 0
+
+        result = await service.rename_window("default", "0", "new-name")
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_rename_window_invalid_session(self, service):
+        result = await service.rename_window("invalid;session", "0", "new-name")
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_rename_window_invalid_window(self, service):
+        result = await service.rename_window("default", "invalid;window", "new-name")
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_rename_window_invalid_new_name(self, service):
+        result = await service.rename_window("default", "0", "invalid;name")
+
+        assert result is False
+
+    @pytest.mark.asyncio
     async def test_get_hierarchy_success(self, service, mock_subprocess):
         mock_exec, mock_process = mock_subprocess
         mock_process.returncode = 0

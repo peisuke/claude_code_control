@@ -107,6 +107,22 @@ class ApiService {
     return ApiResponse.fromJson(response.data as Map<String, dynamic>, null);
   }
 
+  Future<ApiResponse> renameSession(String oldName, String newName) async {
+    final response = await _dio.put('/tmux/rename-session',
+        queryParameters: {'old_name': oldName, 'new_name': newName});
+    return ApiResponse.fromJson(response.data as Map<String, dynamic>, null);
+  }
+
+  Future<ApiResponse> renameWindow(
+      String sessionName, String windowIndex, String newName) async {
+    final response = await _dio.put('/tmux/rename-window', queryParameters: {
+      'session_name': sessionName,
+      'window_index': windowIndex,
+      'new_name': newName,
+    });
+    return ApiResponse.fromJson(response.data as Map<String, dynamic>, null);
+  }
+
   Future<ApiResponse> resizePane(String target, int cols, int rows) async {
     final response = await _dio.post('/tmux/resize', queryParameters: {
       'target': target,
