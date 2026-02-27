@@ -213,5 +213,37 @@ void main() {
         expect(find.byType(ListTile), findsWidgets);
       });
     });
+
+    // ── refresh button ──────────────────────────────────
+    group('refresh button', () {
+      testWidgets('should show refresh button', (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
+        expect(find.byTooltip('Refresh'), findsOneWidget);
+      });
+
+      testWidgets('should refresh current directory on tap', (tester) async {
+        await tester.pumpWidget(_build(
+          tree: const [
+            FileNode(name: 'src', path: '/home/src', type: 'directory'),
+          ],
+          currentPath: '/home',
+        ));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Tap refresh — should not crash and UI should remain
+        await tester.tap(find.byIcon(Icons.refresh));
+        await tester.pump();
+
+        // Still shows the file tree
+        expect(find.text('src'), findsOneWidget);
+      });
+    });
   });
 }
