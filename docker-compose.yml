@@ -7,12 +7,15 @@ services:
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
         TMUX_VERSION: ${TMUX_VERSION:-}
+    init: true
     ports:
       - "${APP_PORT:-8000}:8000"
     volumes:
       - /tmp/tmux-${HOST_UID:-1000}:/tmp/tmux-${HOST_UID:-1000}:rw
+      - ${WORKSPACE:-.}:/workspace:rw
     environment:
       - TMUX_SOCKET_PATH=${TMUX_SOCKET_PATH:-}
+      - WORKSPACE_DIR=/workspace
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -30,12 +33,15 @@ services:
         HOST_GID: ${HOST_GID:-1000}
         TMUX_VERSION: ${TMUX_VERSION:-}
     profiles: ["backend"]
+    init: true
     ports:
       - "${APP_PORT:-8000}:8000"
     volumes:
       - /tmp/tmux-${HOST_UID:-1000}:/tmp/tmux-${HOST_UID:-1000}:rw
+      - ${WORKSPACE:-.}:/workspace:rw
     environment:
       - TMUX_SOCKET_PATH=${TMUX_SOCKET_PATH:-}
+      - WORKSPACE_DIR=/workspace
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
