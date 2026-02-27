@@ -114,4 +114,34 @@ class SessionNotifier extends StateNotifier<SessionState> {
       return false;
     }
   }
+
+  Future<bool> renameSession(String oldName, String newName) async {
+    try {
+      final response = await _api.renameSession(oldName, newName);
+      if (!mounted) return false;
+      if (response.success) {
+        await fetchHierarchy();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> renameWindow(
+      String sessionName, String windowIndex, String newName) async {
+    try {
+      final response =
+          await _api.renameWindow(sessionName, windowIndex, newName);
+      if (!mounted) return false;
+      if (response.success) {
+        await fetchHierarchy();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
 }
