@@ -359,6 +359,7 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
 
     final success =
         await ref.read(sessionProvider.notifier).renameSession(sessionName, newName);
+    if (!mounted) return;
     if (success) {
       // Update selectedTarget if it references the old session name
       final currentTarget = ref.read(selectedTargetProvider);
@@ -394,6 +395,7 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
     final success = await ref
         .read(sessionProvider.notifier)
         .renameWindow(sessionName, windowIndex, newName);
+    if (!mounted) return;
     if (!success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to rename window')),
