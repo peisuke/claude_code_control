@@ -6,6 +6,7 @@ import '../../providers/session_provider.dart';
 import '../../providers/websocket_provider.dart';
 import '../../utils/tmux_utils.dart';
 import 'delete_confirmation_dialog.dart';
+import 'rename_dialog.dart';
 
 class SessionTreeView extends ConsumerStatefulWidget {
   const SessionTreeView({super.key});
@@ -150,6 +151,17 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                     ),
                   ),
                 ),
+                // Rename session button
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 16),
+                  onPressed: () =>
+                      _renameSession(context, sessionName),
+                  tooltip: 'Rename session',
+                  constraints: const BoxConstraints(
+                      minWidth: 28, minHeight: 28),
+                  padding: EdgeInsets.zero,
+                  iconSize: 16,
+                ),
                 // Add window button
                 IconButton(
                   icon: const Icon(Icons.add, size: 16),
@@ -247,6 +259,17 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                     ),
                   ),
                 ),
+                // Rename window button
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 14),
+                  onPressed: () => _renameWindow(
+                      context, sessionName, windowIndex, window.name),
+                  tooltip: 'Rename window',
+                  constraints: const BoxConstraints(
+                      minWidth: 24, minHeight: 24),
+                  padding: EdgeInsets.zero,
+                  iconSize: 14,
+                ),
                 if (totalWindows > 1)
                   IconButton(
                     icon: const Icon(Icons.close, size: 14),
@@ -323,6 +346,61 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
   Future<void> _createWindow(
       BuildContext context, String sessionName) async {
     await ref.read(sessionProvider.notifier).createWindow(sessionName);
+  }
+
+  Future<void> _renameSession(
+      BuildContext context, String sessionName) async {
+    final newName = await showRenameDialog(
+      context,
+      title: 'Rename Session',
+      currentName: sessionName,
+    );
+    if (newName == null) return;
+
+    final success =
+        await ref.read(sessionProvider.notifier).renameSession(sessionName, newName);
+    if (!mounted) return;
+    if (success) {
+      // Update selectedTarget if it references the old session name
+      final currentTarget = ref.read(selectedTargetProvider);
+      final parts = currentTarget.split(':');
+      if (parts.first == sessionName) {
+        final newTarget = '$newName${parts.length > 1 ? ':${parts.sublist(1).join(':')}' : ''}';
+        ref.read(selectedTargetProvider.notifier).state = newTarget;
+        ref.read(websocketServiceProvider).setTarget(newTarget);
+        _lastAutoExpandedTarget = newTarget;
+      }
+      // Update expanded sessions set
+      setState(() {
+        if (_expandedSessions.remove(sessionName)) {
+          _expandedSessions.add(newName);
+        }
+      });
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to rename session')),
+      );
+    }
+  }
+
+  Future<void> _renameWindow(BuildContext context, String sessionName,
+      String windowIndex, String currentName) async {
+    final newName = await showRenameDialog(
+      context,
+      title: 'Rename Window',
+      currentName: currentName,
+    );
+    if (newName == null) return;
+
+    final success = await ref
+        .read(sessionProvider.notifier)
+        .renameWindow(sessionName, windowIndex, newName);
+    if (!mounted) return;
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to rename window')),
+      );
+    }
   }
 
   Future<void> _confirmDeleteSession(
