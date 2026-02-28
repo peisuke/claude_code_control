@@ -2,7 +2,7 @@ export HOST_UID ?= $(shell id -u)
 export HOST_GID ?= $(shell id -g)
 export APP_PORT ?= 8000
 export TMUX_VERSION ?= $(shell tmux -V 2>/dev/null | sed -E 's/^[^0-9]*//')
-export WORKSPACE ?= /Users/ubuntu/workspace/claude
+export WORKSPACE ?= $(shell pwd)
 
 COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VERSION=$(TMUX_VERSION) WORKSPACE=$(WORKSPACE) docker-compose
 FLUTTER ?= flutter
