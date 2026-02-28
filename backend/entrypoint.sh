@@ -15,8 +15,12 @@ chmod 700 "$TMUX_DIR"
 # Create default tmux session as appuser
 DEFAULT_SESSION="${TMUX_DEFAULT_SESSION:-main}"
 WORKSPACE="${WORKSPACE_DIR:-/home/appuser}"
-if ! gosu appuser tmux has-session -t "$DEFAULT_SESSION" 2>/dev/null; then
-    gosu appuser tmux new-session -d -s "$DEFAULT_SESSION" -c "$WORKSPACE"
+TMUX_OPTS=""
+if [ -n "$TMUX_SOCKET_PATH" ]; then
+    TMUX_OPTS="-S $TMUX_SOCKET_PATH"
+fi
+if ! gosu appuser tmux $TMUX_OPTS has-session -t "$DEFAULT_SESSION" 2>/dev/null; then
+    gosu appuser tmux $TMUX_OPTS new-session -d -s "$DEFAULT_SESSION" -c "$WORKSPACE"
     echo "Created default tmux session: $DEFAULT_SESSION (cwd: $WORKSPACE)"
 fi
 
