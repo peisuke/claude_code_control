@@ -1,9 +1,11 @@
 export HOST_UID ?= $(shell id -u)
 export HOST_GID ?= $(shell id -g)
 export APP_PORT ?= 8000
-export TMUX_VERSION ?= $(shell tmux -V 2>/dev/null | grep -oP '[\d.]+[a-z]?')
+export TMUX_VERSION ?= $(shell tmux -V 2>/dev/null | sed -E 's/^[^0-9]*//')
+export WORKSPACE ?= $(shell pwd)
 
-COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VERSION=$(TMUX_VERSION) docker compose
+DOCKER_COMPOSE := $(shell command -v docker-compose 2>/dev/null || echo "docker compose")
+COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VERSION=$(TMUX_VERSION) WORKSPACE="$(WORKSPACE)" $(DOCKER_COMPOSE)
 FLUTTER ?= flutter
 FLUTTER_PORT ?= 3000
 

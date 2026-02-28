@@ -29,8 +29,25 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
 
     return Column(
       children: [
-        // Breadcrumb navigation
-        _buildBreadcrumbs(context, state.currentPath),
+        // Breadcrumb navigation + refresh button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(child: _buildBreadcrumbs(context, state.currentPath)),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20),
+                onPressed: state.isLoadingTree
+                    ? null
+                    : () => ref
+                        .read(fileProvider.notifier)
+                        .fetchTree(path: state.currentPath),
+                tooltip: 'Refresh',
+                iconSize: 20,
+              ),
+            ],
+          ),
+        ),
         const Divider(height: 1),
         // File tree
         Expanded(
@@ -77,9 +94,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
 
     return Tooltip(
       message: path.isEmpty ? '/' : path,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
+      child: Row(
           children: [
             InkWell(
               onTap: () =>
@@ -113,7 +128,6 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
             ],
           ],
         ),
-      ),
     );
   }
 

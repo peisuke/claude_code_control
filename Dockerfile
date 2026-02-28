@@ -34,9 +34,20 @@ RUN apt-get update && \
     fi && \
     rm -rf /var/lib/apt/lists/*
 
-# Create non-root user matching host UID/GID
-RUN groupadd -g ${HOST_GID} appgroup && \
-    useradd -u ${HOST_UID} -g appgroup -m -s /bin/bash appuser
+# Install tools (gosu, git, curl, npm) and create non-root user
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gosu curl ca-certificates git npm && \
+    # uv (Python package manager)
+    curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    mv /root/.local/bin/uv /usr/local/bin/ && mv /root/.local/bin/uvx /usr/local/bin/ && \
+    rm -rf /var/lib/apt/lists/* && \
+    # Create non-root user matching host UID/GID
+    (groupadd -g ${HOST_GID} appgroup 2>/dev/null || true) && \
+    useradd -u ${HOST_UID} -g ${HOST_GID} -m -s /bin/bash appuser
+
+# Claude Code CLI (installer requires bash)
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    cp -L /root/.local/bin/claude /usr/local/bin/claude
 
 WORKDIR /app
 
@@ -44,13 +55,13 @@ WORKDIR /app
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
-# Copy backend source
+# Copy backend source and entrypoint
 COPY backend/ ./backend/
 
 ENV PYTHONUNBUFFERED=1
 
-# Switch to non-root user
-USER appuser
+# Entrypoint runs as root to fix permissions, then drops to appuser via gosu
+ENTRYPOINT ["backend/entrypoint.sh"]
 
 EXPOSE 8000
 
