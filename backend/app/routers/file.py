@@ -25,6 +25,10 @@ ALLOWED_BASE_PATHS = [
     '/workspace',
     os.getcwd(),  # Current working directory
 ]
+# Include WORKSPACE_DIR so custom paths are accessible via the file browser
+_workspace_dir = os.environ.get('WORKSPACE_DIR')
+if _workspace_dir and os.path.realpath(_workspace_dir) not in [os.path.realpath(p) for p in ALLOWED_BASE_PATHS]:
+    ALLOWED_BASE_PATHS.append(_workspace_dir)
 
 # Hidden files/directories that should be shown
 ALLOWED_HIDDEN = {'.bashrc', '.profile', '.zshrc', '.vimrc', '.gitignore', '.gitattributes', '.env', '.config', '.ssh'}

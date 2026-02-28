@@ -5,7 +5,7 @@ export TMUX_VERSION ?= $(shell tmux -V 2>/dev/null | sed -E 's/^[^0-9]*//')
 export WORKSPACE ?= $(shell pwd)
 
 DOCKER_COMPOSE := $(shell command -v docker-compose 2>/dev/null || echo "docker compose")
-COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VERSION=$(TMUX_VERSION) WORKSPACE=$(WORKSPACE) $(DOCKER_COMPOSE)
+COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VERSION=$(TMUX_VERSION) WORKSPACE="$(WORKSPACE)" $(DOCKER_COMPOSE)
 FLUTTER ?= flutter
 FLUTTER_PORT ?= 3000
 
