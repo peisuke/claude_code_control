@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../providers/connection_provider.dart';
 import '../providers/output_provider.dart';
+import '../providers/session_provider.dart';
 import '../providers/view_provider.dart';
+import '../utils/tmux_utils.dart';
 import '../providers/websocket_provider.dart';
 import '../services/websocket_service.dart' show WsConnectionState;
 import '../providers/file_provider.dart';
@@ -109,6 +111,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final viewMode = ref.watch(viewProvider);
     final fileState = ref.watch(fileProvider);
+    final selectedTarget = ref.watch(selectedTargetProvider);
+    final sessionState = ref.watch(sessionProvider);
 
     return PopScope(
       canPop: false,
@@ -132,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                viewMode == ViewMode.tmux ? 'Tmux Controller' : 'Files',
+                viewMode == ViewMode.tmux ? _buildTmuxTitle(selectedTarget, sessionState) : 'Files',
                 style: const TextStyle(fontSize: 16),
               ),
               const Text(
@@ -173,6 +177,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// │ ChoiceButtons or         │
   /// │ CommandInputArea         │
   /// └──────────────────────────┘
+  String _buildTmuxTitle(String target, SessionState state) {
+    final parsed = TmuxUtils.parseTarget(target);
+    final session = parsed.session;
+    final windowIndex = parsed.window;
+    if (session.isEmpty) return 'Tmux Controller';
+    // Look up window name from hierarchy
+    final window = state.hierarchy?.sessions[session]?.windows[windowIndex];
+    final windowName = window?.name;
+    if (windowName != null && windowName.isNotEmpty) {
+      return '$session : $windowName';
+    }
+    return session;
+  }
+
   Widget _buildTmuxView() {
     final outputState = ref.watch(outputProvider);
     final choices = ChoiceDetector.detect(outputState.content);
