@@ -165,15 +165,15 @@ class TmuxService:
             return []
 
     async def create_session(self, session: str) -> bool:
-        """Create a new tmux session starting in the user's home directory"""
+        """Create a new tmux session starting in the workspace directory"""
         if not validate_tmux_name(session):
             logger.warning(f"Invalid tmux session name: {session}")
             return False
 
         try:
-            home_dir = os.path.expanduser('~')
+            start_dir = os.environ.get('WORKSPACE_DIR') or os.path.expanduser('~')
             _, stderr, returncode = await self._execute_tmux_command(
-                ["tmux", "new-session", "-d", "-s", session, "-c", home_dir]
+                ["tmux", "new-session", "-d", "-s", session, "-c", start_dir]
             )
 
             if returncode != 0:
