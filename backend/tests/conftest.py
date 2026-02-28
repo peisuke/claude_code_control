@@ -49,6 +49,8 @@ def mock_tmux_service():
         mock_service.kill_session = AsyncMock(return_value=True)
         mock_service.create_window = AsyncMock(return_value=True)
         mock_service.kill_window = AsyncMock(return_value=True)
+        mock_service.rename_session = AsyncMock(return_value=True)
+        mock_service.rename_window = AsyncMock(return_value=True)
         mock_service.get_hierarchy = AsyncMock(return_value={
             "default": {
                 "name": "default",

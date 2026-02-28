@@ -562,6 +562,57 @@ void main() {
       });
     });
 
+    // ── renameSession ──────────────────────────────────────
+
+    group('renameSession', () {
+      test('should send rename session request', () async {
+        mock.mockResolve({'success': true, 'message': 'Session renamed'});
+
+        final result = await api.renameSession('old-session', 'new-session');
+
+        expect(mock.lastRequest.method, 'PUT');
+        expect(mock.lastRequest.path, '/tmux/rename-session');
+        expect(mock.lastRequest.queryParameters['old_name'], 'old-session');
+        expect(mock.lastRequest.queryParameters['new_name'], 'new-session');
+        expect(result.success, true);
+      });
+
+      test('should throw error on HTTP error', () async {
+        mock.mockReject(statusCode: 500);
+
+        expect(
+          () => api.renameSession('old', 'new'),
+          throwsA(isA<DioException>()),
+        );
+      });
+    });
+
+    // ── renameWindow ───────────────────────────────────────
+
+    group('renameWindow', () {
+      test('should send rename window request', () async {
+        mock.mockResolve({'success': true, 'message': 'Window renamed'});
+
+        final result = await api.renameWindow('my-session', '0', 'new-name');
+
+        expect(mock.lastRequest.method, 'PUT');
+        expect(mock.lastRequest.path, '/tmux/rename-window');
+        expect(mock.lastRequest.queryParameters['session_name'], 'my-session');
+        expect(mock.lastRequest.queryParameters['window_index'], '0');
+        expect(mock.lastRequest.queryParameters['new_name'], 'new-name');
+        expect(result.success, true);
+      });
+
+      test('should throw error on HTTP error', () async {
+        mock.mockReject(statusCode: 500);
+
+        expect(
+          () => api.renameWindow('session', '0', 'name'),
+          throwsA(isA<DioException>()),
+        );
+      });
+    });
+
     // ── resizePane (Flutter-only, not in web tests) ──────────
 
     group('resizePane', () {

@@ -327,6 +327,46 @@ class TmuxService:
             logger.error(f"Error killing window: {e}")
             return False
 
+    async def rename_session(self, old_name: str, new_name: str) -> bool:
+        """Rename a tmux session"""
+        if not validate_tmux_name(old_name):
+            logger.warning(f"Invalid session name: {old_name}")
+            return False
+        if not validate_tmux_name(new_name):
+            logger.warning(f"Invalid session name: {new_name}")
+            return False
+
+        try:
+            _, _, returncode = await self._execute_tmux_command(
+                ["tmux", "rename-session", "-t", old_name, new_name]
+            )
+            return returncode == 0
+        except Exception as e:
+            logger.error(f"Error renaming session: {e}")
+            return False
+
+    async def rename_window(self, session: str, window_index: str, new_name: str) -> bool:
+        """Rename a window in a tmux session"""
+        if not validate_tmux_name(session):
+            logger.warning(f"Invalid session name: {session}")
+            return False
+        if not validate_tmux_name(window_index):
+            logger.warning(f"Invalid window index: {window_index}")
+            return False
+        if not validate_tmux_name(new_name):
+            logger.warning(f"Invalid window name: {new_name}")
+            return False
+
+        try:
+            target = f"{session}:{window_index}"
+            _, _, returncode = await self._execute_tmux_command(
+                ["tmux", "rename-window", "-t", target, new_name]
+            )
+            return returncode == 0
+        except Exception as e:
+            logger.error(f"Error renaming window: {e}")
+            return False
+
     async def get_hierarchy(self) -> Dict[str, Any]:
         """Get complete tmux hierarchy (sessions -> windows -> panes)"""
         try:

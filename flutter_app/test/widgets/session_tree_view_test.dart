@@ -249,6 +249,82 @@ void main() {
       });
     });
 
+    // ── rename ──────────────────────────────────────────
+    group('rename', () {
+      testWidgets('should show edit icon for sessions', (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Edit icons should appear for sessions
+        expect(find.byIcon(Icons.edit), findsWidgets);
+      });
+
+      testWidgets('should show edit icon for windows', (tester) async {
+        await tester.pumpWidget(_build(selectedTarget: 'default:0'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Edit icons should appear (for sessions and windows)
+        expect(find.byIcon(Icons.edit), findsWidgets);
+      });
+
+      testWidgets('should show rename dialog when session edit tapped',
+          (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Find the first edit button (session rename) and tap it
+        await tester.tap(find.byIcon(Icons.edit).first);
+        await tester.pumpAndSettle();
+
+        // Rename dialog should be visible
+        expect(find.text('Rename Session'), findsOneWidget);
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Rename'), findsOneWidget);
+      });
+
+      testWidgets('should show rename dialog when window edit tapped',
+          (tester) async {
+        await tester.pumpWidget(_build(selectedTarget: 'default:0'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Find the window edit button — session edit icons come first,
+        // window edit icons follow. With 'default' expanded showing 2 windows,
+        // we have: 2 session edits + 2 window edits = 4 total.
+        // Window edits start at index 2.
+        final editIcons = find.byIcon(Icons.edit);
+        // Tap the 3rd edit icon (first window edit)
+        await tester.tap(editIcons.at(2));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Rename Window'), findsOneWidget);
+      });
+
+      testWidgets('should dismiss rename dialog on cancel', (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.edit).first);
+        await tester.pumpAndSettle();
+
+        // Tap cancel
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        // Dialog should be dismissed
+        expect(find.text('Rename Session'), findsNothing);
+      });
+    });
+
     // ── error state ──────────────────────────────────────
     group('error state', () {
       testWidgets('should show No sessions with empty hierarchy',

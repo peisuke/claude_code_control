@@ -187,6 +187,37 @@ async def delete_window(session_name: str, window_index: str):
     return await _handle_tmux_operation(_op, "deleting window")
 
 
+@router.put("/rename-session")
+async def rename_session(old_name: str, new_name: str):
+    """Rename a tmux session"""
+    async def _op():
+        success = await tmux_service.rename_session(old_name, new_name)
+        _require_success(success, f"Failed to rename session '{old_name}' to '{new_name}'")
+        return ApiResponse(
+            success=True,
+            message=f"Session '{old_name}' renamed to '{new_name}'"
+        )
+
+    return await _handle_tmux_operation(_op, "renaming session")
+
+
+@router.put("/rename-window")
+async def rename_window(session_name: str, window_index: str, new_name: str):
+    """Rename a window in a tmux session"""
+    async def _op():
+        success = await tmux_service.rename_window(session_name, window_index, new_name)
+        _require_success(
+            success,
+            f"Failed to rename window '{window_index}' in session '{session_name}' to '{new_name}'"
+        )
+        return ApiResponse(
+            success=True,
+            message=f"Window '{window_index}' in session '{session_name}' renamed to '{new_name}'"
+        )
+
+    return await _handle_tmux_operation(_op, "renaming window")
+
+
 @router.get("/status")
 async def get_status():
     """Get tmux status and available sessions"""

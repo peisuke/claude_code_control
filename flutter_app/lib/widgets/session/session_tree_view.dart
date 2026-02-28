@@ -157,20 +157,24 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                   onPressed: () =>
                       _renameSession(context, sessionName),
                   tooltip: 'Rename session',
-                  constraints: const BoxConstraints(
-                      minWidth: 28, minHeight: 28),
-                  padding: EdgeInsets.zero,
                   iconSize: 16,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(28, 28),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
                 // Add window button
                 IconButton(
                   icon: const Icon(Icons.add, size: 16),
                   onPressed: () => _createWindow(context, sessionName),
                   tooltip: 'New window',
-                  constraints: const BoxConstraints(
-                      minWidth: 28, minHeight: 28),
-                  padding: EdgeInsets.zero,
                   iconSize: 16,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(28, 28),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
                 // Delete session button
                 if ((ref.read(sessionProvider).hierarchy?.sessions.length ??
@@ -181,10 +185,12 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                     onPressed: () =>
                         _confirmDeleteSession(context, sessionName),
                     tooltip: 'Delete session',
-                    constraints: const BoxConstraints(
-                        minWidth: 28, minHeight: 28),
-                    padding: EdgeInsets.zero,
                     iconSize: 16,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(28, 28),
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
               ],
             ),
@@ -265,10 +271,12 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                   onPressed: () => _renameWindow(
                       context, sessionName, windowIndex, window.name),
                   tooltip: 'Rename window',
-                  constraints: const BoxConstraints(
-                      minWidth: 24, minHeight: 24),
-                  padding: EdgeInsets.zero,
                   iconSize: 14,
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(24, 24),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
                 if (totalWindows > 1)
                   IconButton(
@@ -276,10 +284,12 @@ class _SessionTreeViewState extends ConsumerState<SessionTreeView> {
                     onPressed: () => _confirmDeleteWindow(
                         context, sessionName, windowIndex),
                     tooltip: 'Delete window',
-                    constraints: const BoxConstraints(
-                        minWidth: 24, minHeight: 24),
-                    padding: EdgeInsets.zero,
                     iconSize: 14,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(24, 24),
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                   ),
               ],
             ),

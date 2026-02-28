@@ -97,6 +97,17 @@ class NoOpApiService extends ApiService {
   }
 
   @override
+  Future<ApiResponse> renameSession(String oldName, String newName) async {
+    return const ApiResponse(success: true, message: '');
+  }
+
+  @override
+  Future<ApiResponse> renameWindow(
+      String sessionName, String windowIndex, String newName) async {
+    return const ApiResponse(success: true, message: '');
+  }
+
+  @override
   Future<ApiResponse> resizePane(String target, int cols, int rows) async {
     return const ApiResponse(success: true, message: '');
   }

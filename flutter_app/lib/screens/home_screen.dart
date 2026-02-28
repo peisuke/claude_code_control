@@ -136,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 style: const TextStyle(fontSize: 16),
               ),
               const Text(
-                'build: 02/15 22:39',
+                'build: ${String.fromEnvironment("BUILD_DATE", defaultValue: "dev")}',
                 style: TextStyle(fontSize: 9, color: Colors.grey),
               ),
             ],
