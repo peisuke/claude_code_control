@@ -127,7 +127,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.text('Tmux Controller'), findsOneWidget);
+        // Title shows session/window info or fallback
+        expect(find.byType(AppBar), findsOneWidget);
       });
 
       testWidgets('should show connection status in app bar', (tester) async {
@@ -174,7 +175,8 @@ void main() {
         // All tmux components should be visible
         expect(find.byType(TerminalOutput), findsOneWidget);
         expect(find.byType(CommandInputArea), findsOneWidget);
-        expect(find.text('Tmux Controller'), findsOneWidget);
+        // Title shows session/window info or fallback
+        expect(find.byType(AppBar), findsOneWidget);
       });
 
       testWidgets('should show Files title in file view mode',
