@@ -93,83 +93,85 @@ def is_blocked_file(path: str) -> bool:
 def get_file_tree(directory: str, max_depth: int = 1, current_depth: int = 0) -> List[dict]:
     """Get file tree structure from the specified directory (non-recursive for performance)"""
     items = []
-    
+
     # Limit the number of items to prevent performance issues
     MAX_ITEMS = 1000
     item_count = 0
-    
+
     try:
-        # Get list of items and sort them (directories first, then files)
-        all_items = os.listdir(directory)
-        
-        # Separate directories and files
-        directories = []
-        files = []
-        
-        for item in all_items:
-            if item_count >= MAX_ITEMS:
-                break
-                
-            item_path = os.path.join(directory, item)
-            
-            # Skip certain hidden files but allow some important ones
-            if item.startswith('.') and item not in ALLOWED_HIDDEN:
-                continue
-            
-            try:
-                if os.path.isdir(item_path):
-                    directories.append(item)
-                else:
-                    files.append(item)
-                item_count += 1
-            except (PermissionError, OSError):
-                continue
-        
-        # Sort directories and files separately
-        directories.sort()
-        files.sort()
-        
+        # Separate directories and files using os.scandir (single stat per entry)
+        dir_entries = []
+        file_entries = []
+
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if item_count >= MAX_ITEMS:
+                    break
+
+                # Skip certain hidden files but allow some important ones
+                if entry.name.startswith('.') and entry.name not in ALLOWED_HIDDEN:
+                    continue
+
+                try:
+                    if entry.is_dir(follow_symlinks=True):
+                        dir_entries.append(entry)
+                    else:
+                        file_entries.append(entry)
+                    item_count += 1
+                except (PermissionError, OSError):
+                    continue
+
+        # Sort directories and files separately by name
+        dir_entries.sort(key=lambda e: e.name)
+        file_entries.sort(key=lambda e: e.name)
+
         # Add directories first
-        for item in directories:
+        for entry in dir_entries:
             if len(items) >= MAX_ITEMS:
                 break
-                
-            item_path = os.path.join(directory, item)
-            absolute_path = os.path.abspath(item_path)
-            
+
             # Skip certain system directories that are typically large or not useful
-            if item in BLOCKED_DIRECTORIES:
+            if entry.name in BLOCKED_DIRECTORIES:
                 continue
-            
+
+            try:
+                modified = entry.stat(follow_symlinks=True).st_mtime
+            except (OSError, ValueError):
+                modified = None
+
             items.append({
-                'name': item,
-                'path': absolute_path,
+                'name': entry.name,
+                'path': os.path.abspath(entry.path),
                 'type': 'directory',
-                'children': []  # Don't load children recursively for performance
+                'children': [],  # Don't load children recursively for performance
+                'modified': modified,
             })
-        
+
         # Add files
-        for item in files:
+        for entry in file_entries:
             if len(items) >= MAX_ITEMS:
                 break
-                
-            item_path = os.path.join(directory, item)
-            absolute_path = os.path.abspath(item_path)
-            
+
             # Include files with allowed extensions or no extension
-            file_ext = os.path.splitext(item)[1].lower()
+            file_ext = os.path.splitext(entry.name)[1].lower()
             if file_ext in ALLOWED_EXTENSIONS or not file_ext:
+                try:
+                    modified = entry.stat(follow_symlinks=True).st_mtime
+                except (OSError, ValueError):
+                    modified = None
+
                 items.append({
-                    'name': item,
-                    'path': absolute_path,
-                    'type': 'file'
+                    'name': entry.name,
+                    'path': os.path.abspath(entry.path),
+                    'type': 'file',
+                    'modified': modified,
                 })
-                
+
     except PermissionError:
         pass
     except Exception as e:
         logger.error(f"Error reading directory {directory}: {e}")
-        
+
     return items
 
 @router.get("/tree")
