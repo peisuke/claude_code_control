@@ -29,12 +29,13 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
 
     return Column(
       children: [
-        // Breadcrumb navigation + refresh button
+        // Breadcrumb navigation + sort + refresh buttons
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
             children: [
               Expanded(child: _buildBreadcrumbs(context, state.currentPath)),
+              _buildSortButton(context, state),
               IconButton(
                 icon: const Icon(Icons.refresh, size: 20),
                 onPressed: state.isLoadingTree
@@ -82,8 +83,79 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
     );
   }
 
+  Widget _buildSortButton(BuildContext context, FileState state) {
+    return PopupMenuButton<_SortOption>(
+      icon: const Icon(Icons.sort, size: 20),
+      tooltip: 'Sort',
+      iconSize: 20,
+      onSelected: (option) {
+        ref.read(fileProvider.notifier).setSort(option.key, option.order);
+      },
+      itemBuilder: (context) {
+        final currentKey = state.sortKey;
+        final currentOrder = state.sortOrder;
+
+        return [
+          _sortMenuItem(
+            label: 'Name (A-Z)',
+            key: FileSortKey.name,
+            order: FileSortOrder.ascending,
+            currentKey: currentKey,
+            currentOrder: currentOrder,
+          ),
+          _sortMenuItem(
+            label: 'Name (Z-A)',
+            key: FileSortKey.name,
+            order: FileSortOrder.descending,
+            currentKey: currentKey,
+            currentOrder: currentOrder,
+          ),
+          _sortMenuItem(
+            label: 'Date (oldest)',
+            key: FileSortKey.modified,
+            order: FileSortOrder.ascending,
+            currentKey: currentKey,
+            currentOrder: currentOrder,
+          ),
+          _sortMenuItem(
+            label: 'Date (newest)',
+            key: FileSortKey.modified,
+            order: FileSortOrder.descending,
+            currentKey: currentKey,
+            currentOrder: currentOrder,
+          ),
+        ];
+      },
+    );
+  }
+
+  PopupMenuItem<_SortOption> _sortMenuItem({
+    required String label,
+    required FileSortKey key,
+    required FileSortOrder order,
+    required FileSortKey currentKey,
+    required FileSortOrder currentOrder,
+  }) {
+    final isSelected = currentKey == key && currentOrder == order;
+    return PopupMenuItem<_SortOption>(
+      value: _SortOption(key, order),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: isSelected
+                ? const Icon(Icons.check, size: 18)
+                : null,
+          ),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
   /// Format path for display: show last 3 segments with '...' prefix when deep.
-  /// Matches web formatPathDisplay(): parts.length <= 3 → full, else '.../' + last 3.
+  /// Matches web formatPathDisplay(): parts.length <= 3 -> full, else '.../' + last 3.
   Widget _buildBreadcrumbs(BuildContext context, String path) {
     final allParts = path.split('/').where((p) => p.isNotEmpty).toList();
     final theme = Theme.of(context);
@@ -136,9 +208,16 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         ? Icons.folder
         : _getFileIcon(node.name);
 
+    final subtitle = node.modified != null
+        ? _formatDate(node.modified!)
+        : null;
+
     return ListTile(
       leading: Icon(icon, size: 20),
       title: Text(node.name, style: Theme.of(context).textTheme.bodySmall),
+      subtitle: subtitle != null
+          ? Text(subtitle, style: Theme.of(context).textTheme.labelSmall)
+          : null,
       dense: true,
       onTap: () {
         if (node.isDirectory) {
@@ -149,6 +228,17 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         }
       },
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    if (dt.year != DateTime.now().year) {
+      return '${dt.year}/$m/$d';
+    }
+    final h = dt.hour.toString().padLeft(2, '0');
+    final min = dt.minute.toString().padLeft(2, '0');
+    return '$m/$d $h:$min';
   }
 
   IconData _getFileIcon(String name) {
@@ -181,4 +271,10 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         return Icons.insert_drive_file;
     }
   }
+}
+
+class _SortOption {
+  final FileSortKey key;
+  final FileSortOrder order;
+  const _SortOption(this.key, this.order);
 }

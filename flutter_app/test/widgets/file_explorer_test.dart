@@ -245,5 +245,103 @@ void main() {
         expect(find.text('src'), findsOneWidget);
       });
     });
+
+    // ── sort button ──────────────────────────────────
+    group('sort button', () {
+      testWidgets('should show sort button', (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byIcon(Icons.sort), findsOneWidget);
+        expect(find.byTooltip('Sort'), findsOneWidget);
+      });
+
+      testWidgets('should show sort menu with 4 options on tap',
+          (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.sort));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Name (A-Z)'), findsOneWidget);
+        expect(find.text('Name (Z-A)'), findsOneWidget);
+        expect(find.text('Date (oldest)'), findsOneWidget);
+        expect(find.text('Date (newest)'), findsOneWidget);
+      });
+
+      testWidgets('should show checkmark on default sort option',
+          (tester) async {
+        await tester.pumpWidget(_build());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.sort));
+        await tester.pumpAndSettle();
+
+        // Default sort is Name (A-Z) — should have check icon
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+    });
+
+    // ── date display ──────────────────────────────────
+    group('date display', () {
+      testWidgets('should display MM/dd HH:mm for current year',
+          (tester) async {
+        final now = DateTime.now();
+        final sameYear = DateTime(now.year, 3, 15, 14, 30);
+        await tester.pumpWidget(_build(tree: [
+          FileNode(
+            name: 'test.txt',
+            path: '/test.txt',
+            type: 'file',
+            modified: sameYear,
+          ),
+        ]));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('03/15 14:30'), findsOneWidget);
+      });
+
+      testWidgets('should display yyyy/MM/dd for different year',
+          (tester) async {
+        await tester.pumpWidget(_build(tree: [
+          FileNode(
+            name: 'old.txt',
+            path: '/old.txt',
+            type: 'file',
+            modified: DateTime(2023, 12, 25, 9, 0),
+          ),
+        ]));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('2023/12/25'), findsOneWidget);
+      });
+
+      testWidgets('should not display subtitle when modified is null',
+          (tester) async {
+        await tester.pumpWidget(_build(tree: const [
+          FileNode(name: 'test.txt', path: '/test.txt', type: 'file'),
+        ]));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        // Only the file name should be shown, no date subtitle
+        expect(find.text('test.txt'), findsOneWidget);
+        // No date pattern visible
+        expect(find.textContaining(RegExp(r'\d{2}/\d{2} \d{2}:\d{2}')),
+            findsNothing);
+      });
+    });
   });
 }

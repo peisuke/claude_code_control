@@ -3,17 +3,28 @@ class FileNode {
   final String path;
   final String type; // 'file' or 'directory'
   final List<FileNode>? children;
+  final DateTime? modified;
 
   const FileNode({
     required this.name,
     required this.path,
     required this.type,
     this.children,
+    this.modified,
   });
 
   bool get isDirectory => type == 'directory';
 
   factory FileNode.fromJson(Map<String, dynamic> json) {
+    DateTime? modified;
+    final rawModified = json['modified'];
+    if (rawModified is num) {
+      modified = DateTime.fromMillisecondsSinceEpoch(
+        (rawModified * 1000).toInt(),
+        isUtc: true,
+      ).toLocal();
+    }
+
     return FileNode(
       name: json['name'] as String? ?? '',
       path: json['path'] as String? ?? '',
@@ -23,6 +34,7 @@ class FileNode {
               .map((e) => FileNode.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
+      modified: modified,
     );
   }
 }
