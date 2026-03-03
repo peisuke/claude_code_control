@@ -90,8 +90,10 @@ class FileNotifier extends StateNotifier<FileState> {
   }
 
   /// Clear file state (e.g. on server switch) so stale data is not shown.
+  /// Re-loads persisted sort preference so it survives resets.
   void reset() {
     state = const FileState();
+    _loadSortPreference();
   }
 
   Future<void> fetchTree({String path = '/'}) async {

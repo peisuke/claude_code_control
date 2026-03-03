@@ -502,6 +502,26 @@ void main() {
         expect(notifier.debugState.sortOrder, FileSortOrder.descending);
       });
 
+      test('should preserve persisted sort preference after reset', () async {
+        SharedPreferences.setMockInitialValues({
+          'file-sort-key': 'modified',
+          'file-sort-order': 'descending',
+        });
+
+        final notifier = FileNotifier(mockApi);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.debugState.sortKey, FileSortKey.modified);
+        expect(notifier.debugState.sortOrder, FileSortOrder.descending);
+
+        // reset() should reload persisted preference, not revert to defaults
+        notifier.reset();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(notifier.debugState.sortKey, FileSortKey.modified);
+        expect(notifier.debugState.sortOrder, FileSortOrder.descending);
+      });
+
       test('should be case-insensitive when sorting by name', () async {
         mockApi.nextFileTree = ApiResponse<FileTreeResponse>(
           success: true,
