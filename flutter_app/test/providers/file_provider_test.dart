@@ -425,6 +425,62 @@ void main() {
         expect(notifier.debugState.tree[1].name, 'dated.txt');
       });
 
+      test('should use name as tiebreaker when dates are equal', () async {
+        final sameDate = DateTime(2024, 6, 15);
+
+        mockApi.nextFileTree = ApiResponse<FileTreeResponse>(
+          success: true,
+          message: '',
+          data: FileTreeResponse(
+            tree: [
+              FileNode(
+                  name: 'zebra.txt',
+                  path: '/zebra.txt',
+                  type: 'file',
+                  modified: sameDate),
+              FileNode(
+                  name: 'apple.txt',
+                  path: '/apple.txt',
+                  type: 'file',
+                  modified: sameDate),
+            ],
+            currentPath: '/',
+          ),
+        );
+
+        final notifier = FileNotifier(mockApi);
+        await notifier.fetchTree();
+        await notifier.setSort(FileSortKey.modified, FileSortOrder.ascending);
+
+        // Same date → stable sort by name
+        expect(notifier.debugState.tree[0].name, 'apple.txt');
+        expect(notifier.debugState.tree[1].name, 'zebra.txt');
+      });
+
+      test('should use name as tiebreaker when all dates are null', () async {
+        mockApi.nextFileTree = ApiResponse<FileTreeResponse>(
+          success: true,
+          message: '',
+          data: const FileTreeResponse(
+            tree: [
+              FileNode(name: 'zebra.txt', path: '/zebra.txt', type: 'file'),
+              FileNode(name: 'apple.txt', path: '/apple.txt', type: 'file'),
+              FileNode(name: 'mango.txt', path: '/mango.txt', type: 'file'),
+            ],
+            currentPath: '/',
+          ),
+        );
+
+        final notifier = FileNotifier(mockApi);
+        await notifier.fetchTree();
+        await notifier.setSort(FileSortKey.modified, FileSortOrder.ascending);
+
+        // All null dates → fall back to alphabetical name order
+        expect(notifier.debugState.tree[0].name, 'apple.txt');
+        expect(notifier.debugState.tree[1].name, 'mango.txt');
+        expect(notifier.debugState.tree[2].name, 'zebra.txt');
+      });
+
       test('should preserve sort when fetching new tree', () async {
         // First fetch
         mockApi.nextFileTree = ApiResponse<FileTreeResponse>(

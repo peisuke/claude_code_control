@@ -88,6 +88,7 @@ class FileNotifier extends StateNotifier<FileState> {
         sortKey: key,
         sortOrder: order,
         tree: _sortTree(state.tree, key, order),
+        error: state.error,
       );
     }
   }
@@ -180,7 +181,10 @@ class FileNotifier extends StateNotifier<FileState> {
         comparator = (a, b) {
           final aTime = a.modified ?? DateTime.fromMillisecondsSinceEpoch(0);
           final bTime = b.modified ?? DateTime.fromMillisecondsSinceEpoch(0);
-          return aTime.compareTo(bTime);
+          final cmp = aTime.compareTo(bTime);
+          // Fall back to name comparison for stable ordering when dates are equal.
+          if (cmp != 0) return cmp;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         };
         break;
     }
