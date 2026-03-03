@@ -114,6 +114,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final selectedTarget = ref.watch(selectedTargetProvider);
     final sessionState = ref.watch(sessionProvider);
 
+    // canPop: false prevents accidental app exit from root route.
+    // On Android with gesture navigation, left-edge swipe = system back,
+    // which conflicts with the Scaffold's drawer edge gesture.
+    // Solution: disable built-in drawer edge drag, and use a custom
+    // GestureDetector on the body to open the drawer on right swipe.
+    final hasFileSelected =
+        viewMode == ViewMode.file && fileState.selectedFile != null;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -122,14 +129,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           Navigator.of(context).pop();
           return;
         }
-        if (viewMode == ViewMode.file && fileState.selectedFile != null) {
+        if (hasFileSelected) {
           ref.read(fileProvider.notifier).clearSelectedFile();
-          return;
         }
-        Navigator.of(context).maybePop();
       },
       child: Scaffold(
         key: _scaffoldKey,
+        drawerEnableOpenDragGesture: false,
         appBar: AppBar(
           toolbarHeight: 48,
           title: Column(
@@ -162,9 +168,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         drawer: Drawer(
           child: SafeArea(child: const Sidebar()),
         ),
-        body: viewMode == ViewMode.tmux
-            ? _buildTmuxView()
-            : _buildFileView(),
+        body: Stack(
+          children: [
+            viewMode == ViewMode.tmux
+                ? _buildTmuxView()
+                : _buildFileView(),
+            // Edge swipe zone to open drawer (20dp from left edge)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 20,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  if (velocity > 300) {
+                    _scaffoldKey.currentState?.openDrawer();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

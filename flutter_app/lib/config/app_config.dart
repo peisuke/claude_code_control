@@ -87,4 +87,6 @@ class AppConfig {
   static const String keyBackendUrl = 'tmux-backend-url';
   static const String keyBackendUrls = 'tmux-backend-urls'; // List<String>
   static const String keyBackendEntries = 'tmux-backend-entries'; // List<JSON>
+  static const String keyFileSortKey = 'file-sort-key';
+  static const String keyFileSortOrder = 'file-sort-order';
 }
