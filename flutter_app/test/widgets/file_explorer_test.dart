@@ -258,9 +258,34 @@ void main() {
         expect(find.byTooltip('Sort'), findsOneWidget);
       });
 
-      testWidgets('should show sort menu with 4 options on tap',
+      testWidgets('should show only name options when no modified dates',
           (tester) async {
-        await tester.pumpWidget(_build());
+        await tester.pumpWidget(_build(tree: const [
+          FileNode(name: 'a.txt', path: '/a.txt', type: 'file'),
+        ]));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.sort));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Name (A-Z)'), findsOneWidget);
+        expect(find.text('Name (Z-A)'), findsOneWidget);
+        expect(find.text('Date (oldest)'), findsNothing);
+        expect(find.text('Date (newest)'), findsNothing);
+      });
+
+      testWidgets('should show all 4 options when modified dates exist',
+          (tester) async {
+        await tester.pumpWidget(_build(tree: [
+          FileNode(
+            name: 'a.txt',
+            path: '/a.txt',
+            type: 'file',
+            modified: DateTime(2024, 1, 1),
+          ),
+        ]));
         await tester.pump();
         await tester.pump();
         await tester.pump();

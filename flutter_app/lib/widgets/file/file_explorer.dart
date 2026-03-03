@@ -94,6 +94,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
       itemBuilder: (context) {
         final currentKey = state.sortKey;
         final currentOrder = state.sortOrder;
+        final hasModified = state.tree.any((n) => n.modified != null);
 
         return [
           _sortMenuItem(
@@ -110,20 +111,22 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
             currentKey: currentKey,
             currentOrder: currentOrder,
           ),
-          _sortMenuItem(
-            label: 'Date (oldest)',
-            key: FileSortKey.modified,
-            order: FileSortOrder.ascending,
-            currentKey: currentKey,
-            currentOrder: currentOrder,
-          ),
-          _sortMenuItem(
-            label: 'Date (newest)',
-            key: FileSortKey.modified,
-            order: FileSortOrder.descending,
-            currentKey: currentKey,
-            currentOrder: currentOrder,
-          ),
+          if (hasModified)
+            _sortMenuItem(
+              label: 'Date (oldest)',
+              key: FileSortKey.modified,
+              order: FileSortOrder.ascending,
+              currentKey: currentKey,
+              currentOrder: currentOrder,
+            ),
+          if (hasModified)
+            _sortMenuItem(
+              label: 'Date (newest)',
+              key: FileSortKey.modified,
+              order: FileSortOrder.descending,
+              currentKey: currentKey,
+              currentOrder: currentOrder,
+            ),
         ];
       },
     );

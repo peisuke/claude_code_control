@@ -168,17 +168,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         drawer: Drawer(
           child: SafeArea(child: const Sidebar()),
         ),
-        body: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onHorizontalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0;
-            if (velocity > 300) {
-              _scaffoldKey.currentState?.openDrawer();
-            }
-          },
-          child: viewMode == ViewMode.tmux
-              ? _buildTmuxView()
-              : _buildFileView(),
+        body: Stack(
+          children: [
+            viewMode == ViewMode.tmux
+                ? _buildTmuxView()
+                : _buildFileView(),
+            // Edge swipe zone to open drawer (20dp from left edge)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 20,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  if (velocity > 300) {
+                    _scaffoldKey.currentState?.openDrawer();
+                  }
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
