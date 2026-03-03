@@ -63,18 +63,21 @@ final fileProvider =
 
 class FileNotifier extends StateNotifier<FileState> {
   final ApiService _api;
+  /// Incremented by setSort(); _loadSortPreference() skips apply when stale.
+  int _sortVersion = 0;
 
   FileNotifier(this._api) : super(const FileState()) {
     _loadSortPreference();
   }
 
   Future<void> _loadSortPreference() async {
+    final versionAtStart = _sortVersion;
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    // If setSort() was called while we were awaiting, our data is stale.
+    if (_sortVersion != versionAtStart) return;
     final keyStr = prefs.getString(AppConfig.keyFileSortKey);
     final orderStr = prefs.getString(AppConfig.keyFileSortOrder);
-    // Only apply if there is a saved preference; skip if prefs are empty
-    // to avoid overwriting a setSort() call that raced ahead.
     if (keyStr == null && orderStr == null) return;
     final key = keyStr == 'modified' ? FileSortKey.modified : FileSortKey.name;
     final order = orderStr == 'descending'
@@ -146,6 +149,7 @@ class FileNotifier extends StateNotifier<FileState> {
   }
 
   Future<void> setSort(FileSortKey key, FileSortOrder order) async {
+    _sortVersion++;
     state = state.copyWith(
       sortKey: key,
       sortOrder: order,
