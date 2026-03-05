@@ -294,7 +294,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
   /// Wrapper around refresh(forceBottom: false) with an in-flight guard.
   /// After completion, checks whether a follow-up refresh is needed
-  /// (shift events arrived during the call, or history is still stale).
+  /// (new shift events arrived during the call).
   Future<void> _autoRefresh() async {
     _isAutoRefreshing = true;
     _refreshPending = false;
@@ -302,9 +302,11 @@ class OutputNotifier extends StateNotifier<OutputState> {
       await refresh(forceBottom: false);
     } finally {
       _isAutoRefreshing = false;
-      // If shift events arrived during the API call, or the result left
-      // history stale (WS-during-call gap), schedule a follow-up refresh.
-      if (mounted && isAtBottom && (_refreshPending || !_historyFresh)) {
+      // Only retry when new line-shift events arrived during the call.
+      // Do NOT retry on !_historyFresh alone — that would cause an
+      // endless retry loop if the API keeps failing or the WS-during-call
+      // branch always leaves history stale.
+      if (mounted && isAtBottom && _refreshPending) {
         _refreshPending = false;
         _scheduleAutoRefresh();
       }
