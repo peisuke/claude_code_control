@@ -104,6 +104,11 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// Guard: true while an auto-refresh API call is in flight.
   bool _isAutoRefreshing = false;
 
+  /// true when a line-shift event was detected while _isAutoRefreshing
+  /// was true.  Checked after the in-flight refresh completes to
+  /// schedule a follow-up refresh.
+  bool _refreshPending = false;
+
   /// Incremented on every WS message. Used by auto-refresh to detect
   /// whether fresher WS data arrived during an async API call.
   int _wsVersion = 0;
@@ -272,9 +277,13 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
   /// Schedule a debounced refresh (500ms). Resets on each call so rapid
   /// output only triggers one refresh after activity settles.
-  /// Skips scheduling if an auto-refresh API call is already in flight.
+  /// When an auto-refresh is already in flight, records the request so
+  /// a follow-up refresh runs after the current one completes.
   void _scheduleAutoRefresh() {
-    if (_isAutoRefreshing) return;
+    if (_isAutoRefreshing) {
+      _refreshPending = true;
+      return;
+    }
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted && isAtBottom && !_isAutoRefreshing) {
@@ -284,12 +293,21 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   /// Wrapper around refresh(forceBottom: false) with an in-flight guard.
+  /// After completion, checks whether a follow-up refresh is needed
+  /// (shift events arrived during the call, or history is still stale).
   Future<void> _autoRefresh() async {
     _isAutoRefreshing = true;
+    _refreshPending = false;
     try {
       await refresh(forceBottom: false);
     } finally {
       _isAutoRefreshing = false;
+      // If shift events arrived during the API call, or the result left
+      // history stale (WS-during-call gap), schedule a follow-up refresh.
+      if (mounted && isAtBottom && (_refreshPending || !_historyFresh)) {
+        _refreshPending = false;
+        _scheduleAutoRefresh();
+      }
     }
   }
 
