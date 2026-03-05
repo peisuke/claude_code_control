@@ -382,11 +382,17 @@ class OutputNotifier extends StateNotifier<OutputState> {
           totalLoadedLines: 0,
         );
       } else {
-        // User scrolled up — update internal state only.
+        // User scrolled up — update internal state and state.content.
+        // state.content must be updated so that onWebSocketMessage does
+        // not re-derive _historyPrefix from a stale snapshot.
         _historyPrefix = '';
         _historyFresh = true;
         _lastWsContent = '';
         _latestContent = output.content;
+        state = state.copyWith(
+          content: output.content,
+          totalLoadedLines: 0,
+        );
       }
     } catch (_) {
       // ignore
