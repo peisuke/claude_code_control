@@ -101,6 +101,9 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// Debounce timer for auto-refresh when lines shift.
   Timer? _autoRefreshTimer;
 
+  /// Guard: true while an auto-refresh API call is in flight.
+  bool _isAutoRefreshing = false;
+
   /// Incremented on every WS message. Used by auto-refresh to detect
   /// whether fresher WS data arrived during an async API call.
   int _wsVersion = 0;
@@ -248,28 +251,46 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   /// Detect whether lines shifted between two WS frames.
-  /// Returns true when the first line changed — meaning output scrolled
-  /// and the old first line moved into the scrollback buffer.
+  /// Returns true when any of the first 3 lines changed — meaning output
+  /// scrolled and the old top lines moved into the scrollback buffer.
+  /// Comparing multiple lines avoids false negatives when the first line
+  /// happens to be identical (e.g. repeated log prefixes).
   /// Returns false for prompt typing, wrapping, or pasting, which only
-  /// affect the bottom of the visible pane (first line stays the same).
+  /// affect the bottom of the visible pane (top lines stay the same).
   static bool _linesShifted(String oldContent, String newContent) {
     if (oldContent == newContent) return false;
-    final oldFirst = oldContent.indexOf('\n');
-    final newFirst = newContent.indexOf('\n');
-    final oldLine0 = oldFirst < 0 ? oldContent : oldContent.substring(0, oldFirst);
-    final newLine0 = newFirst < 0 ? newContent : newContent.substring(0, newFirst);
-    return oldLine0 != newLine0;
+    final oldLines = oldContent.split('\n');
+    final newLines = newContent.split('\n');
+    final checkCount = 3;
+    for (var i = 0; i < checkCount; i++) {
+      final oldLine = i < oldLines.length ? oldLines[i] : '';
+      final newLine = i < newLines.length ? newLines[i] : '';
+      if (oldLine != newLine) return true;
+    }
+    return false;
   }
 
   /// Schedule a debounced refresh (500ms). Resets on each call so rapid
   /// output only triggers one refresh after activity settles.
+  /// Skips scheduling if an auto-refresh API call is already in flight.
   void _scheduleAutoRefresh() {
+    if (_isAutoRefreshing) return;
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer(const Duration(milliseconds: 500), () {
-      if (mounted && isAtBottom) {
-        refresh(forceBottom: false);
+      if (mounted && isAtBottom && !_isAutoRefreshing) {
+        _autoRefresh();
       }
     });
+  }
+
+  /// Wrapper around refresh(forceBottom: false) with an in-flight guard.
+  Future<void> _autoRefresh() async {
+    _isAutoRefreshing = true;
+    try {
+      await refresh(forceBottom: false);
+    } finally {
+      _isAutoRefreshing = false;
+    }
   }
 
   /// [forceBottom]: when true (manual refresh), always jump to bottom.
@@ -321,7 +342,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
             totalLoadedLines: 0,
           );
         }
-      } else if (isAtBottom) {
+      } else if (_wsVersion == wsVersionBefore && isAtBottom) {
         // No WS messages during API call (_wsVersion unchanged) — the API
         // response is the freshest data available, safe to apply directly.
         _historyPrefix = '';
