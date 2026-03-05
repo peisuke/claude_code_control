@@ -256,16 +256,20 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   /// Detect whether lines shifted between two WS frames.
-  /// Returns true when any of the first 3 lines changed — meaning output
-  /// scrolled and the old top lines moved into the scrollback buffer.
-  /// Comparing multiple lines avoids false negatives when the first line
-  /// happens to be identical (e.g. repeated log prefixes).
-  /// Returns false for prompt typing, wrapping, or pasting, which only
-  /// affect the bottom of the visible pane (top lines stay the same).
+  /// Returns true when the top lines changed AND the total line count
+  /// changed — meaning output scrolled and old lines moved into the
+  /// scrollback buffer.
+  /// Returns false when only the top lines are repainted in place
+  /// (same line count) — this is typical for full-screen programs
+  /// like vim/htop that redraw header rows without scrolling.
+  /// Also returns false for prompt typing, wrapping, or pasting,
+  /// which only affect the bottom of the visible pane.
   static bool _linesShifted(String oldContent, String newContent) {
     if (oldContent == newContent) return false;
     final oldLines = oldContent.split('\n');
     final newLines = newContent.split('\n');
+    // Same line count → in-place redraw, not a scroll shift.
+    if (oldLines.length == newLines.length) return false;
     final checkCount = 3;
     for (var i = 0; i < checkCount; i++) {
       final oldLine = i < oldLines.length ? oldLines[i] : '';
