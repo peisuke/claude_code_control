@@ -322,6 +322,11 @@ class OutputNotifier extends StateNotifier<OutputState> {
         // fresher than the API snapshot for the visible pane.  Extract
         // only the history portion from the API response and combine it
         // with the latest WS content to avoid overwriting newer data.
+        //
+        // Note: lines that scrolled off the pane *after* the API snapshot
+        // but *before* the latest WS frame are in neither source.  We
+        // keep _historyFresh = false so the next auto-refresh or
+        // scroll-up will re-fetch a complete snapshot.
         final apiLines = output.content.split('\n');
         final wsLines = _lastWsContent.split('\n');
         final historyCount = apiLines.length - wsLines.length;
@@ -331,7 +336,10 @@ class OutputNotifier extends StateNotifier<OutputState> {
         } else {
           _historyPrefix = '';
         }
-        _historyFresh = true;
+        // Intentionally NOT setting _historyFresh = true here — the
+        // spliced history may have gaps from lines emitted during the
+        // API call.  Keeping it false lets subsequent refreshes or
+        // scroll-up actions re-fetch a clean snapshot.
         final fullContent = _historyPrefix.isEmpty
             ? _lastWsContent
             : '$_historyPrefix$_lastWsContent';
