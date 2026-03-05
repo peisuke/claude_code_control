@@ -101,6 +101,10 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// Debounce timer for auto-refresh when lines shift.
   Timer? _autoRefreshTimer;
 
+  /// Incremented on every WS message. Used by auto-refresh to detect
+  /// whether fresher WS data arrived during an async API call.
+  int _wsVersion = 0;
+
   OutputNotifier(this._api, this._target) : super(const OutputState()) {
     _fetchInitialOutput();
   }
@@ -131,6 +135,8 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   void onWebSocketMessage(TmuxOutput msg) {
+    _wsVersion++;
+
     // First WS message after load: extract history prefix by line count.
     // Initial content = history + current screen. WS = current screen only.
     if (_historyPrefix.isEmpty && state.content.isNotEmpty) {
@@ -277,6 +283,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// When false (auto-refresh), respect current scroll position — if the
   /// user scrolled up during the API call, don't force them back down.
   Future<void> refresh({bool forceBottom = true}) async {
+    final wsVersionBefore = _wsVersion;
     try {
       final lines = AppConfig.minRows * 3;
       final output = await _api.getOutput(
@@ -285,22 +292,58 @@ class OutputNotifier extends StateNotifier<OutputState> {
         lines: lines,
       );
       if (!mounted) return;
-      _historyPrefix = '';
-      _historyFresh = true;
-      _lastWsContent = '';
-      _latestContent = output.content;
+
       if (forceBottom) {
+        _historyPrefix = '';
+        _historyFresh = true;
+        _lastWsContent = '';
+        _latestContent = output.content;
         isAtBottom = true;
         state = state.copyWith(
           content: output.content,
           totalLoadedLines: 0,
         );
+      } else if (_wsVersion > wsVersionBefore && _lastWsContent.isNotEmpty) {
+        // WS messages arrived during the API call — _lastWsContent is
+        // fresher than the API snapshot for the visible pane.  Extract
+        // only the history portion from the API response and combine it
+        // with the latest WS content to avoid overwriting newer data.
+        final apiLines = output.content.split('\n');
+        final wsLines = _lastWsContent.split('\n');
+        final historyCount = apiLines.length - wsLines.length;
+        if (historyCount > 0) {
+          _historyPrefix =
+              '${apiLines.sublist(0, historyCount).join('\n')}\n';
+        } else {
+          _historyPrefix = '';
+        }
+        _historyFresh = true;
+        final fullContent = _historyPrefix.isEmpty
+            ? _lastWsContent
+            : '$_historyPrefix$_lastWsContent';
+        _latestContent = fullContent;
+        if (isAtBottom) {
+          state = state.copyWith(
+            content: fullContent,
+            totalLoadedLines: 0,
+          );
+        }
       } else if (isAtBottom) {
-        // Auto-refresh: only update displayed content if still at bottom.
+        // No WS messages during API call — safe to apply directly.
+        _historyPrefix = '';
+        _historyFresh = true;
+        _lastWsContent = '';
+        _latestContent = output.content;
         state = state.copyWith(
           content: output.content,
           totalLoadedLines: 0,
         );
+      } else {
+        // User scrolled up — update internal state only.
+        _historyPrefix = '';
+        _historyFresh = true;
+        _lastWsContent = '';
+        _latestContent = output.content;
       }
     } catch (_) {
       // ignore
