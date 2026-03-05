@@ -98,8 +98,17 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// Previous WS content for change detection.
   String _lastWsContent = '';
 
+  /// Debounce timer for auto-refresh when lines shift.
+  Timer? _autoRefreshTimer;
+
   OutputNotifier(this._api, this._target) : super(const OutputState()) {
     _fetchInitialOutput();
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchInitialOutput() async {
@@ -141,6 +150,16 @@ class OutputNotifier extends StateNotifier<OutputState> {
         msg.content != _lastWsContent) {
       _historyFresh = false;
     }
+
+    // Auto-refresh: when lines shift (not just typing on last line),
+    // schedule a refresh to replace the stale history prefix with fresh
+    // data from the API. Debounced to avoid API spam during rapid output.
+    if (isAtBottom &&
+        _lastWsContent.isNotEmpty &&
+        _linesShifted(_lastWsContent, msg.content)) {
+      _scheduleAutoRefresh();
+    }
+
     _lastWsContent = msg.content;
 
     final fullContent = _historyPrefix.isEmpty
@@ -220,6 +239,33 @@ class OutputNotifier extends StateNotifier<OutputState> {
       if (!mounted) return;
       state = state.copyWith(isLoadingHistory: false);
     }
+  }
+
+  /// Detect whether lines shifted between two WS frames.
+  /// Returns true when non-last lines differ (= output scrolled, screen
+  /// redrawn, etc.). Returns false when only the last line changed (= user
+  /// typing on the prompt).
+  static bool _linesShifted(String oldContent, String newContent) {
+    if (oldContent == newContent) return false;
+    final oldLines = oldContent.split('\n');
+    final newLines = newContent.split('\n');
+    if (oldLines.length != newLines.length) return true;
+    // Compare all lines except the last (active prompt line).
+    for (int i = 0; i < oldLines.length - 1; i++) {
+      if (oldLines[i] != newLines[i]) return true;
+    }
+    return false;
+  }
+
+  /// Schedule a debounced refresh (500ms). Resets on each call so rapid
+  /// output only triggers one refresh after activity settles.
+  void _scheduleAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted && isAtBottom) {
+        refresh();
+      }
+    });
   }
 
   Future<void> refresh() async {
