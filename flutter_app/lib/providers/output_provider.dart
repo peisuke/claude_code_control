@@ -248,24 +248,17 @@ class OutputNotifier extends StateNotifier<OutputState> {
   }
 
   /// Detect whether lines shifted between two WS frames.
-  /// Returns true when non-last lines differ (= output scrolled, screen
-  /// redrawn, etc.). Returns false when only the bottom of the screen
-  /// changed (= user typing on the prompt, including line wrapping).
+  /// Returns true when the first line changed — meaning output scrolled
+  /// and the old first line moved into the scrollback buffer.
+  /// Returns false for prompt typing, wrapping, or pasting, which only
+  /// affect the bottom of the visible pane (first line stays the same).
   static bool _linesShifted(String oldContent, String newContent) {
     if (oldContent == newContent) return false;
-    final oldLines = oldContent.split('\n');
-    final newLines = newContent.split('\n');
-    // Compare the overlapping top portion, excluding the last line of the
-    // shorter list. This skips the active prompt area which may wrap to
-    // extra lines or change due to typing — a line-count difference alone
-    // is not enough to indicate a real shift.
-    final minLen =
-        oldLines.length < newLines.length ? oldLines.length : newLines.length;
-    if (minLen <= 1) return false;
-    for (int i = 0; i < minLen - 1; i++) {
-      if (oldLines[i] != newLines[i]) return true;
-    }
-    return false;
+    final oldFirst = oldContent.indexOf('\n');
+    final newFirst = newContent.indexOf('\n');
+    final oldLine0 = oldFirst < 0 ? oldContent : oldContent.substring(0, oldFirst);
+    final newLine0 = newFirst < 0 ? newContent : newContent.substring(0, newFirst);
+    return oldLine0 != newLine0;
   }
 
   /// Schedule a debounced refresh (500ms). Resets on each call so rapid
@@ -329,7 +322,8 @@ class OutputNotifier extends StateNotifier<OutputState> {
           );
         }
       } else if (isAtBottom) {
-        // No WS messages during API call — safe to apply directly.
+        // No WS messages during API call (_wsVersion unchanged) — the API
+        // response is the freshest data available, safe to apply directly.
         _historyPrefix = '';
         _historyFresh = true;
         _lastWsContent = '';
