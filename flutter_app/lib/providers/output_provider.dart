@@ -243,15 +243,20 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
   /// Detect whether lines shifted between two WS frames.
   /// Returns true when non-last lines differ (= output scrolled, screen
-  /// redrawn, etc.). Returns false when only the last line changed (= user
-  /// typing on the prompt).
+  /// redrawn, etc.). Returns false when only the bottom of the screen
+  /// changed (= user typing on the prompt, including line wrapping).
   static bool _linesShifted(String oldContent, String newContent) {
     if (oldContent == newContent) return false;
     final oldLines = oldContent.split('\n');
     final newLines = newContent.split('\n');
-    if (oldLines.length != newLines.length) return true;
-    // Compare all lines except the last (active prompt line).
-    for (int i = 0; i < oldLines.length - 1; i++) {
+    // Compare the overlapping top portion, excluding the last line of the
+    // shorter list. This skips the active prompt area which may wrap to
+    // extra lines or change due to typing — a line-count difference alone
+    // is not enough to indicate a real shift.
+    final minLen =
+        oldLines.length < newLines.length ? oldLines.length : newLines.length;
+    if (minLen <= 1) return false;
+    for (int i = 0; i < minLen - 1; i++) {
       if (oldLines[i] != newLines[i]) return true;
     }
     return false;
@@ -263,12 +268,15 @@ class OutputNotifier extends StateNotifier<OutputState> {
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted && isAtBottom) {
-        refresh();
+        refresh(forceBottom: false);
       }
     });
   }
 
-  Future<void> refresh() async {
+  /// [forceBottom]: when true (manual refresh), always jump to bottom.
+  /// When false (auto-refresh), respect current scroll position — if the
+  /// user scrolled up during the API call, don't force them back down.
+  Future<void> refresh({bool forceBottom = true}) async {
     try {
       final lines = AppConfig.minRows * 3;
       final output = await _api.getOutput(
@@ -281,11 +289,19 @@ class OutputNotifier extends StateNotifier<OutputState> {
       _historyFresh = true;
       _lastWsContent = '';
       _latestContent = output.content;
-      isAtBottom = true;
-      state = state.copyWith(
-        content: output.content,
-        totalLoadedLines: 0,
-      );
+      if (forceBottom) {
+        isAtBottom = true;
+        state = state.copyWith(
+          content: output.content,
+          totalLoadedLines: 0,
+        );
+      } else if (isAtBottom) {
+        // Auto-refresh: only update displayed content if still at bottom.
+        state = state.copyWith(
+          content: output.content,
+          totalLoadedLines: 0,
+        );
+      }
     } catch (_) {
       // ignore
     }
