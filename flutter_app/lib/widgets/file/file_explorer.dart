@@ -54,7 +54,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         Expanded(
           child: state.isLoadingTree
               ? const Center(child: CircularProgressIndicator())
-              : state.error != null && state.tree.isEmpty
+              : state.treeError != null && state.tree.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -66,7 +66,7 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
                                     Theme.of(context).colorScheme.error),
                             const SizedBox(height: 8),
                             Text(
-                              state.error!,
+                              state.treeError!,
                               style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme

@@ -25,7 +25,7 @@ class FileViewer extends ConsumerWidget {
     }
 
     // Error display — matches web's <Alert severity="error"> pattern.
-    if (state.error != null) {
+    if (state.contentError != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -36,7 +36,7 @@ class FileViewer extends ConsumerWidget {
                   size: 48, color: theme.colorScheme.error),
               const SizedBox(height: 16),
               Text(
-                state.error!,
+                state.contentError!,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.error),
                 textAlign: TextAlign.center,

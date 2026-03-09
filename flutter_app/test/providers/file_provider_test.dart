@@ -77,7 +77,8 @@ void main() {
         expect(notifier.debugState.selectedFile, isNull);
         expect(notifier.debugState.isLoadingTree, false);
         expect(notifier.debugState.isLoadingContent, false);
-        expect(notifier.debugState.error, isNull);
+        expect(notifier.debugState.treeError, isNull);
+        expect(notifier.debugState.contentError, isNull);
       });
     });
 
@@ -105,7 +106,7 @@ void main() {
         expect(notifier.debugState.selectedFile!.isImage, false);
         expect(notifier.debugState.selectedFile!.mimeType, 'text/plain');
         expect(notifier.debugState.isLoadingContent, false);
-        expect(notifier.debugState.error, isNull);
+        expect(notifier.debugState.contentError, isNull);
       });
 
       test('should handle image files', () async {
@@ -160,7 +161,7 @@ void main() {
         final notifier = FileNotifier(mockApi);
         await notifier.fetchFileContent('/path/to/file.txt');
 
-        expect(notifier.debugState.error, isNotNull);
+        expect(notifier.debugState.contentError, isNotNull);
         expect(notifier.debugState.selectedFile, isNull);
         expect(notifier.debugState.isLoadingContent, false);
       });
@@ -175,7 +176,7 @@ void main() {
         final notifier = FileNotifier(mockApi);
         await notifier.fetchFileContent('/path/to/nonexistent.txt');
 
-        expect(notifier.debugState.error, 'File not found');
+        expect(notifier.debugState.contentError, 'File not found');
         expect(notifier.debugState.selectedFile, isNull);
       });
     });
@@ -237,7 +238,7 @@ void main() {
         final notifier = FileNotifier(mockApi);
         await notifier.fetchTree();
 
-        expect(notifier.debugState.error, isNotNull);
+        expect(notifier.debugState.treeError, isNotNull);
         expect(notifier.debugState.isLoadingTree, false);
       });
     });

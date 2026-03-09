@@ -29,7 +29,7 @@ import '../helpers/widget_test_helpers.dart';
 Widget _build({
   FileContentResponse? selectedFile,
   bool isLoadingContent = false,
-  String? error,
+  String? contentError,
 }) {
   return ProviderScope(
     overrides: [
@@ -48,7 +48,7 @@ Widget _build({
         notifier.state = FileState(
           selectedFile: selectedFile,
           isLoadingContent: isLoadingContent,
-          error: error,
+          contentError: contentError,
         );
         return notifier;
       }),
@@ -90,7 +90,7 @@ void main() {
           (tester) async {
         // Port of: "should display error message" from FileOperations.test.tsx
         await tester.pumpWidget(
-            _build(error: 'File too large to display'));
+            _build(contentError: 'File too large to display'));
         await tester.pump();
         await tester.pump();
 
@@ -100,7 +100,7 @@ void main() {
 
       testWidgets('should show dismiss button in error state',
           (tester) async {
-        await tester.pumpWidget(_build(error: 'Access denied'));
+        await tester.pumpWidget(_build(contentError: 'Access denied'));
         await tester.pump();
         await tester.pump();
 

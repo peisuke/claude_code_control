@@ -44,7 +44,11 @@ class FileState {
   final FileContentResponse? selectedFile;
   final bool isLoadingTree;
   final bool isLoadingContent;
-  final String? error;
+  /// Error from [FileNotifier.fetchTree]. Scoped so a tree failure
+  /// does not hide an already-open file in the viewer.
+  final String? treeError;
+  /// Error from [FileNotifier.fetchFileContent].
+  final String? contentError;
   final FileSortKey sortKey;
   final FileSortOrder sortOrder;
 
@@ -54,7 +58,8 @@ class FileState {
     this.selectedFile,
     this.isLoadingTree = false,
     this.isLoadingContent = false,
-    this.error,
+    this.treeError,
+    this.contentError,
     this.sortKey = FileSortKey.name,
     this.sortOrder = FileSortOrder.ascending,
   });
@@ -65,7 +70,10 @@ class FileState {
     FileContentResponse? selectedFile,
     bool? isLoadingTree,
     bool? isLoadingContent,
-    String? error,
+    String? treeError,
+    bool clearTreeError = false,
+    String? contentError,
+    bool clearContentError = false,
     bool clearSelectedFile = false,
     FileSortKey? sortKey,
     FileSortOrder? sortOrder,
@@ -77,7 +85,9 @@ class FileState {
           clearSelectedFile ? null : (selectedFile ?? this.selectedFile),
       isLoadingTree: isLoadingTree ?? this.isLoadingTree,
       isLoadingContent: isLoadingContent ?? this.isLoadingContent,
-      error: error,
+      treeError: clearTreeError ? null : (treeError ?? this.treeError),
+      contentError:
+          clearContentError ? null : (contentError ?? this.contentError),
       sortKey: sortKey ?? this.sortKey,
       sortOrder: sortOrder ?? this.sortOrder,
     );
@@ -117,7 +127,6 @@ class FileNotifier extends StateNotifier<FileState> {
         sortKey: key,
         sortOrder: order,
         tree: _sortTree(state.tree, key, order),
-        error: state.error,
       );
     }
   }
@@ -130,7 +139,7 @@ class FileNotifier extends StateNotifier<FileState> {
   }
 
   Future<void> fetchTree({String path = '/'}) async {
-    state = state.copyWith(isLoadingTree: true, error: null);
+    state = state.copyWith(isLoadingTree: true, clearTreeError: true);
     try {
       final response = await _api.getFileTree(path: path);
       if (!mounted) return;
@@ -142,16 +151,17 @@ class FileNotifier extends StateNotifier<FileState> {
         );
       } else {
         state = state.copyWith(
-            isLoadingTree: false, error: response.message);
+            isLoadingTree: false, treeError: response.message);
       }
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(isLoadingTree: false, error: _friendlyError(e));
+      state =
+          state.copyWith(isLoadingTree: false, treeError: _friendlyError(e));
     }
   }
 
   Future<void> fetchFileContent(String path) async {
-    state = state.copyWith(isLoadingContent: true, error: null);
+    state = state.copyWith(isLoadingContent: true, clearContentError: true);
     try {
       final response = await _api.getFileContent(path);
       if (!mounted) return;
@@ -162,16 +172,17 @@ class FileNotifier extends StateNotifier<FileState> {
         );
       } else {
         state = state.copyWith(
-            isLoadingContent: false, error: response.message);
+            isLoadingContent: false, contentError: response.message);
       }
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(isLoadingContent: false, error: _friendlyError(e));
+      state = state.copyWith(
+          isLoadingContent: false, contentError: _friendlyError(e));
     }
   }
 
   void clearSelectedFile() {
-    state = state.copyWith(clearSelectedFile: true);
+    state = state.copyWith(clearSelectedFile: true, clearContentError: true);
   }
 
   void navigateTo(String path) {
