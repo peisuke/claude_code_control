@@ -4,8 +4,8 @@ import '../../config/keyboard_constants.dart';
 import '../../providers/command_provider.dart';
 import '../../providers/websocket_provider.dart';
 
-/// Mobile-only tmux keyboard shortcuts (matches web: 4 buttons only).
-/// Ctrl+O, ⇧+Tab on left | ESC, Ctrl+C on right.
+/// Mobile-only tmux keyboard shortcuts.
+/// Ctrl+O, Ctrl+B, ⇧+Tab on left | ESC, Ctrl+C on right.
 class TmuxKeyboard extends ConsumerWidget {
   const TmuxKeyboard({super.key});
 
@@ -31,6 +31,17 @@ class TmuxKeyboard extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.search, size: 16),
                 label: Text(keyboardLabels[KeyboardCommands.ctrlO]!),
+                style: _buttonStyle,
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: enabled
+                    ? () => ref
+                        .read(commandProvider.notifier)
+                        .sendSpecialKey(KeyboardCommands.ctrlB)
+                    : null,
+                icon: const Icon(Icons.dashboard, size: 16),
+                label: Text(keyboardLabels[KeyboardCommands.ctrlB]!),
                 style: _buttonStyle,
               ),
               const SizedBox(width: 8),
