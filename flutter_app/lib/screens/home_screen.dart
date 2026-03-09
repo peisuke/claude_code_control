@@ -35,6 +35,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// Web: useAppVisibility only fires on visibilitychange, not on page load.
   bool _wasPaused = false;
 
+  // ─── Edge swipe to open drawer ─────────────────────────────
+  // On Android 10+ with gesture navigation, the system consumes
+  // left-edge swipes for the "back" gesture. The Scaffold's built-in
+  // drawer edge drag loses the competition. We use raw pointer events
+  // (Listener) which bypass the gesture arena entirely.
+  static const double _edgeSwipeZone = 80;
+  static const double _swipeThreshold = 30;
+  double? _swipeStartX;
+  double? _swipeStartY;
+
+  void _onEdgePointerDown(PointerDownEvent event) {
+    if (event.position.dx < _edgeSwipeZone) {
+      _swipeStartX = event.position.dx;
+      _swipeStartY = event.position.dy;
+    }
+  }
+
+  void _onEdgePointerMove(PointerMoveEvent event) {
+    if (_swipeStartX == null) return;
+    final dx = event.position.dx - _swipeStartX!;
+    final dy = (event.position.dy - _swipeStartY!).abs();
+    if (dx > _swipeThreshold && dy < dx) {
+      _scaffoldKey.currentState?.openDrawer();
+      _swipeStartX = null;
+      _swipeStartY = null;
+    }
+  }
+
+  void _onEdgePointerUp(PointerUpEvent event) {
+    _swipeStartX = null;
+    _swipeStartY = null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -114,11 +147,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final selectedTarget = ref.watch(selectedTargetProvider);
     final sessionState = ref.watch(sessionProvider);
 
-    // canPop: false prevents accidental app exit from root route.
-    // On Android with gesture navigation, left-edge swipe = system back,
-    // which conflicts with the Scaffold's drawer edge gesture.
-    // Solution: disable built-in drawer edge drag, and use a custom
-    // GestureDetector on the body to open the drawer on right swipe.
     final hasFileSelected =
         viewMode == ViewMode.file && fileState.selectedFile != null;
     return PopScope(
@@ -135,7 +163,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       },
       child: Scaffold(
         key: _scaffoldKey,
-        drawerEnableOpenDragGesture: false,
+        // Widen edge drag zone beyond Android's system gesture zone (~24dp)
+        // so users can start the swipe from slightly inward and still open
+        // the drawer.
+        drawerEdgeDragWidth: 60,
         appBar: AppBar(
           toolbarHeight: 48,
           title: Column(
@@ -168,28 +199,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         drawer: Drawer(
           child: SafeArea(child: const Sidebar()),
         ),
-        body: Stack(
-          children: [
-            viewMode == ViewMode.tmux
-                ? _buildTmuxView()
-                : _buildFileView(),
-            // Edge swipe zone to open drawer (20dp from left edge)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 20,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragEnd: (details) {
-                  final velocity = details.primaryVelocity ?? 0;
-                  if (velocity > 300) {
-                    _scaffoldKey.currentState?.openDrawer();
-                  }
-                },
-              ),
-            ),
-          ],
+        body: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _onEdgePointerDown,
+          onPointerMove: _onEdgePointerMove,
+          onPointerUp: _onEdgePointerUp,
+          child: viewMode == ViewMode.tmux
+              ? _buildTmuxView()
+              : _buildFileView(),
         ),
       ),
     );
