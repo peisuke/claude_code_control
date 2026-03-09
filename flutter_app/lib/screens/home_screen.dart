@@ -68,6 +68,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _swipeStartY = null;
   }
 
+  void _onEdgePointerCancel(PointerCancelEvent event) {
+    _swipeStartX = null;
+    _swipeStartY = null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -204,6 +209,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           onPointerDown: _onEdgePointerDown,
           onPointerMove: _onEdgePointerMove,
           onPointerUp: _onEdgePointerUp,
+          onPointerCancel: _onEdgePointerCancel,
           child: viewMode == ViewMode.tmux
               ? _buildTmuxView()
               : _buildFileView(),
