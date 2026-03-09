@@ -29,6 +29,7 @@ import '../helpers/widget_test_helpers.dart';
 Widget _build({
   FileContentResponse? selectedFile,
   bool isLoadingContent = false,
+  String? error,
 }) {
   return ProviderScope(
     overrides: [
@@ -47,6 +48,7 @@ Widget _build({
         notifier.state = FileState(
           selectedFile: selectedFile,
           isLoadingContent: isLoadingContent,
+          error: error,
         );
         return notifier;
       }),
@@ -79,6 +81,32 @@ void main() {
         await tester.pump();
 
         expect(find.text('Select a file to view'), findsOneWidget);
+      });
+    });
+
+    // ── error state ──────────────────────────────────────
+    group('error state', () {
+      testWidgets('should show error message when error occurs',
+          (tester) async {
+        // Port of: "should display error message" from FileOperations.test.tsx
+        await tester.pumpWidget(
+            _build(error: 'File too large to display'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('File too large to display'), findsOneWidget);
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      });
+
+      testWidgets('should show dismiss button in error state',
+          (tester) async {
+        await tester.pumpWidget(_build(error: 'Access denied'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Dismiss'), findsOneWidget);
+        // Should not show the placeholder
+        expect(find.text('Select a file to view'), findsNothing);
       });
     });
 
@@ -204,6 +232,58 @@ void main() {
         expect(find.text('def hello():'), findsOneWidget);
         expect(find.text('  print("hi")'), findsOneWidget);
         expect(find.text('hello()'), findsOneWidget);
+      });
+    });
+
+    // ── binary file ──────────────────────────────────────────
+    group('binary file', () {
+      testWidgets('should show binary placeholder for binary files',
+          (tester) async {
+        await tester.pumpWidget(_build(
+          selectedFile: const FileContentResponse(
+            content: '',
+            path: '/data/archive.wasm',
+            isBinary: true,
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Cannot display binary file'), findsOneWidget);
+        expect(find.text('archive.wasm'), findsOneWidget);
+        expect(find.byIcon(Icons.block), findsOneWidget);
+      });
+
+      testWidgets('should not show line numbers for binary files',
+          (tester) async {
+        await tester.pumpWidget(_build(
+          selectedFile: const FileContentResponse(
+            content: '',
+            path: '/data/app.exe',
+            isBinary: true,
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('1'), findsNothing);
+      });
+    });
+
+    // ── text selection ──────────────────────────────────────
+    group('text selection', () {
+      testWidgets('should wrap text viewer in SelectionArea',
+          (tester) async {
+        await tester.pumpWidget(_build(
+          selectedFile: const FileContentResponse(
+            content: 'selectable text',
+            path: '/test.txt',
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(SelectionArea), findsOneWidget);
       });
     });
 

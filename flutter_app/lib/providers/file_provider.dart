@@ -1,9 +1,38 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/file_node.dart';
 import '../services/api_service.dart';
 import 'connection_provider.dart';
+
+/// Extract a user-friendly message from an error.
+///
+/// For [DioException], tries the backend `detail` field first, then falls back
+/// to a short description based on the HTTP status code.
+String _friendlyError(Object e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic> && data['detail'] is String) {
+      return data['detail'] as String;
+    }
+    final status = e.response?.statusCode;
+    if (status != null) {
+      switch (status) {
+        case 403:
+          return 'Access denied';
+        case 404:
+          return 'File not found';
+        case 413:
+          return 'File too large to display';
+        default:
+          return 'Request failed (HTTP $status)';
+      }
+    }
+    return 'Network error';
+  }
+  return 'An unexpected error occurred';
+}
 
 enum FileSortKey { name, modified }
 
@@ -117,7 +146,7 @@ class FileNotifier extends StateNotifier<FileState> {
       }
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(isLoadingTree: false, error: e.toString());
+      state = state.copyWith(isLoadingTree: false, error: _friendlyError(e));
     }
   }
 
@@ -137,7 +166,7 @@ class FileNotifier extends StateNotifier<FileState> {
       }
     } catch (e) {
       if (!mounted) return;
-      state = state.copyWith(isLoadingContent: false, error: e.toString());
+      state = state.copyWith(isLoadingContent: false, error: _friendlyError(e));
     }
   }
 
