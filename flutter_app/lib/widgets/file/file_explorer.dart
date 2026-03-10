@@ -54,9 +54,40 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         Expanded(
           child: state.isLoadingTree
               ? const Center(child: CircularProgressIndicator())
-              : state.tree.isEmpty
-                  ? const Center(child: Text('Empty directory'))
-                  : ListView(
+              : state.treeError != null && state.tree.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error_outline,
+                                color:
+                                    Theme.of(context).colorScheme.error),
+                            const SizedBox(height: 8),
+                            Text(
+                              state.treeError!,
+                              style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .error),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: () => ref
+                                  .read(fileProvider.notifier)
+                                  .fetchTree(path: state.currentPath),
+                              icon: const Icon(Icons.refresh, size: 18),
+                              label: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : state.tree.isEmpty
+                      ? const Center(child: Text('Empty directory'))
+                      : ListView(
                       children: [
                         // Parent directory
                         if (state.currentPath != '/')

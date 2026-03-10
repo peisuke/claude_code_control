@@ -59,12 +59,14 @@ class FileContentResponse {
   final String content;
   final String path;
   final bool isImage;
+  final bool isBinary;
   final String? mimeType;
 
   const FileContentResponse({
     required this.content,
     required this.path,
     this.isImage = false,
+    this.isBinary = false,
     this.mimeType,
   });
 
@@ -73,6 +75,7 @@ class FileContentResponse {
       content: json['content'] as String? ?? '',
       path: json['path'] as String? ?? '',
       isImage: json['is_image'] as bool? ?? false,
+      isBinary: json['is_binary'] as bool? ?? false,
       mimeType: json['mime_type'] as String?,
     );
   }

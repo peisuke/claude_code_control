@@ -11,10 +11,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tmux_control/models/api_response.dart';
 import 'package:tmux_control/models/file_node.dart';
+import 'package:tmux_control/providers/file_provider.dart';
 import 'package:tmux_control/widgets/file/file_explorer.dart';
 
 import '../helpers/widget_test_helpers.dart';
+
+/// ApiService whose getFileTree always returns a failure response.
+class _FailingTreeApi extends NoOpApiService {
+  @override
+  Future<ApiResponse<FileTreeResponse>> getFileTree(
+      {String path = '/'}) async {
+    return const ApiResponse<FileTreeResponse>(
+      success: false,
+      message: 'Network error',
+    );
+  }
+}
 
 /// Build a widget for FileExplorer testing.
 Widget _build({
@@ -311,6 +325,37 @@ void main() {
 
         // Default sort is Name (A-Z) — should have check icon
         expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+    });
+
+    // ── error state ──────────────────────────────────
+    group('error state', () {
+      testWidgets('should show error when tree fetch fails',
+          (tester) async {
+        // Port of: "should display error message" from FileExplorer.test.tsx
+        // Uses a failing API so initState → fetchTree() sets error state.
+        final failingApi = _FailingTreeApi();
+        await tester.pumpWidget(
+          buildTestWidget(
+            SizedBox(
+              width: 300,
+              height: 600,
+              child: const FileExplorer(),
+            ),
+            extraOverrides: [
+              fileProvider.overrideWith((ref) {
+                return FileNotifier(failingApi);
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Network error'), findsOneWidget);
+        expect(find.text('Retry'), findsOneWidget);
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
       });
     });
 
