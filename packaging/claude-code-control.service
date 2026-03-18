@@ -1,23 +1,21 @@
 [Unit]
 Description=Claude Code Control - tmux controller backend
 After=network.target
-Requires=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=-/etc/claude-code-control/config.env
-ExecStart=/opt/claude-code-control/venv/bin/uvicorn backend.app.main:app --host ${HOST:-0.0.0.0} --port ${PORT:-8192}
+EnvironmentFile=/etc/claude-code-control/config.env
+ExecStart=/opt/claude-code-control/venv/bin/uvicorn backend.app.main:app --host $HOST --port $PORT
 WorkingDirectory=/opt/claude-code-control
 Restart=on-failure
 RestartSec=5
-User=claude-code-control
-Group=claude-code-control
 
-# Security hardening
-NoNewPrivileges=true
-ProtectSystem=strict
-ProtectHome=read-only
-ReadWritePaths=/tmp
+# User/Group set by postinst via drop-in override
+# so the service can access the caller's tmux sockets.
+
+# State directory for settings file
+StateDirectory=claude-code-control
+Environment=STATE_DIR=/var/lib/claude-code-control
 
 [Install]
 WantedBy=multi-user.target

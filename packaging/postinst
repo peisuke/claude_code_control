@@ -1,15 +1,22 @@
 #!/bin/bash
 set -e
 
-# Create service user (no login, no home)
-if ! id claude-code-control >/dev/null 2>&1; then
-    useradd --system --no-create-home --shell /usr/sbin/nologin claude-code-control
-fi
+# Determine the real user (not root) who ran sudo
+RUN_USER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+RUN_GROUP="$(id -gn "$RUN_USER" 2>/dev/null || echo root)"
 
-# Allow service user to access tmux sockets
-# tmux sockets are in /tmp/tmux-<uid>/ — the service user needs
-# to be in the same group as the user running tmux, or the user
-# can add claude-code-control to their group.
+# Create systemd drop-in to run service as the installing user,
+# so it can access their tmux sockets at /tmp/tmux-<uid>/
+mkdir -p /etc/systemd/system/claude-code-control.service.d
+cat > /etc/systemd/system/claude-code-control.service.d/user.conf <<DROPIN
+[Service]
+User=$RUN_USER
+Group=$RUN_GROUP
+DROPIN
+
+# Ensure state directory is owned by the service user
+mkdir -p /var/lib/claude-code-control
+chown "$RUN_USER:$RUN_GROUP" /var/lib/claude-code-control
 
 systemctl daemon-reload
 systemctl enable claude-code-control.service
@@ -17,10 +24,9 @@ systemctl enable claude-code-control.service
 echo ""
 echo "Claude Code Control installed successfully!"
 echo ""
-echo "  Config:  /etc/claude-code-control/config.env"
-echo "  Start:   sudo systemctl start claude-code-control"
-echo "  Logs:    journalctl -u claude-code-control -f"
-echo ""
-echo "NOTE: The service user 'claude-code-control' needs access to tmux sockets."
-echo "  Add it to your group:  sudo usermod -aG \$(id -gn) claude-code-control"
+echo "  Service user: $RUN_USER"
+echo "  Config:       /etc/claude-code-control/config.env"
+echo "  State:        /var/lib/claude-code-control/"
+echo "  Start:        sudo systemctl start claude-code-control"
+echo "  Logs:         journalctl -u claude-code-control -f"
 echo ""

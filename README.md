@@ -35,11 +35,8 @@ Claude Code Control provides an interface to interact with tmux sessions where C
 ### Install via .deb package (Ubuntu/Debian)
 
 ```bash
-# Download the package
+# Install the package (service runs as your user automatically)
 sudo dpkg -i claude-code-control_0.1.0_amd64.deb
-
-# Allow the service user to access your tmux sockets
-sudo usermod -aG $(id -gn) claude-code-control
 
 # Start the service
 sudo systemctl start claude-code-control
@@ -49,6 +46,7 @@ sudo systemctl status claude-code-control
 ```
 
 The backend runs on port 8192 by default. Edit `/etc/claude-code-control/config.env` to change.
+Settings are stored in `/var/lib/claude-code-control/`.
 
 ### Build the .deb package from source
 
