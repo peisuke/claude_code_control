@@ -5,16 +5,35 @@ INSTALL_DIR="/opt/claude-code-control"
 DROPIN_DIR="/etc/systemd/system/claude-code-control.service.d"
 DROPIN_FILE="$DROPIN_DIR/user.conf"
 
-# --- 1. Create/update venv with target system's Python ---
+# --- 1. Create/update venv (offline, no network required) ---
 echo "--- Setting up Python venv ---"
 python3 -m venv "$INSTALL_DIR/venv"
-"$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
-"$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" --quiet
-echo "Dependencies installed."
+"$INSTALL_DIR/venv/bin/pip" install --upgrade pip --no-index \
+    --find-links "$INSTALL_DIR/wheels" --quiet 2>/dev/null || true
+"$INSTALL_DIR/venv/bin/pip" install --no-index \
+    --find-links "$INSTALL_DIR/wheels" \
+    -r "$INSTALL_DIR/requirements.txt" --quiet
+echo "Dependencies installed (offline)."
 
 # --- 2. Configure service user (fresh install only) ---
 if [ ! -f "$DROPIN_FILE" ]; then
-    RUN_USER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+    RUN_USER="${SUDO_USER:-}"
+
+    # If SUDO_USER is not set (root shell, automation), require explicit config
+    if [ -z "$RUN_USER" ] || [ "$RUN_USER" = "root" ]; then
+        echo ""
+        echo "WARNING: Could not detect a non-root user."
+        echo "  The service needs to run as the user whose tmux sessions it controls."
+        echo "  Create the drop-in manually:"
+        echo ""
+        echo "    sudo mkdir -p $DROPIN_DIR"
+        echo "    echo -e '[Service]\nUser=YOUR_USER\nGroup=YOUR_GROUP' | sudo tee $DROPIN_FILE"
+        echo "    sudo systemctl daemon-reload"
+        echo ""
+        # Default to root so the service can at least be configured later
+        RUN_USER="root"
+    fi
+
     RUN_GROUP="$(id -gn "$RUN_USER" 2>/dev/null || echo root)"
 
     mkdir -p "$DROPIN_DIR"
@@ -24,7 +43,9 @@ User=$RUN_USER
 Group=$RUN_GROUP
 DROPIN
 
-    echo "Service user set to: $RUN_USER"
+    if [ "$RUN_USER" != "root" ]; then
+        echo "Service user set to: $RUN_USER"
+    fi
 fi
 
 # Read back the configured user for state directory ownership

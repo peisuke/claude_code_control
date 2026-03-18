@@ -5,14 +5,14 @@ set -euo pipefail
 # Usage: ./packaging/build-deb.sh [version]
 #   version defaults to git describe or "0.1.0"
 #
-# The package ships source + requirements.txt only.
-# The venv is created on the target machine during postinst,
-# so any Python 3.10+ works regardless of build environment.
+# Ships source code + pre-downloaded wheels. The venv is created on the
+# target machine using the local Python, but pip install is offline
+# (no network required during dpkg -i).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERSION="${1:-$(git -C "$PROJECT_DIR" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.1.0")}"
-ARCH="all"  # no compiled code — pure Python, arch-independent
+ARCH="all"
 BUILD_DIR="$(mktemp -d)"
 INSTALL_DIR="$BUILD_DIR/opt/claude-code-control"
 
@@ -20,14 +20,21 @@ trap "rm -rf '$BUILD_DIR'" EXIT
 
 echo "=== Building claude-code-control ${VERSION} (${ARCH}) ==="
 
-# 1. Copy backend source and requirements
+# 1. Copy backend source
 echo "--- Copying backend source ---"
 mkdir -p "$INSTALL_DIR/backend"
 rsync -a --exclude='__pycache__' "$PROJECT_DIR/backend/app/" "$INSTALL_DIR/backend/app/"
 touch "$INSTALL_DIR/backend/__init__.py"
 cp "$PROJECT_DIR/backend/requirements.txt" "$INSTALL_DIR/requirements.txt"
 
-# 2. Build with fpm
+# 2. Download wheels for offline install
+echo "--- Downloading wheels ---"
+mkdir -p "$INSTALL_DIR/wheels"
+pip3 download -r "$PROJECT_DIR/backend/requirements.txt" \
+    -d "$INSTALL_DIR/wheels" --quiet
+echo "$(ls "$INSTALL_DIR/wheels/" | wc -l) wheels downloaded."
+
+# 3. Build with fpm
 echo "--- Building .deb ---"
 fpm \
     --input-type dir \
