@@ -17,6 +17,10 @@ RestartSec=5
 User=nobody
 Group=nogroup
 
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
 # State directory for settings file
 StateDirectory=claude-code-control
 Environment=STATE_DIR=/var/lib/claude-code-control

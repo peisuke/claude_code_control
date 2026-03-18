@@ -5,7 +5,7 @@ INSTALL_DIR="/opt/claude-code-control"
 DROPIN_DIR="/etc/systemd/system/claude-code-control.service.d"
 DROPIN_FILE="$DROPIN_DIR/user.conf"
 
-# --- 1. Create/update venv (offline, no network required) ---
+# --- 1. Create/update venv (requires network for PyPI) ---
 echo "--- Setting up Python venv ---"
 python3 -m venv "$INSTALL_DIR/venv"
 "$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
@@ -44,8 +44,13 @@ DROPIN
 fi
 
 # Read back the configured user for state directory ownership
-CONFIGURED_USER="$(grep -oP '^User=\K.*' "$DROPIN_FILE" 2>/dev/null || echo root)"
-CONFIGURED_GROUP="$(grep -oP '^Group=\K.*' "$DROPIN_FILE" 2>/dev/null || echo root)"
+if [ -f "$DROPIN_FILE" ]; then
+    CONFIGURED_USER="$(grep -oP '^User=\K.*' "$DROPIN_FILE" || echo nobody)"
+    CONFIGURED_GROUP="$(grep -oP '^Group=\K.*' "$DROPIN_FILE" || echo nogroup)"
+else
+    CONFIGURED_USER="nobody"
+    CONFIGURED_GROUP="nogroup"
+fi
 
 # --- 3. State directory ---
 mkdir -p /var/lib/claude-code-control
@@ -56,9 +61,10 @@ if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
     systemctl enable claude-code-control.service
 
-    if [ "$1" = "configure" ] && systemctl is-active --quiet claude-code-control.service 2>/dev/null; then
+    # Start/restart if drop-in is configured (service was stopped by prerm on upgrade)
+    if [ "$1" = "configure" ] && [ -f "$DROPIN_FILE" ]; then
         systemctl restart claude-code-control.service
-        echo "Service restarted after upgrade."
+        echo "Service started."
     fi
 fi
 

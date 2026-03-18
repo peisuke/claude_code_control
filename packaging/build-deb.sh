@@ -8,6 +8,13 @@ set -euo pipefail
 # Ships source code + requirements.txt. The venv and pip install run on
 # the target machine during postinst (requires network for PyPI access).
 
+for cmd in fpm rsync; do
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "ERROR: '$cmd' is required but not found." >&2
+        exit 1
+    fi
+done
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERSION="${1:-$(git -C "$PROJECT_DIR" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.1.0")}"
@@ -15,7 +22,8 @@ ARCH="all"
 BUILD_DIR="$(mktemp -d)"
 INSTALL_DIR="$BUILD_DIR/opt/claude-code-control"
 
-trap "rm -rf '$BUILD_DIR'" EXIT
+cleanup() { rm -rf "$BUILD_DIR"; }
+trap cleanup EXIT
 
 echo "=== Building claude-code-control ${VERSION} (${ARCH}) ==="
 
