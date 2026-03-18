@@ -1,22 +1,32 @@
 #!/bin/bash
 set -e
 
-# Determine the real user (not root) who ran sudo
-RUN_USER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
-RUN_GROUP="$(id -gn "$RUN_USER" 2>/dev/null || echo root)"
+DROPIN_DIR="/etc/systemd/system/claude-code-control.service.d"
+DROPIN_FILE="$DROPIN_DIR/user.conf"
 
-# Create systemd drop-in to run service as the installing user,
-# so it can access their tmux sockets at /tmp/tmux-<uid>/
-mkdir -p /etc/systemd/system/claude-code-control.service.d
-cat > /etc/systemd/system/claude-code-control.service.d/user.conf <<DROPIN
+# Only create the drop-in on fresh install, not on upgrade.
+# This preserves the originally chosen user across package upgrades.
+if [ ! -f "$DROPIN_FILE" ]; then
+    RUN_USER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+    RUN_GROUP="$(id -gn "$RUN_USER" 2>/dev/null || echo root)"
+
+    mkdir -p "$DROPIN_DIR"
+    cat > "$DROPIN_FILE" <<DROPIN
 [Service]
 User=$RUN_USER
 Group=$RUN_GROUP
 DROPIN
 
+    echo "Service user set to: $RUN_USER"
+fi
+
+# Read back the configured user for state directory ownership
+CONFIGURED_USER="$(grep -oP '^User=\K.*' "$DROPIN_FILE" 2>/dev/null || echo root)"
+CONFIGURED_GROUP="$(grep -oP '^Group=\K.*' "$DROPIN_FILE" 2>/dev/null || echo root)"
+
 # Ensure state directory is owned by the service user
 mkdir -p /var/lib/claude-code-control
-chown "$RUN_USER:$RUN_GROUP" /var/lib/claude-code-control
+chown "$CONFIGURED_USER:$CONFIGURED_GROUP" /var/lib/claude-code-control
 
 systemctl daemon-reload
 systemctl enable claude-code-control.service
@@ -24,7 +34,7 @@ systemctl enable claude-code-control.service
 echo ""
 echo "Claude Code Control installed successfully!"
 echo ""
-echo "  Service user: $RUN_USER"
+echo "  Service user: $CONFIGURED_USER"
 echo "  Config:       /etc/claude-code-control/config.env"
 echo "  State:        /var/lib/claude-code-control/"
 echo "  Start:        sudo systemctl start claude-code-control"

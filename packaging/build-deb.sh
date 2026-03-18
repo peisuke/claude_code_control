@@ -11,6 +11,9 @@ VERSION="${1:-$(git -C "$PROJECT_DIR" describe --tags --abbrev=0 2>/dev/null | s
 ARCH="$(dpkg --print-architecture)"
 BUILD_DIR="$(mktemp -d)"
 INSTALL_DIR="$BUILD_DIR/opt/claude-code-control"
+FINAL_VENV="/opt/claude-code-control/venv"
+
+trap "rm -rf '$BUILD_DIR'" EXIT
 
 echo "=== Building claude-code-control ${VERSION} (${ARCH}) ==="
 
@@ -20,13 +23,24 @@ python3 -m venv "$INSTALL_DIR/venv"
 "$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
 "$INSTALL_DIR/venv/bin/pip" install -r "$PROJECT_DIR/backend/requirements.txt" --quiet
 
-# 2. Copy backend source
+# 2. Relocate venv: rewrite shebangs and pyvenv.cfg to final install path
+echo "--- Relocating venv to $FINAL_VENV ---"
+BUILD_VENV="$INSTALL_DIR/venv"
+
+# Fix pyvenv.cfg home path
+sed -i "s|$BUILD_VENV/bin|$FINAL_VENV/bin|g" "$BUILD_VENV/pyvenv.cfg"
+
+# Fix shebangs in all bin/ scripts
+find "$BUILD_VENV/bin" -type f -exec \
+    sed -i "1s|#!$BUILD_VENV/bin/python3|#!$FINAL_VENV/bin/python3|" {} +
+
+# 3. Copy backend source
 echo "--- Copying backend source ---"
 mkdir -p "$INSTALL_DIR/backend"
 rsync -a --exclude='__pycache__' "$PROJECT_DIR/backend/app/" "$INSTALL_DIR/backend/app/"
 touch "$INSTALL_DIR/backend/__init__.py"
 
-# 3. Build with fpm
+# 4. Build with fpm
 echo "--- Building .deb ---"
 fpm \
     --input-type dir \
@@ -47,9 +61,6 @@ fpm \
     --package "$PROJECT_DIR/" \
     "$INSTALL_DIR/=/opt/claude-code-control/" \
     "$SCRIPT_DIR/config.env=/etc/claude-code-control/config.env"
-
-# 4. Cleanup
-rm -rf "$BUILD_DIR"
 
 DEB_FILE="$PROJECT_DIR/claude-code-control_${VERSION}_${ARCH}.deb"
 echo ""
