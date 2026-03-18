@@ -7,7 +7,7 @@ class AppConfig {
 
   static const String _compileTimeUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'http://10.0.2.2:8000',
+    defaultValue: 'http://10.0.2.2:8192',
   );
 
   /// Runtime override — set from SharedPreferences in main.dart.
@@ -44,7 +44,7 @@ class AppConfig {
     return '${uri.replace(scheme: wsScheme)}/api/tmux/ws';
   }
 
-  // Timing constants (matching frontend/src/constants/ui.ts)
+  // Timing constants
   static const int commandRefreshDelayMs = 500;
   static const int appResumeReconnectDelayMs = 1500;
   static const int scrollAnimationDelayMs = 50;

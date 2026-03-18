@@ -41,18 +41,18 @@ cd backend && pip install -r requirements-dev.txt
 
 2. **Run backend server**
 ```bash
-cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8192
 ```
 
 3. **Build Flutter app**
 ```bash
 cd flutter_app
-flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8000
+flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8192
 ```
 
 4. **Access the backend API**
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- Backend API: http://localhost:8192
+- API Docs: http://localhost:8192/docs
 
 ## Usage
 

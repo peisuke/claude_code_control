@@ -52,6 +52,6 @@ ENV PYTHONUNBUFFERED=1
 # Entrypoint runs as root to fix permissions, then drops to appuser via gosu
 ENTRYPOINT ["backend/entrypoint.sh"]
 
-EXPOSE 8000
+EXPOSE 8192
 
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8192"]

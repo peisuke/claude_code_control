@@ -9,7 +9,7 @@ Flutter (Dart) Android app with a FastAPI backend for controlling tmux sessions.
 ```
 Android App (Flutter)
   ↕ HTTP REST + WebSocket
-Backend (FastAPI, port 8000/8080)
+Backend (FastAPI, port 8192)
   ↕ tmux subprocess / socket
 Host tmux server
 ```
@@ -33,7 +33,7 @@ cd flutter_app && /home/ubuntu/flutter/bin/flutter test
 /home/ubuntu/flutter/bin/flutter test test/utils/ansi_parser_test.dart
 
 # Build debug APK
-/home/ubuntu/flutter/bin/flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8080
+/home/ubuntu/flutter/bin/flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8192
 
 # Analyze code
 /home/ubuntu/flutter/bin/flutter analyze
@@ -214,8 +214,8 @@ Content-change detection: if `maxScrollExtent` changed by >0.5, the scroll event
 ## Android Configuration
 
 - `AndroidManifest.xml`: INTERNET, ACCESS_NETWORK_STATE permissions
-- Emulator: `--dart-define=BACKEND_URL=http://10.0.2.2:8080`
-- Physical device: `--dart-define=BACKEND_URL=http://<host-ip>:8080`
+- Emulator: `--dart-define=BACKEND_URL=http://10.0.2.2:8192`
+- Physical device: `--dart-define=BACKEND_URL=http://<host-ip>:8192`
 - App settings allow runtime URL change
 
 ## Development Guidelines
