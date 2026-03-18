@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Clean up venv on any removal (not shipped in package, built by postinst)
+rm -rf /opt/claude-code-control/venv
+
 if [ "$1" = "purge" ]; then
     rm -rf /etc/claude-code-control
     rm -rf /etc/systemd/system/claude-code-control.service.d
