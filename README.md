@@ -41,8 +41,6 @@ cd backend && pip install -r requirements-dev.txt
 
 2. **Run backend server**
 ```bash
-npm run dev:backend
-# Or directly:
 cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
