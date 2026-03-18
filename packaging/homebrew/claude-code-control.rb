@@ -4,16 +4,18 @@ class ClaudeCodeControl < Formula
   desc "tmux controller backend for Claude Code sessions"
   homepage "https://github.com/peisuke/claude_code_control"
   url "https://github.com/peisuke/claude_code_control/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "PLACEHOLDER"
+  # Update sha256 after creating the release tag:
+  #   curl -sL https://github.com/peisuke/claude_code_control/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
+  sha256 "PLACEHOLDER_UPDATE_BEFORE_PUBLISH"
   license "MIT"
 
   depends_on "python@3.11"
   depends_on "tmux"
 
   def install
-    # Create virtualenv and install dependencies from requirements.txt
+    # Create virtualenv and install dependencies
     venv = virtualenv_create(libexec, "python3.11")
-    system libexec/"bin/pip", "install", "-r", buildpath/"backend/requirements.txt"
+    venv.pip_install "-r", buildpath/"backend/requirements.txt"
 
     # Copy backend source
     (libexec/"backend").mkpath
@@ -37,6 +39,7 @@ class ClaudeCodeControl < Formula
         --port "${PORT:-8192}" \\
         "$@"
     EOS
+    chmod 0755, bin/"claude-code-control"
 
     # Install default config
     (etc/"claude-code-control").mkpath
