@@ -119,7 +119,7 @@ class MockWebSocketSink implements WebSocketSink {
   final channels = <MockWebSocketChannel>[];
 
   final service = WebSocketService(
-    wsBaseUrl: 'ws://localhost:8000/api/tmux/ws',
+    wsBaseUrl: 'ws://localhost:8192/api/tmux/ws',
     target: target,
     channelFactory: (uri) {
       final ch = MockWebSocketChannel();
@@ -721,7 +721,7 @@ void main() {
       test('should handle connect error', () async {
         // Create service with a factory that fails.
         final failService = WebSocketService(
-          wsBaseUrl: 'ws://localhost:8000/api/tmux/ws',
+          wsBaseUrl: 'ws://localhost:8192/api/tmux/ws',
           target: 'test',
           channelFactory: (uri) {
             final ch = MockWebSocketChannel();

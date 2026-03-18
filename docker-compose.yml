@@ -9,7 +9,7 @@ services:
         TMUX_VERSION: ${TMUX_VERSION:-}
     init: true
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "${APP_PORT:-8192}:8192"
     volumes:
       - /tmp/tmux-${HOST_UID:-1000}:/tmp/tmux-${HOST_UID:-1000}:rw
       - ${WORKSPACE:-.}:/workspace:rw
@@ -18,7 +18,7 @@ services:
       - WORKSPACE_DIR=/workspace
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8192/health')"]
       interval: 30s
       timeout: 5s
       retries: 3

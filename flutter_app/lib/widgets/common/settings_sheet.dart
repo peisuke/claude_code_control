@@ -143,7 +143,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                     TextField(
                       controller: _newUrlController,
                       decoration: const InputDecoration(
-                        hintText: 'http://10.0.2.2:8000',
+                        hintText: 'http://10.0.2.2:8192',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -176,7 +176,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Emulator: http://10.0.2.2:8000\nDevice: http://<host-ip>:8000',
+            'Emulator: http://10.0.2.2:8192\nDevice: http://<host-ip>:8192',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).hintColor,
                 ),

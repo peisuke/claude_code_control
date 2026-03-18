@@ -178,7 +178,7 @@ class ApiService {
     }
   }
 
-  /// Check health of an arbitrary base URL (e.g. "http://10.0.2.2:8000").
+  /// Check health of an arbitrary base URL (e.g. "http://10.0.2.2:8192").
   ///
   /// Uses short timeouts so the dropdown can update quickly.
   static Future<bool> checkUrlHealth(String baseUrl) async {

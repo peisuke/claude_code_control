@@ -69,10 +69,10 @@ void main() {
   late MockInterceptor mock;
 
   setUp(() {
-    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:8000/api'));
+    final dio = Dio(BaseOptions(baseUrl: 'http://localhost:8192/api'));
     mock = MockInterceptor();
     dio.interceptors.add(mock);
-    api = ApiService(baseUrl: 'http://localhost:8000/api', dio: dio);
+    api = ApiService(baseUrl: 'http://localhost:8192/api', dio: dio);
   });
 
   group('TmuxAPI (api.test.ts port)', () {
@@ -557,7 +557,7 @@ void main() {
       // Port of: "should use /api as default baseURL"
       test('should use configured baseURL', () {
         // Tested implicitly by all tests above.
-        // The Dio instance uses 'http://localhost:8000/api' as base.
+        // The Dio instance uses 'http://localhost:8192/api' as base.
         expect(mock.requests, isEmpty);
       });
     });
