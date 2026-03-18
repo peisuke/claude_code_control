@@ -31,6 +31,7 @@ def load_settings() -> TmuxSettings:
 def save_settings(settings: TmuxSettings) -> bool:
     """Save settings to file"""
     try:
+        os.makedirs(os.path.dirname(SETTINGS_FILE) or ".", exist_ok=True)
         with open(SETTINGS_FILE, 'w') as f:
             json.dump(settings.dict(), f, indent=2)
         return True

@@ -19,7 +19,7 @@ class ClaudeCodeControl < Formula
 
     # Copy backend source
     (libexec/"backend").mkpath
-    (libexec/"backend/app").install Dir[buildpath/"backend/app/*"]
+    (libexec/"backend/app").install Dir[buildpath/"backend/app/*"].reject { |f| f.include?("__pycache__") }
     touch libexec/"backend/__init__.py"
 
     # Create wrapper script that sources config.env and sets PYTHONPATH
@@ -35,7 +35,7 @@ class ClaudeCodeControl < Formula
       export PYTHONPATH="#{libexec}"
       mkdir -p "$STATE_DIR"
       exec "#{libexec}/bin/uvicorn" backend.app.main:app \\
-        --host "${HOST:-0.0.0.0}" \\
+        --host "${HOST:-127.0.0.1}" \\
         --port "${PORT:-8192}" \\
         "$@"
     EOS
@@ -47,7 +47,8 @@ class ClaudeCodeControl < Formula
     unless config.exist?
       config.write <<~EOS
         # Claude Code Control configuration
-        HOST=0.0.0.0
+        # Default: localhost only. Set to 0.0.0.0 for LAN access (no auth — use with caution).
+        HOST=127.0.0.1
         PORT=8192
       EOS
     end
@@ -63,17 +64,19 @@ class ClaudeCodeControl < Formula
     keep_alive true
     working_dir HOMEBREW_PREFIX
     log_path var/"log/claude-code-control.log"
-    error_log_path var/"log/claude-code-control.log"
+    error_log_path var/"log/claude-code-control-error.log"
     environment_variables PATH: "#{HOMEBREW_PREFIX}/bin:#{HOMEBREW_PREFIX}/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
   end
 
   test do
     port = free_port
-    pid = spawn bin/"claude-code-control", "--port", port.to_s
-    sleep 2
-    output = shell_output("curl -sf http://localhost:#{port}/health")
+    pid = spawn({ "PORT" => port.to_s }, bin/"claude-code-control")
+    output = shell_output("curl -sf --retry 5 --retry-delay 1 --retry-connrefused http://localhost:#{port}/health")
     assert_match "healthy", output
   ensure
-    Process.kill("TERM", pid) if pid
+    if pid
+      Process.kill("TERM", pid)
+      Process.wait(pid)
+    end
   end
 end
