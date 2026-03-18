@@ -42,7 +42,7 @@ cd flutter_app && /home/ubuntu/flutter/bin/flutter test
 ./packaging/build-deb.sh 0.1.0
 
 # Install .deb
-sudo dpkg -i claude-code-control_0.1.0_amd64.deb
+sudo dpkg -i claude-code-control_0.1.0_all.deb
 sudo systemctl enable --now claude-code-control
 ```
 

@@ -36,7 +36,7 @@ Claude Code Control provides an interface to interact with tmux sessions where C
 
 ```bash
 # Install the package (service runs as your user automatically)
-sudo dpkg -i claude-code-control_0.1.0_amd64.deb
+sudo dpkg -i claude-code-control_0.1.0_all.deb
 
 # Start the service
 sudo systemctl start claude-code-control
