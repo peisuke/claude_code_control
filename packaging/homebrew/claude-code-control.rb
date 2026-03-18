@@ -1,4 +1,6 @@
 class ClaudeCodeControl < Formula
+  include Language::Python::Virtualenv
+
   desc "tmux controller backend for Claude Code sessions"
   homepage "https://github.com/peisuke/claude_code_control"
   url "https://github.com/peisuke/claude_code_control/archive/refs/tags/v0.1.0.tar.gz"
@@ -9,27 +11,34 @@ class ClaudeCodeControl < Formula
   depends_on "tmux"
 
   def install
-    # Create virtualenv and install dependencies
+    # Create virtualenv and install dependencies from requirements.txt
     venv = virtualenv_create(libexec, "python3.11")
-    venv.pip_install_and_link buildpath/"backend/requirements.txt"
+    system libexec/"bin/pip", "install", "-r", buildpath/"backend/requirements.txt"
 
     # Copy backend source
-    (libexec/"backend").install Dir["backend/app"]
-    (libexec/"backend").install "backend/__init__.py" if File.exist?("backend/__init__.py")
+    (libexec/"backend").mkpath
+    (libexec/"backend/app").install Dir[buildpath/"backend/app/*"]
     touch libexec/"backend/__init__.py"
 
-    # Create wrapper script
+    # Create wrapper script that sources config.env and sets PYTHONPATH
     (bin/"claude-code-control").write <<~EOS
       #!/bin/bash
-      export STATE_DIR="${var}/claude-code-control"
+      CONFIG_FILE="#{etc}/claude-code-control/config.env"
+      if [ -f "$CONFIG_FILE" ]; then
+        set -a
+        source "$CONFIG_FILE"
+        set +a
+      fi
+      export STATE_DIR="#{var}/claude-code-control"
+      export PYTHONPATH="#{libexec}"
       mkdir -p "$STATE_DIR"
-      exec "#{libexec}/bin/uvicorn" backend.app.main:app \
-        --host "${HOST:-0.0.0.0}" \
-        --port "${PORT:-8192}" \
+      exec "#{libexec}/bin/uvicorn" backend.app.main:app \\
+        --host "${HOST:-0.0.0.0}" \\
+        --port "${PORT:-8192}" \\
         "$@"
     EOS
 
-    # Install config
+    # Install default config
     (etc/"claude-code-control").mkpath
     (etc/"claude-code-control/config.env").write <<~EOS
       # Claude Code Control configuration
@@ -53,7 +62,6 @@ class ClaudeCodeControl < Formula
   end
 
   test do
-    # Start server briefly and check health endpoint
     port = free_port
     pid = spawn bin/"claude-code-control", "--port", port.to_s
     sleep 2
