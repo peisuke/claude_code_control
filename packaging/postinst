@@ -8,12 +8,9 @@ DROPIN_FILE="$DROPIN_DIR/user.conf"
 # --- 1. Create/update venv (offline, no network required) ---
 echo "--- Setting up Python venv ---"
 python3 -m venv "$INSTALL_DIR/venv"
-"$INSTALL_DIR/venv/bin/pip" install --upgrade pip --no-index \
-    --find-links "$INSTALL_DIR/wheels" --quiet 2>/dev/null || true
-"$INSTALL_DIR/venv/bin/pip" install --no-index \
-    --find-links "$INSTALL_DIR/wheels" \
-    -r "$INSTALL_DIR/requirements.txt" --quiet
-echo "Dependencies installed (offline)."
+"$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
+"$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" --quiet
+echo "Dependencies installed."
 
 # --- 2. Configure service user (fresh install only) ---
 if [ ! -f "$DROPIN_FILE" ]; then

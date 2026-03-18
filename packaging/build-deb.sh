@@ -5,9 +5,8 @@ set -euo pipefail
 # Usage: ./packaging/build-deb.sh [version]
 #   version defaults to git describe or "0.1.0"
 #
-# Ships source code + pre-downloaded wheels. The venv is created on the
-# target machine using the local Python, but pip install is offline
-# (no network required during dpkg -i).
+# Ships source code + requirements.txt. The venv and pip install run on
+# the target machine during postinst (requires network for PyPI access).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -27,14 +26,7 @@ rsync -a --exclude='__pycache__' "$PROJECT_DIR/backend/app/" "$INSTALL_DIR/backe
 touch "$INSTALL_DIR/backend/__init__.py"
 cp "$PROJECT_DIR/backend/requirements.txt" "$INSTALL_DIR/requirements.txt"
 
-# 2. Download wheels for offline install
-echo "--- Downloading wheels ---"
-mkdir -p "$INSTALL_DIR/wheels"
-pip3 download -r "$PROJECT_DIR/backend/requirements.txt" \
-    -d "$INSTALL_DIR/wheels" --quiet
-echo "$(ls "$INSTALL_DIR/wheels/" | wc -l) wheels downloaded."
-
-# 3. Build with fpm
+# 2. Build with fpm
 echo "--- Building .deb ---"
 fpm \
     --input-type dir \
