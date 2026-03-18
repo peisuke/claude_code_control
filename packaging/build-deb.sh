@@ -13,9 +13,13 @@ BUILD_DIR="$(mktemp -d)"
 INSTALL_DIR="$BUILD_DIR/opt/claude-code-control"
 FINAL_VENV="/opt/claude-code-control/venv"
 
+# Detect build Python version for exact dependency
+PY_VERSION="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+
 trap "rm -rf '$BUILD_DIR'" EXIT
 
 echo "=== Building claude-code-control ${VERSION} (${ARCH}) ==="
+echo "--- Build Python: ${PY_VERSION} ---"
 
 # 1. Create venv and install dependencies
 echo "--- Creating venv and installing dependencies ---"
@@ -52,7 +56,7 @@ fpm \
     --url "https://github.com/peisuke/claude_code_control" \
     --license MIT \
     --depends tmux \
-    --depends "python3 >= 3.10" \
+    --depends "python${PY_VERSION}" \
     --deb-systemd "$SCRIPT_DIR/claude-code-control.service" \
     --after-install "$SCRIPT_DIR/postinst" \
     --before-remove "$SCRIPT_DIR/prerm" \
