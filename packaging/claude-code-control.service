@@ -4,8 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/claude-code-control/config.env
-ExecStart=/opt/claude-code-control/venv/bin/uvicorn backend.app.main:app --host $HOST --port $PORT
+# Defaults (overridden by EnvironmentFile if present)
+Environment=HOST=0.0.0.0
+Environment=PORT=8192
+EnvironmentFile=-/etc/claude-code-control/config.env
+ExecStart=/opt/claude-code-control/venv/bin/uvicorn backend.app.main:app --host ${HOST} --port ${PORT}
 WorkingDirectory=/opt/claude-code-control
 Restart=on-failure
 RestartSec=5

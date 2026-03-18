@@ -48,14 +48,14 @@ fpm \
     --depends tmux \
     --depends "python3 >= 3.10" \
     --depends python3-venv \
-    --deb-systemd "$SCRIPT_DIR/claude-code-control.service" \
     --after-install "$SCRIPT_DIR/postinst" \
     --before-remove "$SCRIPT_DIR/prerm" \
     --after-remove "$SCRIPT_DIR/postrm" \
     --config-files /etc/claude-code-control/config.env \
     --package "$PROJECT_DIR/" \
     "$INSTALL_DIR/=/opt/claude-code-control/" \
-    "$SCRIPT_DIR/config.env=/etc/claude-code-control/config.env"
+    "$SCRIPT_DIR/config.env=/etc/claude-code-control/config.env" \
+    "$SCRIPT_DIR/claude-code-control.service=/lib/systemd/system/claude-code-control.service"
 
 DEB_FILE="$PROJECT_DIR/claude-code-control_${VERSION}_${ARCH}.deb"
 echo ""

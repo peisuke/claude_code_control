@@ -6,11 +6,16 @@ DROPIN_DIR="/etc/systemd/system/claude-code-control.service.d"
 DROPIN_FILE="$DROPIN_DIR/user.conf"
 
 # --- 1. Create/update venv (requires network for PyPI) ---
-echo "--- Setting up Python venv ---"
-python3 -m venv "$INSTALL_DIR/venv"
-"$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
-"$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" --quiet
-echo "Dependencies installed."
+if [ "$1" = "configure" ]; then
+    echo "--- Setting up Python venv ---"
+    python3 -m venv "$INSTALL_DIR/venv"
+    if ! "$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet --no-cache-dir --timeout 60; then
+        echo "WARNING: pip upgrade failed, continuing with bundled pip."
+    fi
+    "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" \
+        --quiet --no-cache-dir --timeout 60
+    echo "Dependencies installed."
+fi
 
 # --- 2. Configure service user (fresh install only) ---
 if [ ! -f "$DROPIN_FILE" ]; then
