@@ -37,6 +37,10 @@ cd flutter_app && /home/ubuntu/flutter/bin/flutter test
 
 # Analyze code
 /home/ubuntu/flutter/bin/flutter analyze
+
+# Homebrew (macOS)
+brew tap peisuke/tap && brew install claude-code-control
+brew services start claude-code-control
 ```
 
 ## Tech Stack

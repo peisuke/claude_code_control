@@ -32,6 +32,22 @@ Claude Code Control provides an interface to interact with tmux sessions where C
 - **tmux** (must be installed and accessible)
 - **Claude Code** (running in tmux sessions)
 
+### Install via Homebrew (macOS)
+
+```bash
+brew tap peisuke/tap
+brew install claude-code-control
+
+# Start as a background service (launchd)
+brew services start claude-code-control
+
+# Or run directly
+claude-code-control
+```
+
+Logs: `$(brew --prefix)/var/log/claude-code-control.log`
+Config: `$(brew --prefix)/etc/claude-code-control/config.env`
+
 ### Development Setup
 
 1. **Install backend dependencies**
@@ -105,6 +121,9 @@ flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8192
 │   │   ├── screens/         # Home screen
 │   │   └── widgets/         # UI components
 │   └── test/                # 338+ tests
+├── packaging/
+│   ├── homebrew/            # Homebrew formula for macOS
+│   └── ...                  # .deb build for Ubuntu/Debian
 ├── Makefile                 # Build/run targets (make help)
 └── Dockerfile               # Backend Docker image
 ```
