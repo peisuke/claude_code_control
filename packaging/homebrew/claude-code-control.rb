@@ -35,7 +35,7 @@ class ClaudeCodeControl < Formula
       export PYTHONPATH="#{libexec}"
       mkdir -p "$STATE_DIR"
       exec "#{libexec}/bin/uvicorn" backend.app.main:app \\
-        --host "${HOST:-127.0.0.1}" \\
+        --host "${HOST:-0.0.0.0}" \\
         --port "${PORT:-8192}" \\
         "$@"
     EOS
@@ -47,8 +47,7 @@ class ClaudeCodeControl < Formula
     unless config.exist?
       config.write <<~EOS
         # Claude Code Control configuration
-        # Default: localhost only. Set to 0.0.0.0 for LAN access (no auth — use with caution).
-        HOST=127.0.0.1
+        HOST=0.0.0.0
         PORT=8192
       EOS
     end
