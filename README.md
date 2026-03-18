@@ -49,7 +49,7 @@ cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 3. **Build Flutter app**
 ```bash
 cd flutter_app
-flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8080
+flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8000
 ```
 
 4. **Access the backend API**
