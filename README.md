@@ -105,7 +105,8 @@ flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8000
 │   │   ├── screens/         # Home screen
 │   │   └── widgets/         # UI components
 │   └── test/                # 338+ tests
-└── package.json             # Root package.json (backend scripts)
+├── Makefile                 # Build/run targets (make help)
+└── Dockerfile               # Backend Docker image
 ```
 
 ## Security Notes
