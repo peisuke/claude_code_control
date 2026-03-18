@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e
 
-# Clean up venv on any removal (not shipped in package, built by postinst)
-rm -rf /opt/claude-code-control/venv
+# Only remove venv on actual removal, not on abort-install/abort-upgrade
+# (which would destroy a working venv after a transient pip failure)
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    rm -rf /opt/claude-code-control/venv
+fi
 
 if [ "$1" = "purge" ]; then
     rm -rf /etc/claude-code-control

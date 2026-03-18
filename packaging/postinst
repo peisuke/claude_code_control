@@ -16,19 +16,19 @@ echo "Dependencies installed."
 if [ ! -f "$DROPIN_FILE" ]; then
     RUN_USER="${SUDO_USER:-}"
 
-    # If SUDO_USER is not set (root shell, automation), require explicit config
+    # Refuse to run as root — the service needs access to a real user's tmux sockets
     if [ -z "$RUN_USER" ] || [ "$RUN_USER" = "root" ]; then
         echo ""
-        echo "WARNING: Could not detect a non-root user."
-        echo "  The service needs to run as the user whose tmux sessions it controls."
-        echo "  Create the drop-in manually:"
+        echo "ERROR: Could not detect a non-root user."
+        echo "  Install with: sudo dpkg -i claude-code-control_*.deb"
+        echo "  (SUDO_USER must be set to a non-root user)"
         echo ""
+        echo "  Or configure manually after install:"
         echo "    sudo mkdir -p $DROPIN_DIR"
         echo "    echo -e '[Service]\nUser=YOUR_USER\nGroup=YOUR_GROUP' | sudo tee $DROPIN_FILE"
         echo "    sudo systemctl daemon-reload"
         echo ""
-        # Default to root so the service can at least be configured later
-        RUN_USER="root"
+        exit 1
     fi
 
     RUN_GROUP="$(id -gn "$RUN_USER" 2>/dev/null || echo root)"
