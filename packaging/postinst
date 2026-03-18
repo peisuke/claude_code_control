@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+# Create service user (no login, no home)
+if ! id claude-code-control >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell /usr/sbin/nologin claude-code-control
+fi
+
+# Allow service user to access tmux sockets
+# tmux sockets are in /tmp/tmux-<uid>/ — the service user needs
+# to be in the same group as the user running tmux, or the user
+# can add claude-code-control to their group.
+
+systemctl daemon-reload
+systemctl enable claude-code-control.service
+
+echo ""
+echo "Claude Code Control installed successfully!"
+echo ""
+echo "  Config:  /etc/claude-code-control/config.env"
+echo "  Start:   sudo systemctl start claude-code-control"
+echo "  Logs:    journalctl -u claude-code-control -f"
+echo ""
+echo "NOTE: The service user 'claude-code-control' needs access to tmux sockets."
+echo "  Add it to your group:  sudo usermod -aG \$(id -gn) claude-code-control"
+echo ""

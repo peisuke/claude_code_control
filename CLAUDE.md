@@ -37,6 +37,13 @@ cd flutter_app && /home/ubuntu/flutter/bin/flutter test
 
 # Analyze code
 /home/ubuntu/flutter/bin/flutter analyze
+
+# Build .deb package (requires fpm: gem install fpm)
+./packaging/build-deb.sh 0.1.0
+
+# Install .deb
+sudo dpkg -i claude-code-control_0.1.0_amd64.deb
+sudo systemctl enable --now claude-code-control
 ```
 
 ## Tech Stack
@@ -135,6 +142,14 @@ flutter_app/test/
     terminal_output_test.dart        # Terminal rendering + ANSI + styling (11 tests)
     home_screen_test.dart            # Layout + lifecycle + app bar (14 tests)
     theme_widget_test.dart           # Theme integration + Material 3 (7 tests)
+
+packaging/
+  build-deb.sh                       # fpm-based .deb build script
+  claude-code-control.service        # systemd unit file
+  config.env                         # Default config → /etc/claude-code-control/
+  postinst                           # Post-install: create user, enable service
+  prerm                              # Pre-remove: stop/disable service
+  postrm                             # Post-remove (purge): delete user/config
 ```
 
 ## Architecture

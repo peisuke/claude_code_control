@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+systemctl stop claude-code-control.service 2>/dev/null || true
+systemctl disable claude-code-control.service 2>/dev/null || true
