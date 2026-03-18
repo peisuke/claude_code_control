@@ -51,13 +51,15 @@ CONFIGURED_GROUP="$(grep -oP '^Group=\K.*' "$DROPIN_FILE" 2>/dev/null || echo ro
 mkdir -p /var/lib/claude-code-control
 chown "$CONFIGURED_USER:$CONFIGURED_GROUP" /var/lib/claude-code-control
 
-# --- 4. Enable and restart ---
-systemctl daemon-reload
-systemctl enable claude-code-control.service
+# --- 4. Enable and restart (skip if systemd is not running) ---
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+    systemctl enable claude-code-control.service
 
-if [ "$1" = "configure" ] && systemctl is-active --quiet claude-code-control.service 2>/dev/null; then
-    systemctl restart claude-code-control.service
-    echo "Service restarted after upgrade."
+    if [ "$1" = "configure" ] && systemctl is-active --quiet claude-code-control.service 2>/dev/null; then
+        systemctl restart claude-code-control.service
+        echo "Service restarted after upgrade."
+    fi
 fi
 
 echo ""

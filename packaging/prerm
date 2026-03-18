@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e
 
-# Only stop and disable on actual removal, not upgrades.
-# $1 is "remove" on removal, "upgrade" on upgrades.
-if [ "$1" = "remove" ]; then
+if [ "$1" = "remove" ] && [ -d /run/systemd/system ]; then
     systemctl stop claude-code-control.service 2>/dev/null || true
     systemctl disable claude-code-control.service 2>/dev/null || true
 fi

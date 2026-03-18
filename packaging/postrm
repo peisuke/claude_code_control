@@ -13,4 +13,6 @@ if [ "$1" = "purge" ]; then
     rm -rf /var/lib/claude-code-control
 fi
 
-systemctl daemon-reload
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+fi

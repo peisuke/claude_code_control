@@ -10,8 +10,12 @@ WorkingDirectory=/opt/claude-code-control
 Restart=on-failure
 RestartSec=5
 
-# User/Group set by postinst via drop-in override
-# so the service can access the caller's tmux sockets.
+# Safe default: nobody (cannot access tmux sockets).
+# postinst creates a drop-in override with the real user.
+# If the drop-in is missing, the service starts but returns no sessions,
+# rather than running as root with full filesystem access.
+User=nobody
+Group=nogroup
 
 # State directory for settings file
 StateDirectory=claude-code-control
