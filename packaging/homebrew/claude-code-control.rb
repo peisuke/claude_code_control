@@ -41,13 +41,16 @@ class ClaudeCodeControl < Formula
     EOS
     chmod 0755, bin/"claude-code-control"
 
-    # Install default config
+    # Install default config (preserve existing on upgrade)
     (etc/"claude-code-control").mkpath
-    (etc/"claude-code-control/config.env").write <<~EOS
-      # Claude Code Control configuration
-      HOST=0.0.0.0
-      PORT=8192
-    EOS
+    config = etc/"claude-code-control/config.env"
+    unless config.exist?
+      config.write <<~EOS
+        # Claude Code Control configuration
+        HOST=0.0.0.0
+        PORT=8192
+      EOS
+    end
   end
 
   def post_install
