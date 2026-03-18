@@ -9,7 +9,7 @@ COMPOSE = HOST_UID=$(HOST_UID) HOST_GID=$(HOST_GID) APP_PORT=$(APP_PORT) TMUX_VE
 FLUTTER ?= flutter
 FLUTTER_PORT ?= 3000
 
-.PHONY: build up down restart logs health ps clean up-frontend flutter apk macos ios help
+.PHONY: build up down restart logs health ps clean flutter apk macos ios help
 
 ## Docker (backend) -------------------------------------------------
 
@@ -36,11 +36,6 @@ ps:  ## Show container status
 
 clean:  ## Stop and remove image
 	$(COMPOSE) --profile backend down --rmi local
-
-## React frontend (local) -------------------------------------------
-
-up-frontend:  ## Start React dev server (port 3000)
-	cd frontend && HOST=0.0.0.0 REACT_APP_BACKEND_PORT=$(APP_PORT) npm start
 
 ## Flutter (local) --------------------------------------------------
 

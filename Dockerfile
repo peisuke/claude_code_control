@@ -1,15 +1,4 @@
-# Stage 1: Build frontend
-FROM node:18-slim AS frontend-build
-
-WORKDIR /app/frontend
-
-COPY frontend/package.json ./
-RUN npm install
-
-COPY frontend/ ./
-RUN npm run build
-
-# Stage 2: Backend only (use --target backend to skip frontend build)
+# Backend only
 FROM python:3.11-slim AS backend
 
 ARG HOST_UID=1000
@@ -66,9 +55,3 @@ ENTRYPOINT ["backend/entrypoint.sh"]
 EXPOSE 8000
 
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# Stage 3: Full app (backend + frontend)
-FROM backend AS app
-
-COPY --from=frontend-build /app/frontend/build ./frontend/build
-ENV STATIC_DIR=/app/frontend/build
