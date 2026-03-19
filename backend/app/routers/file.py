@@ -350,9 +350,10 @@ async def download_file(path: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("File download failed")
         raise HTTPException(
             status_code=500,
-            detail=f"Error downloading file: {str(e)}"
+            detail="File download failed"
         )
 
 
@@ -375,12 +376,20 @@ async def upload_file(
         if not os.path.isdir(dir_path):
             raise HTTPException(status_code=400, detail="Path is not a directory")
 
-        filename = file.filename or "uploaded_file"
-        file_ext = os.path.splitext(filename)[1].lower()
-        if file_ext not in ALLOWED_EXTENSIONS:
-            raise HTTPException(status_code=403, detail=f"File type not allowed: {file_ext}")
+        # Sanitize filename: strip to basename, reject special characters
+        raw_filename = file.filename or "uploaded_file"
+        filename = os.path.basename(raw_filename).strip()
+        if not filename or '\x00' in filename:
+            raise HTTPException(status_code=400, detail="Invalid filename")
 
-        dest_path = os.path.join(dir_path, filename)
+        file_ext = os.path.splitext(filename)[1].lower()
+        if file_ext not in ALLOWED_EXTENSIONS or not file_ext:
+            raise HTTPException(status_code=403, detail=f"File type not allowed: {file_ext or '(none)'}")
+
+        # Resolve full path and verify it stays within allowed directories
+        dest_path = os.path.realpath(os.path.join(dir_path, filename))
+        if not is_safe_path(dest_path):
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directories")
 
         if is_blocked_file(dest_path):
             raise HTTPException(status_code=403, detail="Access denied: sensitive file")
@@ -388,10 +397,12 @@ async def upload_file(
         if os.path.exists(dest_path) and not overwrite:
             raise HTTPException(status_code=409, detail="File already exists")
 
-        # Read and check size
-        content = await file.read()
-        if len(content) > MAX_FILE_SIZE:
-            raise HTTPException(status_code=413, detail="File too large")
+        # Read in chunks to avoid memory exhaustion from large uploads
+        content = bytearray()
+        while chunk := await file.read(8192):
+            content.extend(chunk)
+            if len(content) > MAX_FILE_SIZE:
+                raise HTTPException(status_code=413, detail="File too large")
 
         with open(dest_path, 'wb') as f:
             f.write(content)
@@ -399,13 +410,14 @@ async def upload_file(
         return ApiResponse(
             success=True,
             message="File uploaded successfully",
-            data={'path': dest_path, 'size': len(content)}
+            data={'path': os.path.basename(dest_path), 'size': len(content)}
         )
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("File upload failed")
         raise HTTPException(
             status_code=500,
-            detail=f"Error uploading file: {str(e)}"
+            detail="File upload failed"
         )

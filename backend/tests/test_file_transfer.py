@@ -70,6 +70,18 @@ class TestDownloadFile:
         assert response.status_code == 400
 
 
+    @pytest.mark.asyncio
+    async def test_download_oversized_file(self, temp_directory):
+        big_file = os.path.join(temp_directory, "big.txt")
+        with open(big_file, "w") as f:
+            f.write("x" * (1024 * 1024 * 6))  # 6MB > MAX_FILE_SIZE
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get("/api/files/download", params={"path": big_file})
+
+        assert response.status_code == 413
+
+
 class TestUploadFile:
     """Tests for POST /api/files/upload endpoint"""
 
@@ -170,4 +182,42 @@ class TestUploadFile:
         assert response.status_code == 200
         data = response.json()
         assert data["data"]["size"] == len(content)
-        assert "result.txt" in data["data"]["path"]
+        assert data["data"]["path"] == "result.txt"
+
+    @pytest.mark.asyncio
+    async def test_upload_path_traversal_in_filename_sanitized(self, temp_directory):
+        """Filename with ../ is sanitized to basename — file is saved safely"""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post(
+                "/api/files/upload",
+                params={"directory": temp_directory},
+                files={"file": ("../../etc/evil.txt", b"safe", "text/plain")},
+            )
+
+        assert response.status_code == 200
+        # File saved with sanitized name, not in ../../etc/
+        assert os.path.exists(os.path.join(temp_directory, "evil.txt"))
+        assert not os.path.exists("/etc/evil.txt")
+
+    @pytest.mark.asyncio
+    async def test_upload_absolute_path_filename(self, temp_directory):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post(
+                "/api/files/upload",
+                params={"directory": temp_directory},
+                files={"file": ("/etc/passwd", b"bad", "text/plain")},
+            )
+
+        # basename("/../etc/passwd") = "passwd" which is in BLOCKED_FILES
+        assert response.status_code in (400, 403)
+
+    @pytest.mark.asyncio
+    async def test_upload_extensionless_file_rejected(self, temp_directory):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.post(
+                "/api/files/upload",
+                params={"directory": temp_directory},
+                files={"file": ("somebinary", b"binary content", "application/octet-stream")},
+            )
+
+        assert response.status_code == 403

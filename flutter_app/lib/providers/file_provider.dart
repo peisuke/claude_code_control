@@ -177,17 +177,19 @@ class FileNotifier extends StateNotifier<FileState> {
   Future<String> downloadFile(String serverPath) async {
     state = state.copyWith(isDownloading: true, error: null);
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      // Use external storage so files are visible in file managers
+      final dir = await getExternalStorageDirectory() ??
+          await getApplicationDocumentsDirectory();
       final filename = serverPath.split('/').last;
-      var localPath = '${dir.path}/$filename';
+      final ext = filename.contains('.') ? '.${filename.split('.').last}' : '';
+      final base = filename.contains('.')
+          ? filename.substring(0, filename.lastIndexOf('.'))
+          : filename;
 
       // Avoid overwriting existing local files
+      var localPath = '${dir.path}/$filename';
       var counter = 1;
       while (File(localPath).existsSync()) {
-        final ext = filename.contains('.') ? '.${filename.split('.').last}' : '';
-        final base = filename.contains('.')
-            ? filename.substring(0, filename.lastIndexOf('.'))
-            : filename;
         localPath = '${dir.path}/$base ($counter)$ext';
         counter++;
       }
