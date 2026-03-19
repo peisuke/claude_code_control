@@ -1,6 +1,6 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/file_node.dart';
@@ -172,32 +172,22 @@ class FileNotifier extends StateNotifier<FileState> {
     await prefs.setString(AppConfig.keyFileSortOrder, order.name);
   }
 
-  /// Download a file from the server to the phone's Downloads directory.
-  /// Returns the local file path on success.
+  /// Download a file from the server and save via platform save dialog.
+  /// Returns the saved file name on success.
   Future<String> downloadFile(String serverPath) async {
     state = state.copyWith(isDownloading: true, error: null);
     try {
-      // Use external storage so files are visible in file managers
-      final dir = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      final bytes = await _api.downloadFileBytes(serverPath);
       final filename = serverPath.split('/').last;
-      final ext = filename.contains('.') ? '.${filename.split('.').last}' : '';
-      final base = filename.contains('.')
-          ? filename.substring(0, filename.lastIndexOf('.'))
-          : filename;
 
-      // Avoid overwriting existing local files
-      var localPath = '${dir.path}/$filename';
-      var counter = 1;
-      while (File(localPath).existsSync()) {
-        localPath = '${dir.path}/$base ($counter)$ext';
-        counter++;
-      }
+      await FileSaver.instance.saveFile(
+        name: filename,
+        bytes: bytes,
+      );
 
-      await _api.downloadFile(serverPath, localPath);
-      if (!mounted) return localPath;
+      if (!mounted) return filename;
       state = state.copyWith(isDownloading: false);
-      return localPath;
+      return filename;
     } catch (e) {
       if (!mounted) rethrow;
       state = state.copyWith(isDownloading: false, error: e.toString());
@@ -205,11 +195,12 @@ class FileNotifier extends StateNotifier<FileState> {
     }
   }
 
-  /// Upload a file from the phone to the current server directory.
-  Future<void> uploadFile(String localFilePath) async {
+  /// Upload a file to the current server directory.
+  /// Accepts bytes and filename (from file_picker).
+  Future<void> uploadFile(Uint8List bytes, String fileName) async {
     state = state.copyWith(isUploading: true, error: null);
     try {
-      await _api.uploadFile(localFilePath, state.currentPath);
+      await _api.uploadFile(bytes, fileName, state.currentPath);
       if (!mounted) return;
       state = state.copyWith(isUploading: false);
       // Refresh file tree to show the new file

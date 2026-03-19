@@ -97,14 +97,18 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
   }
 
   Future<void> _onUpload(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result == null || result.files.single.path == null) return;
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    if (result == null) return;
+    final file = result.files.single;
+    if (file.bytes == null) return;
 
     try {
-      await ref.read(fileProvider.notifier).uploadFile(result.files.single.path!);
+      await ref
+          .read(fileProvider.notifier)
+          .uploadFile(file.bytes!, file.name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Uploaded ${result.files.single.name}')),
+          SnackBar(content: Text('Uploaded ${file.name}')),
         );
       }
     } catch (e) {
