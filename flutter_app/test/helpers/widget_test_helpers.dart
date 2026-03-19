@@ -132,6 +132,20 @@ class NoOpApiService extends ApiService {
   }
 
   @override
+  Future<void> downloadFile(String serverPath, String localPath) async {}
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> uploadFile(
+      String localFilePath, String targetDirectory,
+      {bool overwrite = false}) async {
+    return ApiResponse<Map<String, dynamic>>(
+      success: true,
+      message: 'Uploaded',
+      data: {'path': '$targetDirectory/file.txt', 'size': 100},
+    );
+  }
+
+  @override
   Future<bool> healthCheck() async {
     return connectionSuccess;
   }
