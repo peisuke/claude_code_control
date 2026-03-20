@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+if [ -d /run/systemd/system ]; then
+    if [ "$1" = "remove" ]; then
+        systemctl stop claude-code-control.service 2>/dev/null || true
+        systemctl disable claude-code-control.service 2>/dev/null || true
+    elif [ "$1" = "upgrade" ]; then
+        systemctl stop claude-code-control.service 2>/dev/null || true
+    fi
+fi

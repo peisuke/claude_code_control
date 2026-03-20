@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-SETTINGS_FILE = "tmux_settings.json"
+SETTINGS_FILE = os.path.join(
+    os.environ.get("STATE_DIR", "."), "tmux_settings.json"
+)
 
 
 def load_settings() -> TmuxSettings:

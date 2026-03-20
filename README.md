@@ -32,6 +32,29 @@ Claude Code Control provides an interface to interact with tmux sessions where C
 - **tmux** (must be installed and accessible)
 - **Claude Code** (running in tmux sessions)
 
+### Install via .deb package (Ubuntu/Debian)
+
+```bash
+# Install the package (service runs as your user automatically)
+sudo dpkg -i claude-code-control_0.1.0_all.deb
+
+# Start the service
+sudo systemctl start claude-code-control
+
+# Check status
+sudo systemctl status claude-code-control
+```
+
+The backend runs on port 8192 by default. Edit `/etc/claude-code-control/config.env` to change.
+Settings are stored in `/var/lib/claude-code-control/`.
+
+### Build the .deb package from source
+
+```bash
+./packaging/build-deb.sh          # uses version from git tag, or 0.1.0
+./packaging/build-deb.sh 1.2.3    # explicit version
+```
+
 ### Development Setup
 
 1. **Install backend dependencies**
@@ -105,6 +128,10 @@ flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8192
 │   │   ├── screens/         # Home screen
 │   │   └── widgets/         # UI components
 │   └── test/                # 338+ tests
+├── packaging/
+│   ├── build-deb.sh         # .deb package build script (fpm)
+│   ├── claude-code-control.service  # systemd unit
+│   └── config.env           # Default config → /etc/claude-code-control/
 ├── Makefile                 # Build/run targets (make help)
 └── Dockerfile               # Backend Docker image
 ```

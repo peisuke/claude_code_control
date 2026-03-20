@@ -1,0 +1,84 @@
+#!/bin/bash
+set -e
+
+INSTALL_DIR="/opt/claude-code-control"
+DROPIN_DIR="/etc/systemd/system/claude-code-control.service.d"
+DROPIN_FILE="$DROPIN_DIR/user.conf"
+
+# --- 1. Create/update venv (requires network for PyPI) ---
+if [ "$1" = "configure" ]; then
+    echo "--- Setting up Python venv ---"
+    python3 -m venv "$INSTALL_DIR/venv"
+    if ! "$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet --no-cache-dir --timeout 60; then
+        echo "WARNING: pip upgrade failed, continuing with bundled pip."
+    fi
+    "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" \
+        --quiet --no-cache-dir --timeout 60
+    echo "Dependencies installed."
+fi
+
+# --- 2. Configure service user (fresh install only) ---
+if [ ! -f "$DROPIN_FILE" ]; then
+    RUN_USER="${SUDO_USER:-}"
+
+    # If no non-root user detected, skip drop-in creation.
+    # The service won't start until the user configures it manually.
+    if [ -z "$RUN_USER" ] || [ "$RUN_USER" = "root" ]; then
+        echo ""
+        echo "WARNING: Could not detect a non-root user (SUDO_USER not set)."
+        echo "  The service will not start until a service user is configured:"
+        echo ""
+        echo "    sudo mkdir -p $DROPIN_DIR"
+        echo "    echo -e '[Service]\nUser=YOUR_USER\nGroup=YOUR_GROUP' | sudo tee $DROPIN_FILE"
+        echo "    sudo systemctl daemon-reload"
+        echo "    sudo systemctl start claude-code-control"
+        echo ""
+        # Do not create drop-in — leave unconfigured rather than running as root
+    else
+        RUN_GROUP="$(id -gn "$RUN_USER" 2>/dev/null || echo "$RUN_USER")"
+
+        mkdir -p "$DROPIN_DIR"
+        cat > "$DROPIN_FILE" <<DROPIN
+[Service]
+User=$RUN_USER
+Group=$RUN_GROUP
+DROPIN
+
+        echo "Service user set to: $RUN_USER"
+    fi
+fi
+
+# Read back the configured user for state directory ownership
+if [ -f "$DROPIN_FILE" ]; then
+    CONFIGURED_USER="$(grep -oP '^User=\K.*' "$DROPIN_FILE" || echo nobody)"
+    CONFIGURED_GROUP="$(grep -oP '^Group=\K.*' "$DROPIN_FILE" || echo nogroup)"
+else
+    CONFIGURED_USER="nobody"
+    CONFIGURED_GROUP="nogroup"
+fi
+
+# --- 3. State directory ---
+mkdir -p /var/lib/claude-code-control
+chown "$CONFIGURED_USER:$CONFIGURED_GROUP" /var/lib/claude-code-control
+
+# --- 4. Enable and restart (skip if systemd is not running) ---
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+    systemctl enable claude-code-control.service
+
+    # Start/restart if drop-in is configured (service was stopped by prerm on upgrade)
+    if [ "$1" = "configure" ] && [ -f "$DROPIN_FILE" ]; then
+        systemctl restart claude-code-control.service
+        echo "Service started."
+    fi
+fi
+
+echo ""
+echo "Claude Code Control installed successfully!"
+echo ""
+echo "  Service user: $CONFIGURED_USER"
+echo "  Config:       /etc/claude-code-control/config.env"
+echo "  State:        /var/lib/claude-code-control/"
+echo "  Start:        sudo systemctl start claude-code-control"
+echo "  Logs:         journalctl -u claude-code-control -f"
+echo ""

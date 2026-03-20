@@ -1,0 +1,32 @@
+[Unit]
+Description=Claude Code Control - tmux controller backend
+After=network.target
+
+[Service]
+Type=simple
+# Defaults (overridden by EnvironmentFile if present)
+Environment=HOST=0.0.0.0
+Environment=PORT=8192
+EnvironmentFile=-/etc/claude-code-control/config.env
+ExecStart=/opt/claude-code-control/venv/bin/uvicorn backend.app.main:app --host ${HOST} --port ${PORT}
+WorkingDirectory=/opt/claude-code-control
+Restart=on-failure
+RestartSec=5
+
+# Safe default: nobody (cannot access tmux sockets).
+# postinst creates a drop-in override with the real user.
+# If the drop-in is missing, the service starts but returns no sessions,
+# rather than running as root with full filesystem access.
+User=nobody
+Group=nogroup
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# State directory for settings file
+StateDirectory=claude-code-control
+Environment=STATE_DIR=/var/lib/claude-code-control
+
+[Install]
+WantedBy=multi-user.target
