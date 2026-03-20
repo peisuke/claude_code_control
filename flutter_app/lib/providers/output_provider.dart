@@ -98,6 +98,11 @@ class OutputNotifier extends StateNotifier<OutputState> {
   /// Previous WS content for change detection.
   String _lastWsContent = '';
 
+  /// When true, the next WS message should NOT re-derive _historyPrefix
+  /// from state.content. Set by refresh(forceBottom: true) after it
+  /// pre-computes the correct prefix from the API response.
+  bool _historyPrefixLocked = false;
+
   /// Debounce timer for auto-refresh when lines shift.
   Timer? _autoRefreshTimer;
 
@@ -147,7 +152,10 @@ class OutputNotifier extends StateNotifier<OutputState> {
 
     // First WS message after load: extract history prefix by line count.
     // Initial content = history + current screen. WS = current screen only.
-    if (_historyPrefix.isEmpty && state.content.isNotEmpty) {
+    // Skip if _historyPrefixLocked — refresh() already set the correct prefix.
+    if (!_historyPrefixLocked &&
+        _historyPrefix.isEmpty &&
+        state.content.isNotEmpty) {
       final initialLines = state.content.split('\n');
       final wsLines = msg.content.split('\n');
       final historyCount = initialLines.length - wsLines.length;
@@ -156,6 +164,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
             '${initialLines.sublist(0, historyCount).join('\n')}\n';
       }
     }
+    _historyPrefixLocked = false;
 
     // Detect content change → history prefix is now stale.
     // Only invalidate while at bottom — when scrolled up, the user is
@@ -342,9 +351,24 @@ class OutputNotifier extends StateNotifier<OutputState> {
       if (!mounted) return;
 
       if (forceBottom) {
-        _historyPrefix = '';
+        // Pre-compute _historyPrefix from the API response so the next
+        // WS message (which contains only the visible pane) doesn't
+        // discard the history portion.
+        if (_lastWsContent.isNotEmpty) {
+          final apiLines = output.content.split('\n');
+          final wsLines = _lastWsContent.split('\n');
+          final historyCount = apiLines.length - wsLines.length;
+          if (historyCount > 0) {
+            _historyPrefix =
+                '${apiLines.sublist(0, historyCount).join('\n')}\n';
+          } else {
+            _historyPrefix = '';
+          }
+        } else {
+          _historyPrefix = '';
+        }
+        _historyPrefixLocked = true;
         _historyFresh = true;
-        _lastWsContent = '';
         _latestContent = output.content;
         isAtBottom = true;
         state = state.copyWith(
