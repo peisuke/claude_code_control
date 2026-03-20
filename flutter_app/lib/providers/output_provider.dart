@@ -156,13 +156,7 @@ class OutputNotifier extends StateNotifier<OutputState> {
     if (!_historyPrefixLocked &&
         _historyPrefix.isEmpty &&
         state.content.isNotEmpty) {
-      final initialLines = state.content.split('\n');
-      final wsLines = msg.content.split('\n');
-      final historyCount = initialLines.length - wsLines.length;
-      if (historyCount > 0) {
-        _historyPrefix =
-            '${initialLines.sublist(0, historyCount).join('\n')}\n';
-      }
+      _historyPrefix = _extractHistoryPrefix(state.content, msg.content);
     }
     _historyPrefixLocked = false;
 
@@ -264,6 +258,18 @@ class OutputNotifier extends StateNotifier<OutputState> {
     }
   }
 
+  /// Extract the history portion from full content by subtracting the
+  /// visible pane (WS content) line count.
+  static String _extractHistoryPrefix(String fullContent, String wsContent) {
+    final fullLines = fullContent.split('\n');
+    final wsLines = wsContent.split('\n');
+    final historyCount = fullLines.length - wsLines.length;
+    if (historyCount > 0) {
+      return '${fullLines.sublist(0, historyCount).join('\n')}\n';
+    }
+    return '';
+  }
+
   /// Detect whether lines shifted between two WS frames.
   /// Returns true when both the top AND bottom of the visible pane
   /// changed — meaning output scrolled and old lines moved into the
@@ -354,19 +360,9 @@ class OutputNotifier extends StateNotifier<OutputState> {
         // Pre-compute _historyPrefix from the API response so the next
         // WS message (which contains only the visible pane) doesn't
         // discard the history portion.
-        if (_lastWsContent.isNotEmpty) {
-          final apiLines = output.content.split('\n');
-          final wsLines = _lastWsContent.split('\n');
-          final historyCount = apiLines.length - wsLines.length;
-          if (historyCount > 0) {
-            _historyPrefix =
-                '${apiLines.sublist(0, historyCount).join('\n')}\n';
-          } else {
-            _historyPrefix = '';
-          }
-        } else {
-          _historyPrefix = '';
-        }
+        _historyPrefix = _lastWsContent.isNotEmpty
+            ? _extractHistoryPrefix(output.content, _lastWsContent)
+            : '';
         _historyPrefixLocked = true;
         _historyFresh = true;
         _latestContent = output.content;
@@ -385,15 +381,8 @@ class OutputNotifier extends StateNotifier<OutputState> {
         // but *before* the latest WS frame are in neither source.  We
         // keep _historyFresh = false so the next auto-refresh or
         // scroll-up will re-fetch a complete snapshot.
-        final apiLines = output.content.split('\n');
-        final wsLines = _lastWsContent.split('\n');
-        final historyCount = apiLines.length - wsLines.length;
-        if (historyCount > 0) {
-          _historyPrefix =
-              '${apiLines.sublist(0, historyCount).join('\n')}\n';
-        } else {
-          _historyPrefix = '';
-        }
+        _historyPrefix =
+            _extractHistoryPrefix(output.content, _lastWsContent);
         // Intentionally NOT setting _historyFresh = true here — the
         // spliced history may have gaps from lines emitted during the
         // API call.  Keeping it false lets subsequent refreshes or
