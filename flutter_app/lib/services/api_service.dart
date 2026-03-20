@@ -161,6 +161,40 @@ class ApiService {
     );
   }
 
+  // --- File transfer ---
+
+  Future<void> downloadFile(String serverPath, String localPath) async {
+    await _dio.download(
+      '/files/download',
+      localPath,
+      queryParameters: {'path': serverPath},
+      options: Options(receiveTimeout: const Duration(seconds: 60)),
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> uploadFile(
+      String localFilePath, String targetDirectory,
+      {bool overwrite = false}) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(localFilePath),
+    });
+    final response = await _dio.post(
+      '/files/upload',
+      data: formData,
+      queryParameters: {
+        'directory': targetDirectory,
+        if (overwrite) 'overwrite': true,
+      },
+      options: Options(sendTimeout: const Duration(seconds: 60)),
+    );
+    final json = response.data as Map<String, dynamic>;
+    return ApiResponse<Map<String, dynamic>>(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+      data: json['data'] as Map<String, dynamic>?,
+    );
+  }
+
   // --- Health check ---
 
   Future<bool> healthCheck() async {

@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/file_node.dart';
@@ -15,6 +17,8 @@ class FileState {
   final FileContentResponse? selectedFile;
   final bool isLoadingTree;
   final bool isLoadingContent;
+  final bool isUploading;
+  final bool isDownloading;
   final String? error;
   final FileSortKey sortKey;
   final FileSortOrder sortOrder;
@@ -25,6 +29,8 @@ class FileState {
     this.selectedFile,
     this.isLoadingTree = false,
     this.isLoadingContent = false,
+    this.isUploading = false,
+    this.isDownloading = false,
     this.error,
     this.sortKey = FileSortKey.name,
     this.sortOrder = FileSortOrder.ascending,
@@ -36,6 +42,8 @@ class FileState {
     FileContentResponse? selectedFile,
     bool? isLoadingTree,
     bool? isLoadingContent,
+    bool? isUploading,
+    bool? isDownloading,
     String? error,
     bool clearSelectedFile = false,
     FileSortKey? sortKey,
@@ -48,6 +56,8 @@ class FileState {
           clearSelectedFile ? null : (selectedFile ?? this.selectedFile),
       isLoadingTree: isLoadingTree ?? this.isLoadingTree,
       isLoadingContent: isLoadingContent ?? this.isLoadingContent,
+      isUploading: isUploading ?? this.isUploading,
+      isDownloading: isDownloading ?? this.isDownloading,
       error: error,
       sortKey: sortKey ?? this.sortKey,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -160,6 +170,55 @@ class FileNotifier extends StateNotifier<FileState> {
     if (!mounted) return;
     await prefs.setString(AppConfig.keyFileSortKey, key.name);
     await prefs.setString(AppConfig.keyFileSortOrder, order.name);
+  }
+
+  /// Download a file from the server to the phone's Downloads directory.
+  /// Returns the local file path on success.
+  Future<String> downloadFile(String serverPath) async {
+    state = state.copyWith(isDownloading: true, error: null);
+    try {
+      // Use external storage so files are visible in file managers
+      final dir = await getExternalStorageDirectory() ??
+          await getApplicationDocumentsDirectory();
+      final filename = serverPath.split('/').last;
+      final ext = filename.contains('.') ? '.${filename.split('.').last}' : '';
+      final base = filename.contains('.')
+          ? filename.substring(0, filename.lastIndexOf('.'))
+          : filename;
+
+      // Avoid overwriting existing local files
+      var localPath = '${dir.path}/$filename';
+      var counter = 1;
+      while (File(localPath).existsSync()) {
+        localPath = '${dir.path}/$base ($counter)$ext';
+        counter++;
+      }
+
+      await _api.downloadFile(serverPath, localPath);
+      if (!mounted) return localPath;
+      state = state.copyWith(isDownloading: false);
+      return localPath;
+    } catch (e) {
+      if (!mounted) rethrow;
+      state = state.copyWith(isDownloading: false, error: e.toString());
+      rethrow;
+    }
+  }
+
+  /// Upload a file from the phone to the current server directory.
+  Future<void> uploadFile(String localFilePath) async {
+    state = state.copyWith(isUploading: true, error: null);
+    try {
+      await _api.uploadFile(localFilePath, state.currentPath);
+      if (!mounted) return;
+      state = state.copyWith(isUploading: false);
+      // Refresh file tree to show the new file
+      await fetchTree(path: state.currentPath);
+    } catch (e) {
+      if (!mounted) return;
+      state = state.copyWith(isUploading: false, error: e.toString());
+      rethrow;
+    }
   }
 
   /// Sort tree: directories always first, then sort by key within each group.

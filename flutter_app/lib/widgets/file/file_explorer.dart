@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/file_node.dart';
@@ -36,6 +37,18 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
             children: [
               Expanded(child: _buildBreadcrumbs(context, state.currentPath)),
               _buildSortButton(context, state),
+              state.isUploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.upload_file, size: 20),
+                      onPressed: () => _onUpload(context),
+                      tooltip: 'Upload',
+                      iconSize: 20,
+                    ),
               IconButton(
                 icon: const Icon(Icons.refresh, size: 20),
                 onPressed: state.isLoadingTree
@@ -81,6 +94,26 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         ),
       ],
     );
+  }
+
+  Future<void> _onUpload(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result == null || result.files.single.path == null) return;
+
+    try {
+      await ref.read(fileProvider.notifier).uploadFile(result.files.single.path!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Uploaded ${result.files.single.name}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildSortButton(BuildContext context, FileState state) {
