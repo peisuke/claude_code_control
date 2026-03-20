@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import '../config/app_config.dart';
@@ -163,20 +164,29 @@ class ApiService {
 
   // --- File transfer ---
 
-  Future<void> downloadFile(String serverPath, String localPath) async {
-    await _dio.download(
+  /// Download file as raw bytes (works on all platforms including web).
+  Future<Uint8List> downloadFileBytes(String serverPath) async {
+    final response = await _dio.get<List<int>>(
       '/files/download',
-      localPath,
       queryParameters: {'path': serverPath},
-      options: Options(receiveTimeout: const Duration(seconds: 60)),
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 60),
+      ),
     );
+    final data = response.data;
+    if (data == null) {
+      throw Exception('Server returned empty response for: $serverPath');
+    }
+    return Uint8List.fromList(data);
   }
 
+  /// Upload file from bytes (works on all platforms including web).
   Future<ApiResponse<Map<String, dynamic>>> uploadFile(
-      String localFilePath, String targetDirectory,
+      Uint8List bytes, String fileName, String targetDirectory,
       {bool overwrite = false}) async {
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(localFilePath),
+      'file': MultipartFile.fromBytes(bytes, filename: fileName),
     });
     final response = await _dio.post(
       '/files/upload',

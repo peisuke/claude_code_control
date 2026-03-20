@@ -91,11 +91,11 @@ class FileViewer extends ConsumerWidget {
   Future<void> _onDownload(
       BuildContext context, WidgetRef ref, String serverPath) async {
     try {
-      final localPath =
+      final filename =
           await ref.read(fileProvider.notifier).downloadFile(serverPath);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved to $localPath')),
+          SnackBar(content: Text('Saved: $filename')),
         );
       }
     } catch (e) {

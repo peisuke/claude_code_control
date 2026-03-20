@@ -2,6 +2,7 @@
 ///
 /// Provides a [buildTestWidget] function that wraps widgets in a
 /// ProviderScope + MaterialApp with overridden providers for isolated testing.
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tmux_control/models/api_response.dart';
@@ -132,16 +133,18 @@ class NoOpApiService extends ApiService {
   }
 
   @override
-  Future<void> downloadFile(String serverPath, String localPath) async {}
+  Future<Uint8List> downloadFileBytes(String serverPath) async {
+    return Uint8List.fromList([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
+  }
 
   @override
   Future<ApiResponse<Map<String, dynamic>>> uploadFile(
-      String localFilePath, String targetDirectory,
+      Uint8List bytes, String fileName, String targetDirectory,
       {bool overwrite = false}) async {
     return ApiResponse<Map<String, dynamic>>(
       success: true,
       message: 'Uploaded',
-      data: {'path': '$targetDirectory/file.txt', 'size': 100},
+      data: {'path': fileName, 'size': bytes.length},
     );
   }
 
