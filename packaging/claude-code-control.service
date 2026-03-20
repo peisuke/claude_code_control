@@ -20,9 +20,8 @@ RestartSec=5
 User=nobody
 Group=nogroup
 
-# Security hardening
+# Security hardening (PrivateTmp disabled — tmux sockets live in /tmp)
 NoNewPrivileges=true
-PrivateTmp=true
 
 # State directory for settings file
 StateDirectory=claude-code-control
