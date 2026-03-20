@@ -50,6 +50,23 @@ class FileViewer extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (state.isDownloading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.download, size: 18),
+                  onPressed: () => _onDownload(context, ref, file.path),
+                  tooltip: 'Download',
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                ),
+              const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: () =>
@@ -69,6 +86,25 @@ class FileViewer extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _onDownload(
+      BuildContext context, WidgetRef ref, String serverPath) async {
+    try {
+      final filename =
+          await ref.read(fileProvider.notifier).downloadFile(serverPath);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved: $filename')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildContentViewer(BuildContext context, FileContentResponse file) {

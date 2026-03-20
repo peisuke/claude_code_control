@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/file_node.dart';
@@ -36,6 +37,18 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
             children: [
               Expanded(child: _buildBreadcrumbs(context, state.currentPath)),
               _buildSortButton(context, state),
+              state.isUploading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.upload_file, size: 20),
+                      onPressed: () => _onUpload(context),
+                      tooltip: 'Upload',
+                      iconSize: 20,
+                    ),
               IconButton(
                 icon: const Icon(Icons.refresh, size: 20),
                 onPressed: state.isLoadingTree
@@ -81,6 +94,40 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
         ),
       ],
     );
+  }
+
+  Future<void> _onUpload(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    if (result == null) return;
+    final file = result.files.single;
+    if (file.bytes == null) return;
+
+    // Reject files too large for in-memory transfer (5MB matches server limit)
+    if (file.size > 5 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File too large (max 5 MB)')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await ref
+          .read(fileProvider.notifier)
+          .uploadFile(file.bytes!, file.name);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Uploaded ${file.name}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildSortButton(BuildContext context, FileState state) {

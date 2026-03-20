@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
+from fastapi.responses import FileResponse
 from typing import List
 import os
 import base64
@@ -311,4 +312,112 @@ async def get_file_content(path: str):
         raise HTTPException(
             status_code=500,
             detail=f"Error reading file: {str(e)}"
+        )
+
+
+@router.get("/download")
+async def download_file(path: str):
+    """Download a file as a raw binary response"""
+    try:
+        full_path = os.path.realpath(path)
+
+        if not is_safe_path(full_path):
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directories")
+
+        if is_blocked_file(full_path):
+            raise HTTPException(status_code=403, detail="Access denied: sensitive file")
+
+        if not os.path.exists(full_path):
+            raise HTTPException(status_code=404, detail="File not found")
+
+        if not os.path.isfile(full_path):
+            raise HTTPException(status_code=400, detail="Path is not a file")
+
+        file_size = os.path.getsize(full_path)
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="File too large")
+
+        mime_type, _ = mimetypes.guess_type(full_path)
+        if not mime_type:
+            mime_type = 'application/octet-stream'
+
+        return FileResponse(
+            full_path,
+            media_type=mime_type,
+            filename=os.path.basename(full_path),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("File download failed")
+        raise HTTPException(
+            status_code=500,
+            detail="File download failed"
+        )
+
+
+@router.post("/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    directory: str = Query(..., description="Target directory path"),
+    overwrite: bool = Query(False, description="Overwrite existing file"),
+):
+    """Upload a file to the specified directory"""
+    try:
+        dir_path = os.path.realpath(directory)
+
+        if not is_safe_path(dir_path):
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directories")
+
+        if not os.path.exists(dir_path):
+            raise HTTPException(status_code=404, detail="Directory not found")
+
+        if not os.path.isdir(dir_path):
+            raise HTTPException(status_code=400, detail="Path is not a directory")
+
+        # Sanitize filename: strip to basename, reject special characters
+        raw_filename = file.filename or "uploaded_file"
+        filename = os.path.basename(raw_filename).strip()
+        if not filename or '\x00' in filename:
+            raise HTTPException(status_code=400, detail="Invalid filename")
+
+        file_ext = os.path.splitext(filename)[1].lower()
+        if file_ext not in ALLOWED_EXTENSIONS or not file_ext:
+            raise HTTPException(status_code=403, detail=f"File type not allowed: {file_ext or '(none)'}")
+
+        # Resolve full path and verify it stays within allowed directories
+        dest_path = os.path.realpath(os.path.join(dir_path, filename))
+        if not is_safe_path(dest_path):
+            raise HTTPException(status_code=403, detail="Access denied: path outside allowed directories")
+
+        if is_blocked_file(dest_path):
+            raise HTTPException(status_code=403, detail="Access denied: sensitive file")
+
+        if os.path.exists(dest_path) and not overwrite:
+            raise HTTPException(status_code=409, detail="File already exists")
+
+        # Read in chunks to avoid memory exhaustion from large uploads
+        content = bytearray()
+        while chunk := await file.read(8192):
+            content.extend(chunk)
+            if len(content) > MAX_FILE_SIZE:
+                raise HTTPException(status_code=413, detail="File too large")
+
+        with open(dest_path, 'wb') as f:
+            f.write(content)
+
+        return ApiResponse(
+            success=True,
+            message="File uploaded successfully",
+            data={'path': os.path.basename(dest_path), 'size': len(content)}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("File upload failed")
+        raise HTTPException(
+            status_code=500,
+            detail="File upload failed"
         )
