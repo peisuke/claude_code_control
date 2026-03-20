@@ -55,6 +55,22 @@ Settings are stored in `/var/lib/claude-code-control/`.
 ./packaging/build-deb.sh 1.2.3    # explicit version
 ```
 
+### Install via Homebrew (macOS)
+
+```bash
+brew tap peisuke/tap
+brew install claude-code-control
+
+# Start as a background service (launchd)
+brew services start claude-code-control
+
+# Or run directly
+claude-code-control
+```
+
+Logs: `$(brew --prefix)/var/log/claude-code-control.log`
+Config: `$(brew --prefix)/etc/claude-code-control/config.env`
+
 ### Development Setup
 
 1. **Install backend dependencies**
@@ -131,7 +147,8 @@ flutter build apk --debug --dart-define=BACKEND_URL=http://<host-ip>:8192
 ├── packaging/
 │   ├── build-deb.sh         # .deb package build script (fpm)
 │   ├── claude-code-control.service  # systemd unit
-│   └── config.env           # Default config → /etc/claude-code-control/
+│   ├── config.env           # Default config → /etc/claude-code-control/
+│   └── homebrew/            # Homebrew formula for macOS
 ├── Makefile                 # Build/run targets (make help)
 └── Dockerfile               # Backend Docker image
 ```

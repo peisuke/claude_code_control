@@ -44,6 +44,10 @@ cd flutter_app && /home/ubuntu/flutter/bin/flutter test
 # Install .deb
 sudo dpkg -i claude-code-control_0.1.0_all.deb
 sudo systemctl enable --now claude-code-control
+
+# Homebrew (macOS)
+brew tap peisuke/tap && brew install claude-code-control
+brew services start claude-code-control
 ```
 
 ## Tech Stack
