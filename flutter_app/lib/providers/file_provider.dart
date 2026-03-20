@@ -179,10 +179,15 @@ class FileNotifier extends StateNotifier<FileState> {
     try {
       final bytes = await _api.downloadFileBytes(serverPath);
       final filename = serverPath.split('/').last;
+      final ext = filename.contains('.')
+          ? filename.split('.').last
+          : '';
 
       await FileSaver.instance.saveFile(
         name: filename,
         bytes: bytes,
+        ext: ext.isNotEmpty ? ext : '',
+        mimeType: MimeType.other,
       );
 
       if (!mounted) return filename;

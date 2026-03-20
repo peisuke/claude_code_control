@@ -174,7 +174,11 @@ class ApiService {
         receiveTimeout: const Duration(seconds: 60),
       ),
     );
-    return Uint8List.fromList(response.data!);
+    final data = response.data;
+    if (data == null) {
+      throw Exception('Server returned empty response for: $serverPath');
+    }
+    return Uint8List.fromList(data);
   }
 
   /// Upload file from bytes (works on all platforms including web).

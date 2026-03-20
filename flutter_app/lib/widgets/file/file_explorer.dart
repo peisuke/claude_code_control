@@ -102,6 +102,16 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
     final file = result.files.single;
     if (file.bytes == null) return;
 
+    // Reject files too large for in-memory transfer (5MB matches server limit)
+    if (file.size > 5 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File too large (max 5 MB)')),
+        );
+      }
+      return;
+    }
+
     try {
       await ref
           .read(fileProvider.notifier)
