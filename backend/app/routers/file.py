@@ -20,11 +20,7 @@ INITIAL_PATH = os.environ.get('WORKSPACE_DIR') or os.path.expanduser('~')
 
 # Allowed base paths - restrict file access to these directories only
 ALLOWED_BASE_PATHS = [
-    os.path.expanduser('~'),  # User's home directory
-    '/tmp',
-    '/home',
-    '/workspace',
-    os.getcwd(),  # Current working directory
+    '/',  # Allow browsing entire filesystem (blocked dirs/files still enforced)
 ]
 # Include WORKSPACE_DIR so custom paths are accessible via the file browser
 _workspace_dir = os.environ.get('WORKSPACE_DIR')
@@ -59,6 +55,8 @@ def is_safe_path(path: str) -> bool:
         # Check if path is within any allowed base path
         for base_path in ALLOWED_BASE_PATHS:
             normalized_base = os.path.realpath(base_path)
+            if normalized_base == '/':
+                return True
             if requested_path.startswith(normalized_base + os.sep) or requested_path == normalized_base:
                 return True
 
@@ -183,7 +181,7 @@ async def get_tree(path: str = ""):
     
     try:
         # If no path provided, use the initial working directory
-        if not path or path == "/":
+        if not path:
             target_path = INITIAL_PATH
         else:
             target_path = os.path.abspath(path)
