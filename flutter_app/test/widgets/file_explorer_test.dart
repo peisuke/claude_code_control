@@ -40,15 +40,14 @@ void main() {
   group('FileExplorer (FileExplorer.test.tsx port)', () {
     // ── rendering ──────────────────────────────────────────
     group('rendering', () {
-      testWidgets('should render root breadcrumb', (tester) async {
-        // Port of: "should render title" / "should render root button"
+      testWidgets('should render breadcrumb area', (tester) async {
         await tester.pumpWidget(_build());
         await tester.pump();
         await tester.pump();
         await tester.pump();
 
-        // The "/" breadcrumb should always be present
-        expect(find.text('/'), findsOneWidget);
+        // Breadcrumb area renders (refresh and upload buttons present)
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
       });
 
       testWidgets('should show empty directory message when tree is empty',
@@ -149,7 +148,6 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.text('/'), findsOneWidget);
         expect(find.text('home'), findsOneWidget);
         expect(find.text('user'), findsOneWidget);
         expect(find.text('projects'), findsOneWidget);
@@ -161,7 +159,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.text('/'), findsOneWidget);
+        // Root path has no visible breadcrumb parts (empty after split)
+        expect(find.text('home'), findsNothing);
       });
     });
 
