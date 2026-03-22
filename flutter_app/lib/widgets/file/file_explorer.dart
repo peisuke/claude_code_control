@@ -218,11 +218,13 @@ class _FileExplorerState extends ConsumerState<FileExplorer> {
       message: path.isEmpty ? '/' : path,
       child: Row(
           children: [
+            // Root: show just "/"
+            if (visibleParts.isEmpty)
+              Text('/', style: theme.textTheme.bodySmall),
             if (truncated)
-              Text('... / ', style: theme.textTheme.bodySmall),
+              Text('...', style: theme.textTheme.bodySmall),
             for (var i = 0; i < visibleParts.length; i++) ...[
-              if (i > 0)
-                Text(' / ', style: theme.textTheme.bodySmall),
+              Text('/', style: theme.textTheme.bodySmall),
               Flexible(
                 child: InkWell(
                   onTap: () {
