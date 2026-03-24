@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import '../models/tmux_session.dart';
 import '../services/api_service.dart';
 import 'connection_provider.dart';
 import 'file_provider.dart';
@@ -236,7 +237,36 @@ class ServerNotifier extends StateNotifier<ServerState> {
     }
   }
 
+  /// Persistence key for per-server target memory.
+  static const _keyServerTargets = 'server-targets';
+
+  /// Save the current selected target for the current server URL.
+  Future<void> _saveCurrentTarget() async {
+    final currentUrl = AppConfig.backendUrl;
+    final currentTarget = _ref.read(selectedTargetProvider);
+    if (currentUrl.isEmpty || currentTarget.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final map = Map<String, String>.from(
+        jsonDecode(prefs.getString(_keyServerTargets) ?? '{}')
+            as Map<String, dynamic>);
+    map[currentUrl] = currentTarget;
+    await prefs.setString(_keyServerTargets, jsonEncode(map));
+  }
+
+  /// Load the saved target for a server URL, or return null.
+  Future<String?> _loadSavedTarget(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = Map<String, String>.from(
+        jsonDecode(prefs.getString(_keyServerTargets) ?? '{}')
+            as Map<String, dynamic>);
+    return map[url];
+  }
+
   Future<void> _applyConnection(String url) async {
+    // Save current target before switching
+    await _saveCurrentTarget();
+
     final normalized = url.replaceAll(RegExp(r'/+$'), '');
     AppConfig.setSavedBackendUrl(url);
     _ref.read(apiServiceProvider).updateBaseUrl('$normalized/api');
@@ -254,13 +284,22 @@ class ServerNotifier extends StateNotifier<ServerState> {
 
     final hierarchy = _ref.read(sessionProvider).hierarchy;
     if (hierarchy != null && hierarchy.sessions.isNotEmpty) {
-      final firstSession = hierarchy.sessions.values.first;
-      final firstWindow = firstSession.windows.isNotEmpty
-          ? firstSession.windows.keys.first
-          : null;
-      final target = firstWindow != null
-          ? '${firstSession.name}:$firstWindow'
-          : firstSession.name;
+      // Restore saved target for this server, or fall back to first session
+      final savedTarget = await _loadSavedTarget(url);
+      String target;
+      if (savedTarget != null &&
+          savedTarget.isNotEmpty &&
+          _isValidTarget(hierarchy, savedTarget)) {
+        target = savedTarget;
+      } else {
+        final firstSession = hierarchy.sessions.values.first;
+        final firstWindow = firstSession.windows.isNotEmpty
+            ? firstSession.windows.keys.first
+            : null;
+        target = firstWindow != null
+            ? '${firstSession.name}:$firstWindow'
+            : firstSession.name;
+      }
       _ref.read(selectedTargetProvider.notifier).state = target;
       _ref.read(websocketServiceProvider).setTarget(target);
       _ref.read(websocketServiceProvider).resetAndReconnect();
@@ -272,6 +311,20 @@ class ServerNotifier extends StateNotifier<ServerState> {
       _ref.read(websocketServiceProvider).setTarget('');
       _ref.read(websocketServiceProvider).disconnect();
     }
+  }
+
+  /// Check if a target string (e.g. "session:0.1") exists in the hierarchy.
+  static bool _isValidTarget(TmuxHierarchy hierarchy, String target) {
+    final parts = target.split(':');
+    final sessionName = parts[0];
+    if (!hierarchy.sessions.containsKey(sessionName)) return false;
+    if (parts.length < 2) return true;
+    final windowPane = parts[1].split('.');
+    final windowIndex = windowPane[0];
+    final session = hierarchy.sessions[sessionName]!;
+    if (!session.windows.containsKey(windowIndex)) return false;
+    if (windowPane.length < 2) return true;
+    return session.windows[windowIndex]!.panes.containsKey(windowPane[1]);
   }
 
   Future<void> _saveUrls() async {
