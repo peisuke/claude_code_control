@@ -5,6 +5,7 @@ from typing import Optional, Any
 class CommandRequest(BaseModel):
     command: str
     target: str  # session, session:window, or session:window.pane
+    literal: bool = True  # True: send text literally (-l), False: interpret key names
 
 
 class TmuxSettings(BaseModel):

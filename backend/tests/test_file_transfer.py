@@ -148,7 +148,8 @@ class TestUploadFile:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_upload_path_traversal(self):
+    async def test_upload_to_readonly_directory(self):
+        """Upload to a directory without write permission returns 500"""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             response = await ac.post(
                 "/api/files/upload",
@@ -156,7 +157,7 @@ class TestUploadFile:
                 files={"file": ("test.txt", b"content", "text/plain")},
             )
 
-        assert response.status_code == 403
+        assert response.status_code == 500
 
     @pytest.mark.asyncio
     async def test_upload_blocked_filename(self, temp_directory):

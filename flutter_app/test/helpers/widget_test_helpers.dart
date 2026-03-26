@@ -55,7 +55,7 @@ class NoOpApiService extends ApiService {
 
   @override
   Future<ApiResponse> sendCommand(String command,
-      {required String target}) async {
+      {required String target, bool literal = true}) async {
     sentCommands.add(command);
     return const ApiResponse(success: true, message: '');
   }

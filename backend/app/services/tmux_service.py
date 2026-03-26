@@ -57,8 +57,13 @@ class TmuxService:
             process.returncode
         )
 
-    async def send_command(self, command: str, target: str = None) -> bool:
-        """Send a command to tmux target (session, window, or pane)"""
+    async def send_command(self, command: str, target: str = None, literal: bool = True) -> bool:
+        """Send a command to tmux target (session, window, or pane).
+
+        When literal=True, uses send-keys -l to send text as-is without
+        interpreting key names. When literal=False, key names like
+        'C-c', 'Escape' are interpreted by tmux.
+        """
 
         if not validate_tmux_target(target):
             logger.warning(f"Invalid tmux target format: {target}")
@@ -69,9 +74,11 @@ class TmuxService:
             return False
 
         try:
-            _, _, returncode = await self._execute_tmux_command(
-                ["tmux", "send-keys", "-t", target, command]
-            )
+            cmd = ["tmux", "send-keys", "-t", target]
+            if literal:
+                cmd.append("-l")
+            cmd.append(command)
+            _, _, returncode = await self._execute_tmux_command(cmd)
             return returncode == 0
         except Exception as e:
             logger.error(f"Error sending command: {e}")

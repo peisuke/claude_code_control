@@ -26,7 +26,7 @@ class MockApiService extends ApiService {
 
   @override
   Future<ApiResponse> sendCommand(String command,
-      {required String target}) async {
+      {required String target, bool literal = true}) async {
     sendCommandCalls.add(_SendCommandCall(command, target));
     if (sendCommandError != null) {
       final err = sendCommandError!;

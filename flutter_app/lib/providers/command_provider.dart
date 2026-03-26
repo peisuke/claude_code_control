@@ -67,7 +67,7 @@ class CommandNotifier extends StateNotifier<CommandState> {
   Future<void> sendSpecialKey(String key) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await _api.sendCommand(key, target: _target);
+      await _api.sendCommand(key, target: _target, literal: false);
       if (!mounted) return;
       await Future.delayed(
           const Duration(milliseconds: AppConfig.commandRefreshDelayMs));

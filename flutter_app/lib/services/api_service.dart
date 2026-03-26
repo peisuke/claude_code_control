@@ -33,10 +33,11 @@ class ApiService {
   // --- Tmux endpoints ---
 
   Future<ApiResponse> sendCommand(String command,
-      {required String target}) async {
+      {required String target, bool literal = true}) async {
     final response = await _dio.post('/tmux/send-command', data: {
       'command': command,
       'target': target,
+      'literal': literal,
     });
     return ApiResponse.fromJson(response.data as Map<String, dynamic>, null);
   }

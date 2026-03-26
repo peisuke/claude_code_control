@@ -64,7 +64,7 @@ async def send_command(request: CommandRequest):
     _validate_target(request.target)
 
     async def _op():
-        success = await tmux_service.send_command(request.command, request.target)
+        success = await tmux_service.send_command(request.command, request.target, literal=request.literal)
         _require_success(success, "Failed to send command")
         return ApiResponse(success=True, message="Command sent successfully")
 
