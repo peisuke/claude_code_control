@@ -49,6 +49,10 @@ class AnsiParser {
     var strikethrough = false;
     var reverse = false;
 
+    // Terminal background color for reverse video fallback.
+    // When reverse is active and bg is null, use this instead of transparent.
+    const terminalBg = Color(0xFF000000);
+
     int lastEnd = 0;
 
     for (final match in _ansiPattern.allMatches(line)) {
@@ -59,7 +63,7 @@ class AnsiParser {
           text: text,
           style: _buildStyle(
             baseStyle,
-            fg: reverse ? currentBg : currentFg,
+            fg: reverse ? (currentBg ?? terminalBg) : currentFg,
             bg: reverse ? currentFg : currentBg,
             bold: bold,
             dim: dim,
@@ -171,7 +175,7 @@ class AnsiParser {
         text: text,
         style: _buildStyle(
           baseStyle,
-          fg: reverse ? currentBg : currentFg,
+          fg: reverse ? (currentBg ?? terminalBg) : currentFg,
           bg: reverse ? currentFg : currentBg,
           bold: bold,
           dim: dim,
